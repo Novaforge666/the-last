@@ -62,3 +62,35 @@ Deriv volatility indices are synthetic products. Trading them carries a high
 risk of losing money rapidly. Signals, hit rates and bots on this site describe
 past ticks only and **do not guarantee profit**. This is an independent
 third-party client, not affiliated with or endorsed by Deriv.
+
+## Deploy on Vercel (dashboard, no build step)
+
+The repository is already prepared for this. In the Vercel dashboard:
+
+1. **Add New → Project** and import `Novaforge666/the-last`.
+2. Framework preset: **Other**. Build command: *(empty)*. Output directory: *(empty, defaults to the repo root)*.
+   Vercel has no `index.html` on `main` yet, so point **Settings → Git → Production Branch**
+   at `arena/2279a8ca-the-last` (or merge that branch into `main`) — otherwise the
+   project deploys a 404.
+3. Deploy. Vercel serves `index.html` from the root; you get a
+   `https://<project>.vercel.app` URL and **no custom domain is required**.
+4. Optional CLI flow: `npx vercel deploy --prod` from this folder (it will also
+   detect a static site with no build command).
+
+Several repository layouts were tried through the Vercel API during setup; the
+first deployment of the `the-last` project still has to be created with the
+settings above, because the API refuses a first deployment that has no
+`projectSettings` block.
+
+## Known limits
+
+- **Live data works with any app id**; login and trading do not. Until you set
+  your own id, the header shows a banner saying exactly that.
+- Login uses the OAuth redirect `https://oauth.deriv.com/oauth2/authorize?app_id=…`;
+  Deriv appends `token1` / `acct1` to the redirect URL, which the page reads,
+  strips from the address bar and exchanges for an `authorize` call. The token
+  is kept in `sessionStorage` only.
+- Contract digit barriers use the Volatility indices' last digit of the quoted
+  price, exactly as Deriv reports it.
+- `ticks_history` and `profit_table` are rate limited; the market scan batches
+  five markets per request and the trades table pages 25 rows at a time.

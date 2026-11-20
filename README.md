@@ -2,9 +2,11 @@
 
 A single-file, zero-build trading terminal for Deriv volatility indices.
 Everything lives in **`index.html`** (HTML + CSS + vanilla JS inline): no
-frameworks, no bundler, no backend, no mock data. All quotes, proposals,
-balances and trades come from the official Deriv WebSocket API at
-`wss://ws.derivws.com/websockets/v3`.
+frameworks, no bundler, no backend, no mock data. Market data, quotes,
+proposals, balances and trades come from Deriv's official Options API:
+`wss://api.derivws.com/trading/v1/options/ws/public` for guest data and a
+single-use authenticated Options WebSocket for API-token sessions. Legacy OAuth
+login remains supported through `wss://ws.derivws.com/websockets/v3`.
 
 ## What's inside
 
@@ -17,9 +19,10 @@ balances and trades come from the official Deriv WebSocket API at
 
 Core plumbing: a WebSocket helper with `req_id` request/response matching,
 auto-reconnect with backoff, a 30-second ping heartbeat, subscription restore
-after a reconnect, Deriv OAuth redirect login (`token1` / `acct1` from the URL
-→ `authorize`), and a header with account id, Demo/Real badge, live `balance`
-subscription and logout.
+after a reconnect, an **API token login** (PAT → REST account discovery →
+single-use OTP WebSocket), Deriv OAuth redirect login (`token1` / `acct1` from
+the URL → `authorize`) for legacy apps, and a header with account id, Demo/Real
+badge, live `balance` subscription and logout.
 
 ## 1. Register an App ID
 
@@ -42,6 +45,30 @@ That is the only place the app id is used (the WebSocket URL and the OAuth URL
 are both built from it). The app id is configured. If you ever reset it to the
 placeholder, the page falls back to Deriv's public app id `1089`, which gives you live market data but **not**
 OAuth login or trading — the header banner tells you so.
+
+## 3. Log in with an API token
+
+Recommended because it avoids the OAuth redirect entirely:
+
+1. Open <https://developers.deriv.com> → Dashboard and create a **PAT-type**
+   application. Copy its **App ID** into `index.html` as `APP_ID`.
+2. In the same dashboard, create a **Personal Access Token** with the `trade`
+   scope.
+3. On the site, click **API token** (top right), paste the token and press
+   **Find accounts**.
+4. Pick the account you want to use. Demo accounts connect immediately; a real
+   account requires an explicit confirmation.
+5. The token is kept only in `sessionStorage` (this browser tab) and is sent
+   only to Deriv. It is never written into this repository, the built page or
+   logs. Close the tab to forget it.
+
+Under the hood the page calls `GET /trading/v1/options/accounts` with
+`Authorization: Bearer …` and `Deriv-App-ID: …`, then
+`POST /trading/v1/options/accounts/{account_id}/otp`, and connects to the
+returned `wss://api.derivws.com/trading/v1/options/ws/demo|real?otp=…` URL.
+That WebSocket is already authenticated; the page does **not** send an
+`authorize` message on it. OTP URLs expire, so every reconnect mints a fresh
+one automatically.
 
 ## 3. Host it
 
@@ -86,10 +113,17 @@ settings above, because the API refuses a first deployment that has no
 
 - **Live data works with any app id**; login and trading do not. Until you set
   your own id, the header shows a banner saying exactly that.
-- Login uses the OAuth redirect `https://oauth.deriv.com/oauth2/authorize?app_id=…`;
+- Login uses either an API token (recommended; see section 3) or the OAuth
+  redirect `https://oauth.deriv.com/oauth2/authorize?app_id=…`. For OAuth,
   Deriv appends `token1` / `acct1` to the redirect URL, which the page reads,
-  strips from the address bar and exchanges for an `authorize` call. The token
-  is kept in `sessionStorage` only.
+  strips from the address bar and exchanges for an `authorize` call. Both token
+  types are kept in `sessionStorage` only.
+- A PAT is only accepted by Deriv's current Options API. It will not work with
+  the legacy `ws.derivws.com` endpoint, and the legacy app id will not work with
+  the Options API; keep the app id and the token from the same application type.
+- **Never paste a PAT into chat, commit it or put it in Vercel environment
+  variables for the static site.** If a token has been shared anywhere outside
+  Deriv, revoke/rotate it and use the new one.
 - Contract digit barriers use the Volatility indices' last digit of the quoted
   price, exactly as Deriv reports it.
 - `ticks_history` and `profit_table` are rate limited; the market scan batches

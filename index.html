@@ -210,7 +210,7 @@ label.field > span.lbl{
   color:var(--dim);margin-bottom:6px;font-weight:600;
 }
 .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.35}
-input[type=number],input[type=text],select{
+input[type=number],input[type=text],input[type=password],select{
   width:100%;padding:9px 11px;border-radius:0;
   background:#070808;border:1px solid var(--line-2);color:var(--txt);
   outline:none;transition:.15s;
@@ -531,6 +531,18 @@ th.num{text-align:right}
 .modal h4{font-size:15px;margin-bottom:8px}
 .modal p{font-size:12.5px;color:var(--muted);line-height:1.55}
 .modal .actions{display:flex;gap:9px;justify-content:flex-end;margin-top:16px}
+.pat-help{font-size:12px;color:var(--muted);line-height:1.55;margin:10px 0 12px}
+.pat-help a{color:var(--acc)}
+.pat-error{border:1px solid rgba(255,77,77,.5);background:rgba(255,77,77,.08);color:#ffb0b0;padding:10px;font-size:12px;line-height:1.45;margin-top:10px}
+.pat-accounts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.pat-account{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;border:1px solid var(--line-2);background:#070808;color:var(--txt);padding:10px 11px;cursor:pointer}
+.pat-account:hover{border-color:var(--acc);background:#10100e}
+.pat-account b{display:block;font-size:13px;letter-spacing:.08em}
+.pat-account small{display:block;color:var(--muted);margin-top:3px;font-size:11px}
+.pat-account .go{color:var(--acc);font:700 10px var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.pat-account.real{border-color:rgba(255,77,77,.45)}
+.pat-account.real .go{color:#ff8a8a}
+.acct-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 
 /* ---------------------------------------------------------------------------
    15. FOOTER
@@ -661,8 +673,11 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
         </div>
         <div class="bal"><span id="balance">—</span><small id="balanceCur"></small></div>
       </div>
-      <button class="btn sm primary" id="btnLogin">Log in</button>
-      <button class="btn sm ghost hidden" id="btnLogout">Log out</button>
+      <div class="acct-actions">
+        <button class="btn sm primary" id="btnLogin">Log in</button>
+        <button class="btn sm ghost" id="btnToken">API token</button>
+        <button class="btn sm ghost hidden" id="btnLogout">Log out</button>
+      </div>
     </div>
   </div>
 </header>
@@ -1222,6 +1237,27 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
   </div>
 </div>
 
+<!-- API token login (Personal Access Token; no redirect) -->
+<div class="modal-back hidden" id="patBack" role="dialog" aria-modal="true" aria-labelledby="patTitle">
+  <div class="modal">
+    <h4 id="patTitle">Log in with API token</h4>
+    <div class="pat-help">
+      Create a token at <a href="https://developers.deriv.com" target="_blank" rel="noopener noreferrer">developers.deriv.com</a>
+      with the <b>trade</b> scope. Tokens beginning with <span class="mono">pat_</span> use the current Deriv Options API: this page keeps the token in this browser tab only and exchanges it for a single-use WebSocket URL. Other Deriv API tokens use the legacy <span class="mono">authorize</span> call.
+    </div>
+    <label class="field">
+      <span class="lbl">API token</span>
+      <input type="password" id="patInput" autocomplete="off" spellcheck="false" autocapitalize="none" placeholder="Paste your token" />
+    </label>
+    <div class="pat-error hidden" id="patError"></div>
+    <div class="pat-accounts" id="patAccounts"></div>
+    <div class="actions">
+      <button class="btn ghost sm" id="patCancel">Cancel</button>
+      <button class="btn primary sm" id="patFind">Find accounts</button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts" aria-live="polite"></div>
 
 <script>
@@ -1250,7 +1286,10 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
    Leave it as "YOUR_APP_ID" to browse live market data with Deriv's public app id. */
 const APP_ID = "350V848Kr6DwMKS6qzG73";
 
-const WS_URL        = "wss://ws.derivws.com/websockets/v3";
+const LEGACY_WS_URL = "wss://ws.derivws.com/websockets/v3";
+const CURRENT_PUBLIC_WS_URL = "wss://api.derivws.com/trading/v1/options/ws/public";
+const CURRENT_API_BASE = "https://api.derivws.com";
+const WS_URL        = LEGACY_WS_URL; // OAuth uses the legacy endpoint; PAT uses current API endpoints.
 const OAUTH_URL     = "https://oauth.deriv.com/oauth2/authorize";
 const PING_MS       = 30000;   // heartbeat interval required by Deriv
 const PING_TIMEOUT  = 8000;    // treat the socket as dead if a ping stalls
@@ -1360,7 +1399,10 @@ const state = {
   auth: null,                  // authorize payload
   balance: null,
   accountType: null,           // "demo" | "real" | null
+  apiStyle: "options-v1",     // options-v1 | legacy
   loginPending: false,
+  authMode: null,             // "pat" | "oauth" | null
+  patAccount: null,           // account selected from GET /trading/v1/options/accounts
   proposal: null,              // last proposal response
   proposalAt: 0,
   proposalSeq: 0,
@@ -1443,8 +1485,10 @@ document.addEventListener("keydown", e => {
    - named subscriptions that are restored automatically after a reconnect
    --------------------------------------------------------------------------- */
 class DerivSocket {
-  constructor(url) {
+  constructor(url, appendAppId, urlProvider) {
     this.url = url;
+    this.appendAppId = appendAppId !== false;
+    this.urlProvider = urlProvider || null;
     this.ws = null;
     this.status = "idle";
     this.attempt = 0;
@@ -1464,19 +1508,26 @@ class DerivSocket {
 
   setStatus(s, detail) { this.status = s; this.emit("status", { status: s, detail: detail || "" }); }
 
-  connect() {
+  async resolveEndpoint() {
+    const base = this.urlProvider ? await this.urlProvider() : this.url;
+    const joiner = base.includes("?") ? "&" : "?";
+    return this.appendAppId === false ? base : base + joiner + "app_id=" + encodeURIComponent(ACTIVE_APP_ID);
+  }
+
+  async connect() {
     if (this._connecting) return;
     if (this.ws && (this.ws.readyState === 0 || this.ws.readyState === 1)) return;
     this._connecting = true;
     clearTimeout(this.reconnectTimer);
     this.setStatus(this.attempt ? "reconnecting" : "connecting");
 
-    let ws;
+    let ws, endpoint;
     try {
-      ws = new WebSocket(this.url + "?app_id=" + encodeURIComponent(ACTIVE_APP_ID));
+      endpoint = await this.resolveEndpoint();
+      ws = new WebSocket(endpoint);
     } catch (e) {
       this._connecting = false;
-      this.emit("error", { message: "Could not open a WebSocket: " + e.message });
+      this.emit("error", { message: "Could not open a WebSocket: " + (e && e.message ? e.message : "unknown error") });
       this.scheduleReconnect();
       return;
     }
@@ -1644,6 +1695,10 @@ class DerivSocket {
         if (stream.onData) stream.onData(resp);
       } catch (err) {
         console.warn("Could not restore subscription", key, err && err.message);
+        if (key.indexOf("ticks:") === 0) {
+          const sym = key.slice(6);
+          if (Markets.data.has(sym)) Markets.data.get(sym).live = false;
+        }
       }
     }
     this.emit("restored", null);
@@ -1682,9 +1737,26 @@ class DerivSocket {
     this.ws = null;
     this.setStatus("closed");
   }
+
+  /** Close the current connection and reconnect to a different endpoint. */
+  restart(url, appendAppId, urlProvider) {
+    clearTimeout(this.reconnectTimer);
+    this.stopPing();
+    this.rejectAll("Switching Deriv connection.");
+    this.subIndex.clear();
+    if (this.ws) { try { this.ws.close(); } catch (_) {} }
+    this.ws = null;
+    this.url = url;
+    this.appendAppId = appendAppId !== false;
+    this.urlProvider = urlProvider || null;
+    this.attempt = 0;
+    this.closedByUser = false;
+    // Named subscriptions remain registered; restoreStreams() reissues them on open.
+    this.connect();
+  }
 }
 
-const socket = new DerivSocket(WS_URL);
+const socket = new DerivSocket(CURRENT_PUBLIC_WS_URL, false);
 
 /* ---------------------------------------------------------------------------
    5. MARKET DATA STORE
@@ -1823,6 +1895,253 @@ function runWhile(digits, pred) {
    --------------------------------------------------------------------------- */
 const TOKEN_KEY = "tickforge.token1";
 const ACCT_KEY  = "tickforge.acct1";
+const PAT_TOKEN_KEY = "tickforge.pat.token";
+const PAT_ACCOUNT_KEY = "tickforge.pat.account";
+
+let patDraftToken = null; // token currently shown in the token dialog; never rendered or logged
+
+function isPat(token) {
+  return /^pat_[A-Za-z0-9_-]{8,}$/.test(String(token || "").trim());
+}
+
+/** Options API accepts underlying_symbol; the legacy socket expects symbol. */
+function symbolPayload(sym) {
+  return state.apiStyle === "legacy" ? { symbol: sym } : { underlying_symbol: sym };
+}
+
+function getStoredPatToken() {
+  try { return sessionStorage.getItem(PAT_TOKEN_KEY) || ""; } catch (_) { return ""; }
+}
+function getStoredPatAccountId() {
+  try { return sessionStorage.getItem(PAT_ACCOUNT_KEY) || ""; } catch (_) { return ""; }
+}
+
+async function derivRest(path, token, options) {
+  const opts = options || {};
+  const headers = {
+    "Authorization": "Bearer " + token,
+    "Deriv-App-ID": ACTIVE_APP_ID
+  };
+  if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), opts.timeout || 12000) : null;
+  let res;
+  try {
+    res = await fetch(CURRENT_API_BASE + path, {
+      method: opts.method || "GET",
+      headers,
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      cache: "no-store",
+      credentials: "omit",
+      mode: "cors",
+      signal: controller ? controller.signal : undefined
+    });
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    if (err && err.name === "AbortError") throw { code: "TIMEOUT", message: "Deriv did not answer in time. Please retry." };
+    throw { code: "NETWORK", message: "Could not reach Deriv. Check this site's network access and try again." };
+  }
+  if (timer) clearTimeout(timer);
+
+  let body = null;
+  try { body = await res.json(); } catch (_) {}
+  if (!res.ok) {
+    const first = body && Array.isArray(body.errors) && body.errors[0] ? body.errors[0] : {};
+    throw {
+      status: res.status,
+      code: first.code || ("HTTP_" + res.status),
+      message: first.message || ("Deriv returned HTTP " + res.status + ".")
+    };
+  }
+  return body && body.data !== undefined ? body.data : body;
+}
+
+async function fetchPatAccounts(token) {
+  const data = await derivRest("/trading/v1/options/accounts", token);
+  const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+  return list.filter(a => a && a.account_id && a.status !== "inactive");
+}
+
+async function fetchPatWsUrl(accountId, token) {
+  const data = await derivRest("/trading/v1/options/accounts/" + encodeURIComponent(accountId) + "/otp", token, { method: "POST" });
+  const url = data && data.url;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "wss:" || u.host !== "api.derivws.com") throw new Error("unexpected URL");
+    return url;
+  } catch (_) {
+    throw { code: "BAD_DERIV_RESPONSE", message: "Deriv returned an unexpected WebSocket URL." };
+  }
+}
+
+function makePatProvider(accountId) {
+  return async () => {
+    const token = getStoredPatToken();
+    if (!token) throw { code: "PAT_MISSING", message: "The token is no longer in this tab. Please log in again." };
+    return fetchPatWsUrl(accountId, token);
+  };
+}
+
+function showPatError(message) {
+  const box = $("#patError");
+  if (!box) return;
+  box.textContent = message || "Could not use that token.";
+  box.classList.remove("hidden");
+}
+function clearPatError() {
+  const box = $("#patError");
+  if (box) box.classList.add("hidden");
+}
+function openTokenDialog() {
+  patDraftToken = null;
+  const input = $("#patInput");
+  const list = $("#patAccounts");
+  if (input) input.value = "";
+  if (list) list.replaceChildren();
+  clearPatError();
+  const btn = $("#patFind");
+  if (btn) { btn.disabled = false; btn.textContent = "Find accounts"; }
+  $("#patBack").classList.remove("hidden");
+  setTimeout(() => { if (input) input.focus(); }, 30);
+}
+function closeTokenDialog() {
+  patDraftToken = null;
+  $("#patBack").classList.add("hidden");
+  clearPatError();
+  const input = $("#patInput");
+  if (input) input.value = "";
+  const list = $("#patAccounts");
+  if (list) list.replaceChildren();
+}
+
+function renderPatAccounts(accounts, token) {
+  patDraftToken = token;
+  const host = $("#patAccounts");
+  if (!host) return;
+  host.replaceChildren();
+
+  const label = document.createElement("div");
+  label.className = "tiny dim";
+  label.textContent = accounts.length === 1 ? "1 Options account found" : accounts.length + " Options accounts found";
+  host.appendChild(label);
+
+  accounts.forEach(account => {
+    const isReal = account.account_type === "real";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pat-account" + (isReal ? " real" : "");
+    btn.innerHTML =
+      '<span><b>' + esc(account.account_id) + '</b><small>' +
+        esc(String(account.account_type || "").toUpperCase()) + ' · ' + esc(account.currency || "USD") +
+        ' balance ' + esc(money(account.balance, account.currency || "USD")) +
+      '</small></span><span class="go">Connect</span>';
+    btn.addEventListener("click", () => connectPatAccount(account, token, false));
+    host.appendChild(btn);
+  });
+}
+
+async function connectPatAccount(account, token, silent) {
+  clearPatError();
+  if (account.account_type === "real" && !silent) {
+    const ok = await confirmDialog(
+      "Connect real account?",
+      "You are connecting a <b>real-money</b> Options account. Trades placed here spend real funds. Continue?",
+      "Connect real account",
+      true
+    );
+    if (!ok) return;
+  }
+
+  const find = $("#patFind");
+  if (find) { find.disabled = true; find.textContent = "Connecting…"; }
+  try {
+    const url = await fetchPatWsUrl(account.account_id, token);
+    try {
+      sessionStorage.setItem(PAT_TOKEN_KEY, token);
+      sessionStorage.setItem(PAT_ACCOUNT_KEY, account.account_id);
+    } catch (_) {}
+
+    state.authMode = "pat";
+    state.apiStyle = "options-v1";
+    state.patAccount = account;
+    state.patApplied = false;
+    state.auth = null;
+    state.balance = null;
+    socket.restart(url, false, makePatProvider(account.account_id));
+    closeTokenDialog();
+    setBanner("info", "<b>API token connected.</b> Authorising " + esc(String(account.account_type || "").toUpperCase()) + " account <span class='mono'>" + esc(account.account_id) + "</span>…");
+  } catch (err) {
+    showPatError((err && err.message) ? err.message : "Could not connect this account.");
+    if (find) { find.disabled = false; find.textContent = "Find accounts"; }
+  }
+}
+
+async function restoreStoredPat() {
+  const token = getStoredPatToken();
+  const accountId = getStoredPatAccountId();
+  if (!token || !accountId) return false;
+  try {
+    setBanner("info", "<b>Restoring API token session…</b>");
+    const accounts = await fetchPatAccounts(token);
+    const account = accounts.find(a => a.account_id === accountId);
+    if (!account) throw { code: "AccountNotFound", message: "The stored Options account is no longer available." };
+    const url = await fetchPatWsUrl(accountId, token);
+    state.authMode = "pat";
+    state.apiStyle = "options-v1";
+    state.patAccount = account;
+    state.patApplied = false;
+    socket.restart(url, false, makePatProvider(accountId));
+    return true;
+  } catch (err) {
+    try { sessionStorage.removeItem(PAT_TOKEN_KEY); sessionStorage.removeItem(PAT_ACCOUNT_KEY); } catch (_) {}
+    state.authMode = null;
+    state.apiStyle = "options-v1";
+    const msg = (err && err.message) ? err.message : "Unknown error.";
+    setBanner("err", "<b>API token restore failed.</b> " + esc(msg) + " Live market data is still available.");
+    return false;
+  }
+}
+
+function applyPatAccount() {
+  const account = state.patAccount;
+  if (!account) return;
+  const isDemo = String(account.account_type || "").toLowerCase() !== "real";
+  const firstConnect = !state.patApplied;
+  state.auth = {
+    loginid: account.account_id,
+    is_virtual: isDemo,
+    currency: account.currency || "USD",
+    balance: num(account.balance),
+    is_pat: true
+  };
+  state.currency = state.auth.currency;
+  state.accountType = isDemo ? "demo" : "real";
+  state.balance = num(account.balance);
+  state.patApplied = true;
+  try { sessionStorage.setItem(PAT_ACCOUNT_KEY, account.account_id); } catch (_) {}
+
+  renderAuth();
+  renderOpenContract();
+  subscribeBalance();
+  loadProfitTable();
+  ticketDirty = true;
+  scheduleProposal(true);
+  pushLog("sys", "Authorized " + account.account_id + " (" + (isDemo ? "demo" : "real") + ", " + state.currency + ") via API token.");
+  if (firstConnect) {
+    toast("Logged in", "Account " + account.account_id + " · " + (isDemo ? "Demo" : "Real") + " balance " + money(account.balance), "ok");
+  }
+  if (state.bot.running) stopBot("Account changed — bot stopped.");
+}
+
+async function connectLegacyToken(token) {
+  try { sessionStorage.setItem(TOKEN_KEY, token); } catch (_) {}
+  state.authMode = "oauth";
+  state.apiStyle = "legacy";
+  state.token = token;
+  setBanner("info", "<b>Legacy token accepted.</b> Authorising…");
+  socket.restart(LEGACY_WS_URL, true);
+}
 
 function oauthUrl() {
   const redirect = location.origin + location.pathname;
@@ -1835,8 +2154,16 @@ function startLogin() {
     toast("App ID required", "Set your own App ID at the top of the script — OAuth login only works with your registered app.", "warn");
   }
   state.loginPending = true;
+  state.authMode = "oauth";
+  state.apiStyle = "legacy";
   try { sessionStorage.setItem("tickforge.loginStarted", "1"); } catch (_) {}
+  // OAuth/authorize uses the legacy WebSocket endpoint.
+  restartForOAuth();
   location.href = oauthUrl();
+}
+
+function restartForOAuth() {
+  socket.restart(LEGACY_WS_URL, true);
 }
 
 /** Read token1 / acct1 that Deriv appended to the redirect URL, then authorize. */
@@ -1856,6 +2183,8 @@ function consumeOAuthParams() {
 
   state.token = token;
   state.pendingAcct = acct;
+  state.authMode = "oauth";
+  state.apiStyle = "legacy";
   try { sessionStorage.setItem(TOKEN_KEY, token); } catch (_) {}
   cleanUrl();
   return true;
@@ -1889,6 +2218,8 @@ async function doAuthorize(token) {
     if (String(err && err.code) === "InvalidToken" || /invalid|expired|token/i.test(msg)) {
       try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
       state.token = null;
+      state.authMode = null;
+      state.apiStyle = "options-v1";
     }
     toast("Login failed", msg, "err");
     renderAuth();
@@ -1900,6 +2231,8 @@ function applyAuthorize(resp) {
   const a = resp.authorize;
   if (!a) return;
   state.auth = a;
+  state.authMode = "oauth";
+  state.apiStyle = "legacy";
   state.currency = a.currency || "USD";
   state.accountType = a.is_virtual ? "demo" : "real";
   state.balance = a.balance;
@@ -1919,13 +2252,19 @@ function applyAuthorize(resp) {
 
 function logout() {
   if (state.bot.running) stopBot("Logged out — bot stopped.");
-  try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(PAT_TOKEN_KEY);
+    sessionStorage.removeItem(PAT_ACCOUNT_KEY);
+  } catch (_) {}
   state.token = null; state.auth = null; state.balance = null; state.accountType = null;
+  state.authMode = null; state.apiStyle = "options-v1"; state.patAccount = null; state.patApplied = false;
   state.proposal = null; state.trades = [];
   socket.forget("balance");
   socket.forget("poc");
   socket.forget("botpoc");
   socket.forgetAllOfType("proposal_open_contract");
+  socket.restart(CURRENT_PUBLIC_WS_URL, false);
   renderAuth(); renderBalance(); renderProposal(); renderOpenContract(); renderTrades();
   toast("Logged out", "You are now viewing live market data only.", "info");
 }
@@ -2043,7 +2382,7 @@ socket.on("status", ({ status, detail }) => {
   if (status === "open") {
     dot.classList.add("live");
     txt.textContent = "Live" + (socket.lastPing ? " · " + socket.lastPing + "ms" : "");
-    setBanner(null);
+    if (!(state.authMode === "pat" && state.patAccount && !state.auth)) setBanner(null);
   } else if (status === "connecting") {
     dot.classList.add("wait"); txt.textContent = "Connecting…";
   } else if (status === "reconnecting") {
@@ -2312,9 +2651,9 @@ function ticketRequest() {
     contract_type: ct,
     currency: state.currency || "USD",
     duration: duration,
-    duration_unit: "t",
-    symbol: sym
+    duration_unit: "t"
   };
+  Object.assign(req, symbolPayload(sym));
   if (ct === "DIGITOVER" || ct === "DIGITUNDER" || ct === "DIGITMATCH" || ct === "DIGITDIFF") {
     req.barrier = String(barrier);
   }
@@ -3033,7 +3372,7 @@ async function quickTrade(s, btn) {
   const req = {
     proposal: 1, amount: stake.toFixed(2), basis: "stake",
     contract_type: def.type, currency: state.currency || "USD",
-    duration: 1, duration_unit: "t", symbol: state.market, barrier: String(def.barrier)
+    duration: 1, duration_unit: "t", ...symbolPayload(state.market), barrier: String(def.barrier)
   };
   const original = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "Quoting…"; }
@@ -3604,7 +3943,7 @@ async function placeBotTrade(cfg, decision) {
   const propReq = {
     proposal: 1, amount: stake.toFixed(2), basis: "stake",
     contract_type: contract, currency: state.currency || "USD",
-    duration: cfg.ticks, duration_unit: "t", symbol: cfg.market
+    duration: cfg.ticks, duration_unit: "t", ...symbolPayload(cfg.market)
   };
   if (DIGIT_CONTRACTS.indexOf(contract) >= 0) propReq.barrier = String(barrier);
 
@@ -3703,6 +4042,48 @@ function botOnContractClosed(c) {
    19. LOGIN BUTTONS + BOOT
    --------------------------------------------------------------------------- */
 $("#btnLogin").addEventListener("click", startLogin);
+$("#btnToken").addEventListener("click", openTokenDialog);
+$("#patCancel").addEventListener("click", closeTokenDialog);
+$("#patBack").addEventListener("click", e => { if (e.target.id === "patBack") closeTokenDialog(); });
+$("#patInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#patFind").click(); } });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#patBack").classList.contains("hidden")) closeTokenDialog();
+});
+$("#patFind").addEventListener("click", async () => {
+  const input = $("#patInput");
+  const btn = $("#patFind");
+  const token = input ? input.value.trim() : "";
+  clearPatError();
+  $("#patAccounts").replaceChildren();
+  if (!token) { showPatError("Paste an API token first."); return; }
+
+  if (!isPat(token)) {
+    const ok = await confirmDialog(
+      "Use legacy token?",
+      "This does not look like a <span class='mono'>pat_</span> token. It will be used with Deriv's legacy <span class='mono'>authorize</span> call instead. Continue?",
+      "Use legacy token",
+      false
+    );
+    if (!ok) return;
+    closeTokenDialog();
+    await connectLegacyToken(token);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Finding accounts…";
+  try {
+    const accounts = await fetchPatAccounts(token);
+    if (!accounts.length) throw { code: "NoAccounts", message: "No active Options accounts were returned for this token." };
+    renderPatAccounts(accounts, token);
+    btn.disabled = false;
+    btn.textContent = "Find accounts";
+  } catch (err) {
+    showPatError((err && err.message) ? err.message : "Deriv rejected this token.");
+    btn.disabled = false;
+    btn.textContent = "Find accounts";
+  }
+});
 $("#btnLogout").addEventListener("click", async () => {
   if (state.bot.running) {
     const ok = await confirmDialog("Stop the bot?", "A bot is running. Logging out stops it first.", "Stop and log out", true);
@@ -3713,7 +4094,12 @@ $("#btnLogout").addEventListener("click", async () => {
 
 /* Authorize once the socket is open (and after every reconnect). */
 socket.on("status", ({ status }) => {
-  if (status === "open" && state.token && !state.auth) doAuthorize(state.token);
+  if (status !== "open") return;
+  if (state.authMode === "pat") {
+    if (!state.auth) applyPatAccount();
+    return;
+  }
+  if (state.token && !state.auth) doAuthorize(state.token);
 });
 
 /* Reconnect sanity: the header dot is updated by the status handler above. */
@@ -3773,7 +4159,7 @@ async function boot() {
   renderStrategyParams();
   renderBotStatus();
   renderBotStats();
-  pushLog("sys", "Terminal ready · app id " + ACTIVE_APP_ID + (APP_ID_IS_REAL ? "" : " (public fallback — set APP_ID for your own app)"));
+  pushLog("sys", "Terminal ready · app id " + ACTIVE_APP_ID + (APP_ID_IS_REAL ? "" : " (public fallback — set APP_ID for your own app)") + " · API token supported");
   if (!APP_ID_IS_REAL) {
     setBanner("warn",
       "<b>Set your App ID.</b> The script is running with Deriv's public app id <span class='mono'>" + ACTIVE_APP_ID +
@@ -3784,8 +4170,17 @@ async function boot() {
 
   // 1) Pull a token out of the OAuth redirect before touching the socket.
   const hadToken = consumeOAuthParams();
+  let transportStarted = false;
   if (!hadToken) {
     try { const saved = sessionStorage.getItem(TOKEN_KEY); if (saved) state.token = saved; } catch (_) {}
+  }
+  const hasLegacyToken = !!state.token;
+  if (hasLegacyToken) {
+    // OAuth/authorize uses the legacy endpoint.
+    socket.url = LEGACY_WS_URL;
+    socket.appendAppId = true;
+    state.apiStyle = "legacy";
+    state.authMode = "oauth";
   }
 
   if ($("#botMarket")) $("#botMarket").value = state.market;
@@ -3794,7 +4189,10 @@ async function boot() {
   chart.resize();
 
   // 2) Connect. Authorization happens from the "open" status handler.
-  socket.connect();
+  if (!hasLegacyToken) {
+    transportStarted = await restoreStoredPat();
+  }
+  if (!transportStarted) socket.connect();
 
   // 3) Load the selected market.
   setMarket(state.market, { silent: true });

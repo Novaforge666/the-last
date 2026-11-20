@@ -4,8 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
-<meta name="theme-color" content="#070a10" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232ee6a8'/%3E%3Cpath d='M8 22l5-7 4 3 7-9' stroke='%23041410' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<meta name="theme-color" content="#060707" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ff5a1f'/%3E%3Cpath d='M7 23l6-8 4 3 8-10' stroke='%23060707' stroke-width='2.6' fill='none' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E" />
 <title>TickForge — Deriv Volatility Terminal</title>
 <meta name="description" content="A third-party Deriv trading terminal for volatility indices: manual digit trades, auto bots, tick analysis and live entry signals." />
 <!--
@@ -49,27 +52,30 @@
    1. DESIGN TOKENS
    --------------------------------------------------------------------------- */
 :root{
-  --bg:#070a10;
-  --bg-2:#0a0f18;
-  --panel:#0d1420;
-  --panel-2:#111a28;
-  --panel-3:#15202f;
-  --line:#1b2738;
-  --line-2:#243346;
-  --txt:#e9eff9;
-  --muted:#8ea1bd;
-  --dim:#63758f;
-  --acc:#2ee6a8;
-  --acc-dim:#1a8f6b;
-  --blue:#4c8dff;
-  --purple:#a78bfa;
+  /* THE VERT palette: near-black blueprint, hairline frames, mono type,
+     one safety-orange accent. Square corners, no soft shadows. */
+  --bg:#060707;
+  --bg-2:#060707;
+  --panel:#0b0c0c;
+  --panel-2:#0e0f10;
+  --panel-3:#141616;
+  --line:#22262a;
+  --line-2:#2b3136;
+  --txt:#f2f4f3;
+  --muted:#9aa3a1;
+  --dim:#5f6a68;
+  --acc:#ff5a1f;
+  --acc-dim:#b33c11;
+  --blue:#8ea3b0;
+  --purple:#b9a08c;
   --warn:#ffb020;
-  --danger:#ff5d73;
-  --radius:12px;
-  --radius-sm:8px;
-  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
-  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --danger:#ff4d4d;
+  --radius:0px;
+  --radius-sm:0px;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:"IBM Plex Mono",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --shadow:none;
+  --track:.14em;          /* micro-label letter-spacing */
 }
 
 /* ---------------------------------------------------------------------------
@@ -80,8 +86,8 @@ html,body{height:100%}
 body{
   margin:0;
   background:
-    radial-gradient(1100px 600px at 88% -12%, rgba(76,141,255,.13), transparent 60%),
-    radial-gradient(900px 520px at 4% -6%, rgba(46,230,168,.09), transparent 62%),
+    linear-gradient(180deg, rgba(255,90,31,.035), transparent 320px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0 1px, transparent 1px 44px),
     var(--bg);
   color:var(--txt);
   font-family:var(--sans);
@@ -116,9 +122,9 @@ a:hover{text-decoration:underline}
 
 header.topbar{
   position:sticky;top:0;z-index:40;
-  backdrop-filter:blur(14px);
-  background:rgba(9,13,20,.86);
-  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+  background:rgba(6,7,7,.94);
+  border-bottom:1px solid var(--line-2);
 }
 .topbar-inner{
   max-width:1320px;margin:0 auto;padding:10px 14px;
@@ -126,45 +132,45 @@ header.topbar{
 }
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .brand .logo{
-  width:32px;height:32px;border-radius:9px;flex:0 0 auto;
-  display:grid;place-items:center;font-weight:800;font-size:15px;
-  color:#04140f;
-  background:linear-gradient(140deg,var(--acc),#3dd6ff);
-  box-shadow:0 0 0 1px rgba(46,230,168,.25),0 6px 18px rgba(46,230,168,.18);
+  width:32px;height:32px;border-radius:0;flex:0 0 auto;
+  display:grid;place-items:center;font-weight:700;font-size:15px;
+  color:#060707;background:var(--acc);
+  box-shadow:none;
 }
-.brand-txt strong{display:block;font-size:15px;letter-spacing:.02em;line-height:1.1}
-.brand-txt span{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.brand-txt strong{display:block;font-size:14px;letter-spacing:.2em;text-transform:uppercase;line-height:1.2}
+.brand-txt span{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
 
 .conn{
   display:inline-flex;align-items:center;gap:6px;
   font-size:11px;color:var(--muted);
-  padding:4px 9px;border:1px solid var(--line-2);border-radius:999px;
-  background:var(--panel);
+  padding:4px 9px;border:1px solid var(--line-2);border-radius:0;
+  background:transparent;letter-spacing:.12em;text-transform:uppercase;
   white-space:nowrap;
 }
 .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);box-shadow:0 0 0 0 rgba(46,230,168,.5)}
 .dot.live{background:var(--acc);animation:pulse 2.2s infinite}
+/* breathing dot only here — blueprint UI stays still otherwise */
 .dot.wait{background:var(--warn)}
 .dot.dead{background:var(--danger)}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,230,168,.45)}70%{box-shadow:0 0 0 7px rgba(46,230,168,0)}100%{box-shadow:0 0 0 0 rgba(46,230,168,0)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,31,.5)}70%{box-shadow:0 0 0 6px rgba(255,90,31,0)}100%{box-shadow:0 0 0 0 rgba(255,90,31,0)}}
 
 .topbar-spacer{flex:1 1 auto}
 
 .acct{
   display:flex;align-items:center;gap:10px;
-  border:1px solid var(--line-2);border-radius:10px;background:var(--panel);
+  border:1px solid var(--line-2);border-radius:0;background:transparent;
   padding:5px 10px;
 }
-.acct .lid{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.acct .lid{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px;letter-spacing:.1em;text-transform:uppercase}
 .acct .bal{font-family:var(--mono);font-size:16px;font-weight:650;line-height:1.05}
 .acct .bal small{font-size:10.5px;color:var(--dim);font-weight:500;margin-left:4px}
 .badge{
-  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  padding:2px 7px;border-radius:999px;border:1px solid transparent;
+  font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  padding:2px 7px;border-radius:0;border:1px solid transparent;
 }
-.badge.demo{color:#8ef0cd;background:rgba(46,230,168,.12);border-color:rgba(46,230,168,.35)}
-.badge.real{color:#ffc9d1;background:rgba(255,93,115,.13);border-color:rgba(255,93,115,.4)}
-.badge.soft{color:var(--muted);background:var(--panel-3);border-color:var(--line-2)}
+.badge.demo{color:var(--acc);background:rgba(255,90,31,.08);border-color:rgba(255,90,31,.4)}
+.badge.real{color:#ff8a66;background:rgba(255,77,77,.1);border-color:rgba(255,77,77,.45)}
+.badge.soft{color:var(--muted);background:transparent;border-color:var(--line-2)}
 
 /* ---------------------------------------------------------------------------
    4. BUTTONS / INPUTS
@@ -172,49 +178,50 @@ header.topbar{
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   border:1px solid var(--line-2);background:var(--panel-2);color:var(--txt);
-  padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:600;font-size:13px;
+  padding:9px 14px;border-radius:0;cursor:pointer;font-weight:600;font-size:12px;
+  letter-spacing:.12em;text-transform:uppercase;
   transition:.16s ease;white-space:nowrap;
 }
-.btn:hover{background:var(--panel-3);border-color:#2e405a}
+.btn:hover{background:var(--panel-3);border-color:#3a4147}
 .btn:active{transform:translateY(1px)}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
-.btn.xs{padding:4px 8px;font-size:11.5px;border-radius:7px}
+.btn.sm{padding:6px 10px;font-size:11px;border-radius:0}
+.btn.xs{padding:4px 8px;font-size:10.5px;border-radius:0}
 .btn.primary{
-  background:linear-gradient(180deg,#33efb1,#1fc48f);border-color:#1fc48f;color:#04140f;
-  box-shadow:0 8px 22px rgba(46,230,168,.22);
+  background:var(--acc);border-color:var(--acc);color:#060707;
+  letter-spacing:.16em;box-shadow:none;
 }
-.btn.primary:hover{background:linear-gradient(180deg,#4bf5bd,#25d59c)}
+.btn.primary:hover{background:#ff6f3c;border-color:#ff6f3c}
 .btn.buy{
   width:100%;padding:14px;font-size:15px;letter-spacing:.02em;
-  background:linear-gradient(180deg,#33efb1,#17b481);border-color:#17b481;color:#04140f;
-  box-shadow:0 10px 26px rgba(46,230,168,.25);
+  background:var(--acc);border-color:var(--acc);color:#060707;
+  letter-spacing:.22em;box-shadow:none;
 }
-.btn.buy:hover{filter:brightness(1.06)}
-.btn.danger{background:rgba(255,93,115,.12);border-color:rgba(255,93,115,.45);color:#ffb3bd}
-.btn.danger:hover{background:rgba(255,93,115,.2)}
+.btn.buy:hover{background:#ff6f3c;border-color:#ff6f3c}
+.btn.danger{background:transparent;border-color:rgba(255,77,77,.55);color:#ff8a8a}
+.btn.danger:hover{background:rgba(255,77,77,.12)}
 .btn.ghost{background:transparent}
 .btn.block{width:100%}
-.btn.on{background:rgba(76,141,255,.16);border-color:rgba(76,141,255,.5);color:#cfe0ff}
+.btn.on{background:rgba(255,90,31,.1);border-color:rgba(255,90,31,.5);color:var(--acc)}
 
 label.field{display:block}
 label.field > span.lbl{
-  display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  display:block;font-size:10px;letter-spacing:var(--track);text-transform:uppercase;
   color:var(--dim);margin-bottom:6px;font-weight:600;
 }
 .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.35}
 input[type=number],input[type=text],select{
-  width:100%;padding:10px 11px;border-radius:9px;
-  background:#0a111b;border:1px solid var(--line-2);color:var(--txt);
+  width:100%;padding:9px 11px;border-radius:0;
+  background:#070808;border:1px solid var(--line-2);color:var(--txt);
   outline:none;transition:.15s;
-  font-family:var(--mono);font-size:13.5px;
+  font-family:var(--mono);font-size:13px;letter-spacing:.02em;
 }
 select{font-family:var(--sans);font-size:13px;cursor:pointer;appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
   background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px;
 }
-input:focus,select:focus{border-color:rgba(76,141,255,.65);box-shadow:0 0 0 3px rgba(76,141,255,.14)}
+input:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 1px rgba(255,90,31,.35)}
 input:disabled,select:disabled{opacity:.55;cursor:not-allowed}
 input[type=range]{width:100%;accent-color:var(--acc)}
 .chk{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--muted);user-select:none}
@@ -224,20 +231,23 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    5. PANELS / GRID
    --------------------------------------------------------------------------- */
 .panel{
-  background:linear-gradient(180deg,var(--panel),#0b121c);
-  border:1px solid var(--line);
+  background:var(--panel);
+  border:1px solid var(--line-2);
   border-radius:var(--radius);
   overflow:hidden;
-  box-shadow:var(--shadow);
+  box-shadow:none;
+  position:relative;
 }
 .panel + .panel{margin-top:12px}
 .panel-head{
   display:flex;align-items:center;gap:10px;
-  padding:10px 13px;border-bottom:1px solid var(--line);
-  background:rgba(255,255,255,.014);
-  min-height:42px;
+  padding:9px 13px;border-bottom:1px solid var(--line);
+  background:transparent;
+  min-height:40px;
 }
-.panel-head h3{font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:#c3d2e6;font-weight:700}
+/* micro-label style: "SELECTED WORK —" */
+.panel-head h3{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt);font-weight:700}
+.panel-head::before{content:"";width:5px;height:5px;background:var(--acc);flex:0 0 auto}
 .panel-head .spacer{flex:1}
 .panel-body{padding:13px}
 .panel-body.tight{padding:10px}
@@ -255,9 +265,9 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    --------------------------------------------------------------------------- */
 .tabbar{
   position:sticky;top:57px;z-index:30;
-  background:rgba(8,12,18,.9);
-  backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--line);
+  background:rgba(6,7,7,.95);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line-2);
   padding:0 14px;
   overflow-x:auto;
   scrollbar-width:none;
@@ -266,22 +276,23 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .tabbar::-webkit-scrollbar{display:none}
 .tabbar-inner{max-width:1320px;margin:0 auto;display:flex;gap:2px;min-width:max-content}
 .tab{
-  appearance:none;border:0;background:transparent;color:var(--muted);
-  padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  appearance:none;border:0;background:transparent;color:var(--dim);
+  padding:12px 14px;font-size:11.5px;font-weight:600;cursor:pointer;
+  letter-spacing:.16em;text-transform:uppercase;
   border-bottom:2px solid transparent;transition:.15s;white-space:nowrap;
   display:flex;align-items:center;gap:8px;
 }
 .tab .n{
-  font-family:var(--mono);font-size:10.5px;color:var(--dim);
-  border:1px solid var(--line-2);border-radius:5px;padding:0 4px;
+  font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.06em;
+  border:1px solid var(--line-2);border-radius:0;padding:0 4px;
 }
 .tab:hover{color:var(--txt)}
 .tab.active{color:var(--txt);border-bottom-color:var(--acc)}
-.tab.active .n{color:var(--acc);border-color:rgba(46,230,168,.4)}
+.tab.active .n{color:var(--acc);border-color:rgba(255,90,31,.45)}
 .tab .pill{
-  font-size:9.5px;font-weight:800;letter-spacing:.06em;
-  background:rgba(255,176,32,.18);color:var(--warn);
-  border-radius:999px;padding:1px 6px;
+  font-size:9px;font-weight:800;letter-spacing:.14em;
+  background:rgba(255,90,31,.14);color:var(--acc);
+  border-radius:0;padding:1px 6px;
 }
 .tabpane{display:none;padding-top:14px}
 .tabpane.active{display:block;animation:fade .18s ease}
@@ -292,33 +303,33 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    --------------------------------------------------------------------------- */
 .banner{
   display:flex;gap:10px;align-items:flex-start;
-  border:1px solid var(--line-2);border-radius:10px;
+  border:1px solid var(--line-2);border-left-width:2px;border-radius:0;
   padding:10px 12px;font-size:12.5px;line-height:1.5;
   background:var(--panel);
   margin-bottom:12px;
 }
 .banner b{font-weight:700}
 .banner .ico{flex:0 0 auto;font-size:14px;line-height:1.3}
-.banner.info{background:rgba(76,141,255,.08);border-color:rgba(76,141,255,.32);color:#cfe0ff}
-.banner.warn{background:rgba(255,176,32,.08);border-color:rgba(255,176,32,.34);color:#ffe0a8}
-.banner.err{background:rgba(255,93,115,.09);border-color:rgba(255,93,115,.36);color:#ffc6ce}
-.banner.okay{background:rgba(46,230,168,.07);border-color:rgba(46,230,168,.3);color:#b6f7e0}
+.banner.info{background:transparent;border-color:var(--line-2);border-left-color:var(--muted);color:var(--muted)}
+.banner.warn{background:rgba(255,176,32,.05);border-color:rgba(255,176,32,.3);border-left-color:var(--warn);color:#ffd899}
+.banner.err{background:rgba(255,77,77,.06);border-color:rgba(255,77,77,.35);border-left-color:var(--danger);color:#ffb3b3}
+.banner.okay{background:rgba(255,90,31,.05);border-color:rgba(255,90,31,.3);border-left-color:var(--acc);color:#ffc4ad}
 
 #toasts{
   position:fixed;right:14px;bottom:14px;z-index:120;
   display:flex;flex-direction:column;gap:8px;max-width:min(380px,calc(100vw - 28px));
 }
 .toast{
-  border:1px solid var(--line-2);border-left-width:3px;border-radius:9px;
-  background:#0e1622;box-shadow:var(--shadow);
+  border:1px solid var(--line-2);border-left-width:2px;border-radius:0;
+  background:#0d0e0e;box-shadow:0 12px 30px rgba(0,0,0,.6);
   padding:9px 12px;font-size:12.5px;color:var(--txt);
   animation:slidein .18s ease;
 }
 .toast.err{border-left-color:var(--danger)}
-.toast.warn{border-left-color:var(--warn)}
 .toast.ok{border-left-color:var(--acc)}
+.toast.warn{border-left-color:var(--warn)}
 .toast.info{border-left-color:var(--blue)}
-.toast b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.toast b{display:block;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);margin-bottom:3px}
 @keyframes slidein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* ---------------------------------------------------------------------------
@@ -334,29 +345,29 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .tick-meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--dim)}
 .tick-meta-row .kv b{color:var(--muted);font-weight:600}
 .digit-box{
-  width:78px;height:78px;border-radius:14px;display:grid;place-items:center;
+  width:78px;height:78px;border-radius:0;display:grid;place-items:center;
   font-family:var(--mono);font-size:40px;font-weight:700;
-  background:radial-gradient(120% 120% at 30% 10%,#1b2b40,#0b1420);
-  border:1px solid var(--line-2);
+  background:#080909;
+  border:1px solid var(--acc);
   color:var(--txt);
-  transition:transform .12s ease,border-color .2s;
+  transition:transform .12s ease,background .2s;
 }
-.digit-box.pop{transform:scale(1.06);border-color:rgba(46,230,168,.6)}
+.digit-box.pop{transform:scale(1.04);background:rgba(255,90,31,.14)}
 .digit-box small{display:block;font-family:var(--sans);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:700}
-.chart-wrap{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#080e16;overflow:hidden}
+.chart-wrap{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:0;background:#060707;overflow:hidden}
 canvas#chart{display:block;width:100%;height:170px}
-.chart-legend{position:absolute;top:7px;left:9px;font-size:10.5px;color:var(--dim);display:flex;gap:10px;pointer-events:none}
+.chart-legend{position:absolute;top:7px;left:9px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:flex;gap:10px;pointer-events:none}
 .chart-legend b{color:var(--muted);font-weight:600}
 
 .strip{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px}
 .chip-d{
-  width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
-  font-family:var(--mono);font-size:13px;font-weight:700;
-  background:#0f1926;border:1px solid var(--line-2);color:#b9c8dc;
+  width:26px;height:26px;border-radius:0;display:grid;place-items:center;
+  font-family:var(--mono);font-size:12.5px;font-weight:700;
+  background:transparent;border:1px solid var(--line-2);color:var(--muted);
 }
-.chip-d.even{color:#9fe9ff;border-color:rgba(76,141,255,.32);background:rgba(76,141,255,.1)}
-.chip-d.odd{color:#d6c4ff;border-color:rgba(167,139,250,.32);background:rgba(167,139,250,.1)}
-.chip-d.new{box-shadow:0 0 0 2px rgba(46,230,168,.45)}
+.chip-d.even{color:#a9bcc4;border-color:#33403f;background:rgba(142,163,176,.07)}
+.chip-d.odd{color:#c8b6a6;border-color:#3d3730;background:rgba(185,160,140,.07)}
+.chip-d.new{box-shadow:inset 0 0 0 1px var(--acc);color:var(--txt)}
 
 /* ---------------------------------------------------------------------------
    9. TABLES
@@ -364,11 +375,12 @@ canvas#chart{display:block;width:100%;height:170px}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+td{border-bottom-style:solid}
 th{
-  font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);
-  font-weight:700;background:rgba(255,255,255,.015);position:sticky;top:0;
+  font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  font-weight:700;background:#080909;position:sticky;top:0;border-bottom:1px solid var(--line-2);
 }
-tbody tr:hover{background:rgba(255,255,255,.022)}
+tbody tr:hover{background:rgba(255,90,31,.045)}
 td.num{font-family:var(--mono);text-align:right}
 th.num{text-align:right}
 .empty{padding:22px 12px;text-align:center;color:var(--dim);font-size:12.5px}
@@ -377,110 +389,111 @@ th.num{text-align:right}
    10. CARDS / STATS
    --------------------------------------------------------------------------- */
 .stat{
-  border:1px solid var(--line);border-radius:10px;background:var(--panel-2);
-  padding:10px 12px;min-width:0;
+  border:1px solid var(--line);border-radius:0;background:transparent;
+  padding:10px 12px;min-width:0;border-left:2px solid var(--line-2);
 }
-.stat .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:650}
+.stat .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:650}
 .stat .v{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:3px;line-height:1.15;overflow-wrap:anywhere}
 .stat .s{font-size:11px;color:var(--dim);margin-top:2px}
 
 .kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
-.meta-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.meta-line{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:5px 0;border-bottom:1px solid var(--line)}
+.meta-line .k{letter-spacing:.1em;text-transform:uppercase;font-size:10px}
 .meta-line:last-child{border-bottom:0}
 .meta-line .k{color:var(--dim)}
 .meta-line .v{font-family:var(--mono);color:#cfdcee;text-align:right}
 
 /* payout preview */
 .payout{
-  border:1px solid var(--line-2);border-radius:11px;
-  background:linear-gradient(180deg,#101b28,#0b131d);
+  border:1px solid var(--line-2);border-left:2px solid var(--acc);border-radius:0;
+  background:#080909;
   padding:12px;
 }
-.payout .big{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--acc);line-height:1.1}
+.payout .big{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--txt);line-height:1.1}
 .payout .sub{font-size:11.5px;color:var(--dim);margin-top:3px}
 .payout .split{display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 .payout .split div{font-size:11.5px;color:var(--dim)}
 .payout .split b{display:block;font-family:var(--mono);font-size:14px;color:var(--txt);margin-top:2px}
 
 /* open contract */
-.open-card{border:1px solid var(--line-2);border-radius:10px;padding:11px;background:var(--panel-2)}
+.open-card{border:1px solid var(--line-2);border-left:2px solid var(--acc);border-radius:0;padding:11px;background:transparent}
 .open-card .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .open-card .cid{font-family:var(--mono);font-size:11px;color:var(--dim)}
 .pl-big{font-family:var(--mono);font-size:22px;font-weight:700}
-.progress{height:5px;border-radius:99px;background:#0a1119;overflow:hidden;margin-top:9px;border:1px solid var(--line)}
-.progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--acc));transition:width .3s ease}
+.progress{height:5px;border-radius:0;background:#0a0b0b;overflow:hidden;margin-top:9px;border:1px solid var(--line)}
+.progress > i{display:block;height:100%;width:0%;background:var(--acc);transition:width .3s ease}
 
 /* ---------------------------------------------------------------------------
    11. BOT
    --------------------------------------------------------------------------- */
 .log{
-  height:270px;overflow:auto;background:#070d14;border:1px solid var(--line);
-  border-radius:10px;padding:9px;font-family:var(--mono);font-size:11.5px;line-height:1.6;
+  height:270px;overflow:auto;background:#050606;border:1px solid var(--line);
+  border-radius:0;padding:9px;font-family:var(--mono);font-size:11px;line-height:1.65;
 }
 .log .ln{display:flex;gap:8px;padding:1px 0;word-break:break-word}
-.log .ts{color:#41556f;flex:0 0 auto}
-.log .msgt{color:#a9bcd4;flex:1 1 auto}
-.log .ln.buy .msgt{color:#8fd0ff}
+.log .ts{color:#3d4544;flex:0 0 auto}
+.log .msgt{color:#a7b0ae;flex:1 1 auto}
+.log .ln.buy .msgt{color:#d8d2c9}
 .log .ln.win .msgt{color:var(--acc)}
-.log .ln.loss .msgt{color:var(--danger)}
+.log .ln.loss .msgt{color:#ff8a8a}
 .log .ln.warn .msgt{color:var(--warn)}
 .log .ln.err .msgt{color:#ff96a4}
 .log .ln.sys .msgt{color:#7f95b0}
 
-.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;overflow:hidden;background:#0a111b}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:0;overflow:hidden;background:#070808}
 .seg button{
   border:0;background:transparent;color:var(--muted);padding:6px 11px;cursor:pointer;
-  font-size:12px;font-weight:600;font-family:var(--mono);
+  font-size:11px;font-weight:600;font-family:var(--mono);letter-spacing:.06em;
 }
 .seg button + button{border-left:1px solid var(--line-2)}
-.seg button.active{background:rgba(76,141,255,.16);color:#dbe8ff}
+.seg button.active{background:rgba(255,90,31,.16);color:var(--txt)}
 .seg button:hover:not(.active){background:rgba(255,255,255,.03)}
 
 .status-pill{
-  display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
-  font-size:11.5px;font-weight:700;letter-spacing:.04em;border:1px solid var(--line-2);
-  background:var(--panel-2);color:var(--muted);
+  display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:0;
+  font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--line-2);
+  background:transparent;color:var(--muted);
 }
-.status-pill.running{color:#9ff5d6;border-color:rgba(46,230,168,.42);background:rgba(46,230,168,.1)}
+.status-pill.running{color:var(--acc);border-color:rgba(255,90,31,.5);background:rgba(255,90,31,.08)}
 .status-pill.running .dot{background:var(--acc);animation:pulse 1.8s infinite}
 
 /* ---------------------------------------------------------------------------
    12. ANALYSIS
    --------------------------------------------------------------------------- */
-.bars{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:7px;align-items:end;height:190px;margin-top:6px}
+.bars{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;align-items:end;height:190px;margin-top:6px}
 .bar{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:5px}
 .bar .col{
-  width:100%;background:linear-gradient(180deg,#3f7fe0,#1e3f74);border-radius:5px 5px 3px 3px;
+  width:100%;background:#31383c;border-radius:0;
   position:relative;min-height:3px;transition:height .3s ease,background .3s;
 }
-.bar.hot .col{background:linear-gradient(180deg,#45f0b6,#16805e)}
-.bar.cold .col{background:linear-gradient(180deg,#7f8ea8,#333f52)}
-.bar .pc{font-family:var(--mono);font-size:11px;color:#c8d7e8}
-.bar .d{font-family:var(--mono);font-size:11.5px;color:var(--dim);font-weight:700}
+.bar.hot .col{background:var(--acc)}
+.bar.cold .col{background:#1d2225}
+.bar .pc{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.bar .d{font-family:var(--mono);font-size:11px;color:var(--dim);font-weight:700}
 .bar.hot .d{color:var(--acc)}
-.bar.cold .d{color:#9fb0c7}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin-top:10px}
-.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.bar.cold .d{color:#7d8a87}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:0;margin-right:5px;vertical-align:middle}
 
-.ratio{display:flex;height:26px;border-radius:7px;overflow:hidden;border:1px solid var(--line-2);font-size:11px;font-weight:700}
-.ratio > div{display:grid;place-items:center;color:#06121a;transition:width .3s ease;min-width:0;overflow:hidden;white-space:nowrap}
-.ratio .ev{background:linear-gradient(180deg,#5fb0ff,#3d8ae0)}
-.ratio .od{background:linear-gradient(180deg,#c4a8ff,#9678e8)}
+.ratio{display:flex;height:26px;border-radius:0;overflow:hidden;border:1px solid var(--line-2);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.ratio > div{display:grid;place-items:center;color:#060707;transition:width .3s ease;min-width:0;overflow:hidden;white-space:nowrap}
+.ratio .ev{background:#a9bcc4}
+.ratio .od{background:#c8b6a6}
 
 /* ---------------------------------------------------------------------------
    13. SIGNAL CARDS
    --------------------------------------------------------------------------- */
 .signals{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:11px}
 .sig{
-  border:1px solid var(--line-2);border-radius:12px;background:linear-gradient(180deg,#111a27,#0b131d);
+  border:1px solid var(--line-2);border-radius:0;background:var(--panel);
   padding:12px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;
   transition:.18s ease;
 }
-.sig::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--line-2)}
+.sig::before{content:"";position:absolute;inset:0 auto 0 0;width:2px;background:var(--line-2)}
 .sig.entry::before{background:var(--acc)}
-.sig.wait::before{background:#4a5a72}
-.sig:hover{border-color:#2c3d55;transform:translateY(-1px)}
-.sig .name{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.sig.wait::before{background:#3a4147}
+.sig:hover{border-color:#3a4147}
+.sig .name{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .sig .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .sig .rate{font-family:var(--mono);font-size:25px;font-weight:700;line-height:1}
 .sig .rate small{font-size:12px;color:var(--dim);font-weight:600}
@@ -488,16 +501,16 @@ th.num{text-align:right}
 .sig .arrow.up{color:var(--acc)}
 .sig .arrow.down{color:var(--danger)}
 .sig .arrow.flat{color:var(--dim)}
-.sig .strength{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid transparent}
-.sig .strength.strong{color:#9ff5d6;background:rgba(46,230,168,.13);border-color:rgba(46,230,168,.4)}
-.sig .strength.medium{color:#ffe0a8;background:rgba(255,176,32,.12);border-color:rgba(255,176,32,.36)}
-.sig .strength.weak{color:#a9b9cf;background:rgba(255,255,255,.05);border-color:var(--line-2)}
+.sig .strength{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:2px 7px;border-radius:0;border:1px solid transparent}
+.sig .strength.strong{color:var(--acc);background:rgba(255,90,31,.1);border-color:rgba(255,90,31,.45)}
+.sig .strength.medium{color:#ffcf99;background:rgba(255,176,32,.1);border-color:rgba(255,176,32,.36)}
+.sig .strength.weak{color:var(--muted);background:transparent;border-color:var(--line-2)}
 .sig .badge-entry{
-  font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-  padding:3px 8px;border-radius:999px;
+  font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  padding:3px 8px;border-radius:0;
 }
-.sig .badge-entry.go{background:rgba(46,230,168,.15);color:#8ff3cd;border:1px solid rgba(46,230,168,.45)}
-.sig .badge-entry.hold{background:rgba(255,255,255,.05);color:#93a5bd;border:1px solid var(--line-2)}
+.sig .badge-entry.go{background:var(--acc);color:#060707;border:1px solid var(--acc)}
+.sig .badge-entry.hold{background:transparent;color:var(--muted);border:1px solid var(--line-2)}
 .sig .why{font-size:11px;color:var(--dim);line-height:1.45;min-height:31px}
 .sig .foot{display:flex;gap:7px;margin-top:auto}
 .sig .foot .btn{flex:1}
@@ -510,10 +523,11 @@ th.num{text-align:right}
   backdrop-filter:blur(4px);display:grid;place-items:center;padding:18px;
 }
 .modal{
-  width:min(440px,100%);border:1px solid var(--line-2);border-radius:14px;
-  background:linear-gradient(180deg,#111a27,#0a121c);box-shadow:0 24px 60px rgba(0,0,0,.6);
+  width:min(440px,100%);border:1px solid var(--line-2);border-top:2px solid var(--acc);border-radius:0;
+  background:#0b0c0c;box-shadow:0 24px 60px rgba(0,0,0,.7);
   padding:18px;
 }
+.modal h4{letter-spacing:.16em;text-transform:uppercase;font-size:12px}
 .modal h4{font-size:15px;margin-bottom:8px}
 .modal p{font-size:12.5px;color:var(--muted);line-height:1.55}
 .modal .actions{display:flex;gap:9px;justify-content:flex-end;margin-top:16px}
@@ -565,6 +579,28 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+/* ---------------------------------------------------------------------------
+   17. READOUT STRIP (THE VERT micro-label band)
+   --------------------------------------------------------------------------- */
+.readout{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-top:12px;padding:7px 11px;
+  border:1px solid var(--line-2);border-left:2px solid var(--acc);
+  background:rgba(255,90,31,.03);
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);
+}
+.readout b{color:var(--txt);font-weight:600;letter-spacing:.1em}
+.readout .ro-sep{color:var(--line-2)}
+.readout .ro-spacer{flex:1 1 auto}
+.readout .ro-dim{color:#3d4544;letter-spacing:.18em}
+.readout .ro-dot{display:inline-block;width:6px;height:6px;background:var(--dim);margin-right:6px}
+.readout .ro-dot.live{background:var(--acc);animation:pulse 2.2s infinite}
+.readout .ro-dot.dead{background:var(--danger)}
+@media (max-width:760px){
+  .readout{font-size:9px;gap:7px;padding:6px 8px}
+  .readout .ro-dim{display:none}
 }
 </style>
 </head>
@@ -642,6 +678,23 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
 </nav>
 
 <div class="wrap">
+
+  <!-- Readout strip: blueprint-style live readout of the current scope -->
+  <div class="readout" id="readout">
+    <span><i class="ro-dot" id="roDot"></i><b id="roState">CONNECTING</b></span>
+    <span class="ro-sep">/</span>
+    <span>MARKET <b id="roMarket">VOL 50</b></span>
+    <span class="ro-sep">/</span>
+    <span>LAST <b id="roLast">—</b></span>
+    <span class="ro-sep">/</span>
+    <span>DIGIT <b id="roDigit">—</b></span>
+    <span class="ro-sep">/</span>
+    <span>ACCOUNT <b id="roAcct">GUEST</b></span>
+    <span class="ro-sep">/</span>
+    <span>BAL <b id="roBal">—</b></span>
+    <span class="ro-spacer"></span>
+    <span class="ro-dim" id="roApp">TICKFORGE_LIVE · APP —</span>
+  </div>
 
   <!-- Global banner: connection / login / errors -->
   <div id="globalBanner" class="banner info hidden" style="margin-top:12px"></div>
@@ -1192,7 +1245,10 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
    While the placeholder is unchanged the page uses Deriv's public app id
    1089, which allows live market data but NOT OAuth login or trading.
    --------------------------------------------------------------------------- */
-const APP_ID = "YOUR_APP_ID";
+/* Deriv app id — registered at https://api.deriv.com (see the header comment).
+   It may be numeric (e.g. 12345) or an alphanumeric id such as 350V848Kr6DwMKS6qzG73.
+   Leave it as "YOUR_APP_ID" to browse live market data with Deriv's public app id. */
+const APP_ID = "350V848Kr6DwMKS6qzG73";
 
 const WS_URL        = "wss://ws.derivws.com/websockets/v3";
 const OAUTH_URL     = "https://oauth.deriv.com/oauth2/authorize";
@@ -1203,7 +1259,7 @@ const HISTORY_COUNT = 1000;    // ticks used by the Analysis tab
 const BUFFER_MAX    = 2000;    // ticks kept in memory per market
 
 /* Is the configured id usable? A Deriv app id is numeric. */
-const APP_ID_IS_REAL = /^\d+$/.test(String(APP_ID).trim());
+const APP_ID_IS_REAL = /^[A-Za-z0-9_-]{4,64}$/.test(String(APP_ID).trim()) && String(APP_ID).trim() !== "YOUR_APP_ID";
 const ACTIVE_APP_ID = APP_ID_IS_REAL ? String(APP_ID).trim() : "1089";
 
 /* Volatility indices. `pip` is the number of decimals Deriv reports. */
@@ -1922,6 +1978,7 @@ function renderAuth() {
     badge.textContent = "Guest";
   }
   $("#balanceCur").textContent = loggedIn ? state.currency : "";
+  renderReadout();
   const botBadge = $("#botAcctBadge");
   if (loggedIn) {
     botBadge.className = "badge " + (a.is_virtual ? "demo" : "real");
@@ -1938,6 +1995,24 @@ function renderAuth() {
   } else setBanner("okay", "<b>Demo account connected.</b> Trades here use virtual funds.");
 }
 
+/* Readout strip: keeps the blueprint micro-label band in sync with state. */
+function renderReadout() {
+  const b = Markets.buf(state.market);
+  const t = b.ticks[b.ticks.length - 1];
+  const m = $id("roMarket");
+  if (m) m.textContent = (MARKETS[state.market] ? MARKETS[state.market].short : state.market).toUpperCase();
+  const last = $id("roLast");
+  if (last) last.textContent = t ? fmtPrice(t.quote, state.market) : "—";
+  const dig = $id("roDigit");
+  if (dig) dig.textContent = t && t.digit != null ? String(t.digit) : "—";
+  const acct = $id("roAcct");
+  if (acct) acct.textContent = state.auth ? state.auth.loginid + (state.auth.is_virtual ? " · DEMO" : " · REAL") : "GUEST";
+  const bal = $id("roBal");
+  if (bal) bal.textContent = state.auth && state.balance != null ? money(state.balance) : "—";
+  const app = $id("roApp");
+  if (app) app.textContent = "TICKFORGE_LIVE · APP " + ACTIVE_APP_ID;
+}
+
 function renderBalance() {
   const b = $("#balance");
   if (state.auth && state.balance != null) {
@@ -1947,6 +2022,7 @@ function renderBalance() {
     b.textContent = "—";
     b.className = "";
   }
+  renderReadout();
   const bb = $("#botBalance");
   if (bb) bb.textContent = state.auth && state.balance != null ? money(state.balance) : "—";
   updateBuyState();
@@ -1957,6 +2033,11 @@ function renderBalance() {
    --------------------------------------------------------------------------- */
 socket.on("status", ({ status, detail }) => {
   const dot = $("#connDot"), txt = $("#connText");
+  const roDot = $id("roDot"), roState = $id("roState");
+  if (roDot) {
+    roDot.className = "ro-dot" + (status === "open" ? " live" : status === "offline" || status === "closed" ? " dead" : "");
+  }
+  if (roState) roState.textContent = status === "open" ? "LIVE" : status === "reconnecting" ? "RECONNECTING" : status.toUpperCase();
   if (!dot || !txt) return;
   dot.className = "dot";
   if (status === "open") {
@@ -2101,7 +2182,7 @@ const chart = {
     c.clearRect(0, 0, W, H);
 
     // grid
-    c.strokeStyle = "rgba(255,255,255,.045)";
+    c.strokeStyle = "rgba(255,255,255,.05)";
     c.lineWidth = 1;
     for (let i = 1; i < 5; i++) {
       const y = (H / 5) * i;
@@ -2109,7 +2190,7 @@ const chart = {
     }
     const pts = this.points;
     if (pts.length < 2) {
-      c.fillStyle = "rgba(142,161,189,.7)";
+      c.fillStyle = "rgba(95,106,104,.9)";
       c.font = "12px ui-monospace,monospace";
       c.fillText("waiting for ticks…", 12, H / 2);
       return;
@@ -2124,7 +2205,7 @@ const chart = {
     // area
     const grad = c.createLinearGradient(0, 0, 0, H);
     const rising = pts[pts.length - 1] >= pts[0];
-    grad.addColorStop(0, rising ? "rgba(46,230,168,.28)" : "rgba(255,93,115,.26)");
+    grad.addColorStop(0, rising ? "rgba(255,90,31,.26)" : "rgba(255,77,77,.22)");
     grad.addColorStop(1, "rgba(0,0,0,0)");
     c.beginPath();
     c.moveTo(0, H);
@@ -2136,19 +2217,19 @@ const chart = {
     // line
     c.beginPath();
     pts.forEach((v, i) => { const x = xOf(i), y = yOf(v); i ? c.lineTo(x, y) : c.moveTo(x, y); });
-    c.strokeStyle = rising ? "#2ee6a8" : "#ff5d73";
+    c.strokeStyle = rising ? "#ff5a1f" : "#ff4d4d";
     c.lineWidth = 1.8; c.lineJoin = "round"; c.lineCap = "round";
     c.stroke();
 
     // last point
     const lx = xOf(pts.length - 1), ly = yOf(pts[pts.length - 1]);
     c.beginPath(); c.arc(lx, ly, 3.2, 0, Math.PI * 2);
-    c.fillStyle = rising ? "#2ee6a8" : "#ff5d73"; c.fill();
+    c.fillStyle = rising ? "#ff5a1f" : "#ff4d4d"; c.fill();
     c.beginPath(); c.arc(lx, ly, 6.5, 0, Math.PI * 2);
-    c.strokeStyle = rising ? "rgba(46,230,168,.35)" : "rgba(255,93,115,.35)"; c.stroke();
+    c.strokeStyle = rising ? "rgba(255,90,31,.35)" : "rgba(255,77,77,.35)"; c.stroke();
 
     // axis labels
-    c.fillStyle = "rgba(142,161,189,.75)";
+    c.fillStyle = "rgba(154,163,161,.8)";
     c.font = "10px ui-monospace,monospace";
     c.fillText(fmtPrice(max, state.market), 6, 13);
     c.fillText(fmtPrice(min, state.market), 6, H - 5);
@@ -2189,6 +2270,7 @@ function renderTickPanel(sym) {
 
   // strip
   renderDigitStrip($("#digitStrip"), Markets.digits(sym, 24), true);
+  renderReadout();
 }
 
 function renderDigitStrip(host, digits, withNewest) {
@@ -3683,6 +3765,7 @@ setInterval(() => {
 async function boot() {
   renderAuth();
   renderBalance();
+  renderReadout();
   renderTrades();
   renderOpenContract();
   renderProposal(true);

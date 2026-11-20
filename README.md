@@ -94,3 +94,11 @@ settings above, because the API refuses a first deployment that has no
   price, exactly as Deriv reports it.
 - `ticks_history` and `profit_table` are rate limited; the market scan batches
   five markets per request and the trades table pages 25 rows at a time.
+
+## Live site
+
+- Production (Vercel, `main`): **https://the-last-weld.vercel.app**
+- Also available as `https://the-last-the-vert.vercel.app`
+
+Register that exact URL (with the trailing slash) as the **OAuth redirect URL**
+of your Deriv app in <https://api.deriv.com> → Dashboard → Applications.

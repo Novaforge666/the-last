@@ -35,12 +35,12 @@ Open `index.html`, find the clearly marked constant at the very top of the
 `<script>` block and replace the placeholder:
 
 ```js
-const APP_ID = "YOUR_APP_ID";   // <- your app id from api.deriv.com
+const APP_ID = "350V848Kr6DwMKS6qzG73";   // <- your app id from api.deriv.com
 ```
 
 That is the only place the app id is used (the WebSocket URL and the OAuth URL
-are both built from it). While the placeholder is left unchanged the page falls
-back to Deriv's public app id `1089`, which gives you live market data but **not**
+are both built from it). The app id is configured. If you ever reset it to the
+placeholder, the page falls back to Deriv's public app id `1089`, which gives you live market data but **not**
 OAuth login or trading — the header banner tells you so.
 
 ## 3. Host it
@@ -94,3 +94,12 @@ settings above, because the API refuses a first deployment that has no
   price, exactly as Deriv reports it.
 - `ticks_history` and `profit_table` are rate limited; the market scan batches
   five markets per request and the trades table pages 25 rows at a time.
+
+## Theme
+
+The UI follows the THE VERT house style: near-black blueprint canvas with a
+faint 44 px grid, 1 px hairline frames, square corners, zero drop shadows,
+IBM Plex Mono throughout, uppercase micro-labels with wide tracking, and a
+single safety-orange accent (`#FF5A1F`) for live state, calls to action and
+the highlighted last digit. A micro-label readout strip under the tabs shows
+connection, market, last quote, last digit, account and balance.

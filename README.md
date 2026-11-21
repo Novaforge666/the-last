@@ -1,12 +1,21 @@
 # TickForge — Deriv Volatility Terminal
 
-A single-file, zero-build trading terminal for Deriv volatility indices.
-Everything lives in **`index.html`** (HTML + CSS + vanilla JS inline): no
-frameworks, no bundler, no backend, no mock data. Market data, quotes,
-proposals, balances and trades come from Deriv's official Options API:
-`wss://api.derivws.com/trading/v1/options/ws/public` for guest data and a
-single-use authenticated Options WebSocket for API-token sessions. Legacy OAuth
-login remains supported through `wss://ws.derivws.com/websockets/v3`.
+A zero-build trading terminal for Deriv volatility indices. The whole UI lives
+in **`index.html`** (HTML + CSS + vanilla JS inline): no frameworks, no
+bundler, no mock data. The only server-side code is one Vercel Function,
+`api/deriv-oauth-token.js`, which performs the OAuth 2.0 code → token exchange
+that Deriv requires a backend to do.
+
+Market data, quotes, proposals, balances and trades come from Deriv's official
+Options API:
+
+| Purpose | Endpoint |
+| --- | --- |
+| Guest market data | `wss://api.derivws.com/trading/v1/options/ws/public` |
+| Authenticated trading | `wss://api.derivws.com/trading/v1/options/ws/demo\|real?otp=…` (single-use OTP) |
+| REST (accounts, OTP) | `https://api.derivws.com/trading/v1/options/…` |
+| OAuth authorize | `https://auth.deriv.com/oauth2/auth` |
+| OAuth token exchange | `https://auth.deriv.com/oauth2/token` (server-side only) |
 
 ## What's inside
 
@@ -19,69 +28,111 @@ login remains supported through `wss://ws.derivws.com/websockets/v3`.
 
 Core plumbing: a WebSocket helper with `req_id` request/response matching,
 auto-reconnect with backoff, a 30-second ping heartbeat, subscription restore
-after a reconnect, an **API token login** (PAT → REST account discovery →
-single-use OTP WebSocket), Deriv OAuth redirect login (`token1` / `acct1` from
-the URL → `authorize`) for legacy apps, and a header with account id, Demo/Real
-badge, live `balance` subscription and logout.
+after a reconnect, **OAuth 2.0 login (Authorization Code + PKCE)**, an optional
+**API-token login** (PAT → REST account discovery → single-use OTP WebSocket),
+an account picker for logins with several Options accounts, and a header with
+account id, Demo/Real badge, live `balance` subscription and logout.
 
-## 1. Register an App ID
+## 1. Register the application
 
-1. Go to <https://api.deriv.com> and sign in.
-2. Open **Dashboard → Applications** and create a new application.
-3. Grant the trading scopes and add the URL where you host this file as an
-   **OAuth redirect URL** (for example `https://your-site.vercel.app/`).
-4. Copy the numeric **App ID**.
-
-## 2. Set it in the file
-
-Open `index.html`, find the clearly marked constant at the very top of the
-`<script>` block and replace the placeholder:
+Everything is driven by one constant at the top of the `<script>` block:
 
 ```js
-const APP_ID = "350V848Kr6DwMKS6qzG73";   // <- your app id from api.deriv.com
+const APP_ID = "350V848Kr6DwMKS6qzG73";   // <- client_id of the registered app
 ```
 
-That is the only place the app id is used (the WebSocket URL and the OAuth URL
-are both built from it). The app id is configured. If you ever reset it to the
-placeholder, the page falls back to Deriv's public app id `1089`, which gives you live market data but **not**
-OAuth login or trading — the header banner tells you so.
+That app must be registered in the [Deriv developer dashboard](https://developers.deriv.com)
+as an **OAuth 2.0 application** with:
 
-## 3. Log in with an API token
+- **Redirect URI:** `https://the-last-weld.vercel.app/` — byte-for-byte, including
+  `https`, the host and the trailing slash. Deriv compares it exactly; a mismatch
+  fails authorization with `redirect_uri` mismatch and the token exchange with
+  `invalid_grant`.
+- **Scope:** `trade`. The page requests `scope=trade` only. Asking for a scope the
+  app does not have produces `invalid_scope`.
+- **Client id:** the same value as `APP_ID`.
 
-Recommended because it avoids the OAuth redirect entirely:
+For the fallback **API token** button, create a PAT with the `trade` scope. PATs
+must come from a PAT-type application; keep the app id and the token from the
+same kind of application.
 
-1. Open <https://developers.deriv.com> → Dashboard and create a **PAT-type**
-   application. Copy its **App ID** into `index.html` as `APP_ID`.
-2. In the same dashboard, create a **Personal Access Token** with the `trade`
-   scope.
-3. On the site, click **API token** (top right), paste the token and press
-   **Find accounts**.
-4. Pick the account you want to use. Demo accounts connect immediately; a real
-   account requires an explicit confirmation.
-5. The token is kept only in `sessionStorage` (this browser tab) and is sent
-   only to Deriv. It is never written into this repository, the built page or
-   logs. Close the tab to forget it.
+If `APP_ID` is left as the placeholder, the page still streams live ticks but
+shows a banner and refuses to start login — there is no silent fallback to a
+public app id.
 
-Under the hood the page calls `GET /trading/v1/options/accounts` with
-`Authorization: Bearer …` and `Deriv-App-ID: …`, then
-`POST /trading/v1/options/accounts/{account_id}/otp`, and connects to the
-returned `wss://api.derivws.com/trading/v1/options/ws/demo|real?otp=…` URL.
-That WebSocket is already authenticated; the page does **not** send an
-`authorize` message on it. OTP URLs expire, so every reconnect mints a fresh
-one automatically.
+## 2. How the OAuth login works
 
-## 3. Host it
+1. **Generate PKCE.** A random 64-byte `code_verifier` (base64url) and
+   `code_challenge = BASE64URL(SHA256(verifier))`, plus a random `state`. The
+   verifier and state are kept in `sessionStorage` for this tab only.
+2. **Redirect** to
+   `https://auth.deriv.com/oauth2/auth?response_type=code&client_id=…&redirect_uri=…&scope=trade&state=…&code_challenge=…&code_challenge_method=S256`.
+3. Deriv shows its own login/consent screens and returns to the registered
+   redirect URI with `?code=…&state=…` (or `?error=…&error_description=…`).
+4. **Verify `state`** against the stored value. A mismatch aborts the login.
+   `code`, `state` and any error parameters are then stripped from the address
+   bar with `history.replaceState`, so a refresh cannot replay the code.
+5. **Exchange the code** with a same-origin `POST /api/deriv-oauth-token`. The
+   Function validates the body (code length, PKCE verifier shape, client id,
+   redirect-URI allowlist) and forwards a form-encoded request to
+   `https://auth.deriv.com/oauth2/token`. It stores and logs nothing.
+6. **Pick an account.** The access token is used as a Bearer token against
+   `GET https://api.derivws.com/trading/v1/options/accounts`. The page restores
+   the account used before, otherwise prefers a demo account, otherwise uses the
+   only account, otherwise opens the account picker. A real account always needs
+   an explicit confirmation.
+7. **Connect the trading socket.** `POST …/accounts/{id}/otp` returns a
+   single-use WebSocket URL. That socket is already authenticated, so the page
+   never sends an `authorize` message. OTP URLs expire, so every reconnect mints
+   a fresh one through the stored token.
 
-Any static host works, because there is nothing to build:
+Properties:
 
-- **Vercel** – import this repository; framework preset “Other”, no build
-  command, output directory `.` (this repository is deployed that way).
-- **Netlify / Cloudflare Pages** – publish directory `.`, no build command.
-- **GitHub Pages** – serve the default branch root.
-- **Plain Apache/Nginx** – drop `index.html` in the web root.
+- Tokens live in `sessionStorage` only. Closing the tab forgets them.
+- OAuth Bearer tokens are sent **without** a `Deriv-App-ID` header; PAT requests
+  include it.
+- **No refresh token.** Deriv does not issue them to third-party apps. When
+  `expires_in` elapses (or any REST call returns `401`), the page clears the
+  session and asks the user to log in again — which reruns the PKCE flow.
 
-The redirect URL you registered in step 1 must match the hosting URL exactly,
-including `https` and the trailing path.
+## 3. Logging in with an API token (optional)
+
+1. Create a PAT with the `trade` scope in the developer dashboard.
+2. Click **API token** (top right), paste it, press **Find accounts**.
+3. Pick an account. Demo connects immediately; real asks first.
+4. The token is kept in `sessionStorage` for this tab and sent only to Deriv. It
+   is never written to the repository, the page source, analytics or logs.
+
+Under the hood this is `GET /trading/v1/options/accounts` with
+`Authorization: Bearer …` + `Deriv-App-ID: …`, then `POST …/{account_id}/otp`,
+then the returned `wss://…/ws/demo|real?otp=…` URL.
+
+## 4. Deploy
+
+The repository is deployed on Vercel with no build step:
+
+- `index.html` is served from the repository root.
+- `api/deriv-oauth-token.js` is picked up automatically as a Node.js Function
+  (plain `module.exports = handler(req, res)`, global `fetch`, no dependencies,
+  no environment variables required).
+
+To deploy your own copy:
+
+1. Import the repository into Vercel (framework preset **Other**, empty build
+   command, empty output directory).
+2. Register the resulting `https://<project>.vercel.app/` URL as the OAuth
+   redirect URI and update `APP_ID` if you use a different client id.
+3. Push. Vercel redeploys `main` automatically.
+
+Any static host can serve the guest view, but OAuth login needs an equivalent
+same-origin POST endpoint that forwards the exchange to
+`https://auth.deriv.com/oauth2/token`. A purely static host has nowhere to keep
+the token exchange off the browser, so the **API token** path is the fallback
+there.
+
+For local development, `vercel dev` serves both the page and the Function at
+`http://localhost:3000/`. The Function's redirect-URI allowlist accepts
+`http://localhost` and `https://*.vercel.app` only.
 
 ## Risk warning
 
@@ -90,44 +141,24 @@ risk of losing money rapidly. Signals, hit rates and bots on this site describe
 past ticks only and **do not guarantee profit**. This is an independent
 third-party client, not affiliated with or endorsed by Deriv.
 
-## Deploy on Vercel (dashboard, no build step)
-
-The repository is already prepared for this. In the Vercel dashboard:
-
-1. **Add New → Project** and import `Novaforge666/the-last`.
-2. Framework preset: **Other**. Build command: *(empty)*. Output directory: *(empty, defaults to the repo root)*.
-   Vercel has no `index.html` on `main` yet, so point **Settings → Git → Production Branch**
-   at `arena/2279a8ca-the-last` (or merge that branch into `main`) — otherwise the
-   project deploys a 404.
-3. Deploy. Vercel serves `index.html` from the root; you get a
-   `https://<project>.vercel.app` URL and **no custom domain is required**.
-4. Optional CLI flow: `npx vercel deploy --prod` from this folder (it will also
-   detect a static site with no build command).
-
-Several repository layouts were tried through the Vercel API during setup; the
-first deployment of the `the-last` project still has to be created with the
-settings above, because the API refuses a first deployment that has no
-`projectSettings` block.
-
 ## Known limits
 
-- **Live data works with any app id**; login and trading do not. Until you set
-  your own id, the header shows a banner saying exactly that.
-- Login uses either an API token (recommended; see section 3) or the OAuth
-  redirect `https://oauth.deriv.com/oauth2/authorize?app_id=…`. For OAuth,
-  Deriv appends `token1` / `acct1` to the redirect URL, which the page reads,
-  strips from the address bar and exchanges for an `authorize` call. Both token
-  types are kept in `sessionStorage` only.
-- A PAT is only accepted by Deriv's current Options API. It will not work with
-  the legacy `ws.derivws.com` endpoint, and the legacy app id will not work with
-  the Options API; keep the app id and the token from the same application type.
-- **Never paste a PAT into chat, commit it or put it in Vercel environment
-  variables for the static site.** If a token has been shared anywhere outside
-  Deriv, revoke/rotate it and use the new one.
-- Contract digit barriers use the Volatility indices' last digit of the quoted
-  price, exactly as Deriv reports it.
-- `ticks_history` and `profit_table` are rate limited; the market scan batches
-  five markets per request and the trades table pages 25 rows at a time.
+- **No token refresh.** Re-login is required when the access token expires or a
+  request returns `401`. Deriv does not offer refresh tokens to third-party apps.
+- **Exact redirect URI.** Trailing slash, scheme and host must match the
+  dashboard entry. Preview deployments on other `*.vercel.app` hosts will pass
+  the Function's allowlist but still be rejected by Deriv unless that URL is
+  registered too.
+- **One account at a time.** Switching accounts restarts the socket with a fresh
+  OTP; open contracts stay on Deriv and reappear in the trades table.
+- **Rate limits.** `ticks_history` and `profit_table` are throttled by Deriv; the
+  market scan batches five markets per request and the trades table pages 25 rows
+  at a time.
+- **Never paste a token into chat or a commit.** If a token was shared anywhere
+  outside Deriv, revoke and rotate it in the dashboard.
+- **Login is real, not simulated.** If Deriv rejects the app (`invalid_client`,
+  redirect mismatch, `invalid_scope`), the banner shows the provider's error text
+  as-is.
 
 ## Theme
 

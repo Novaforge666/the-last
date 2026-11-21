@@ -2026,43 +2026,114 @@ function hasOAuthCallback() {
   } catch (_) { return false; }
 }
 
+/**
+ * One Options REST call.
+ * Deriv is tried directly first. If the browser cannot read the response (CORS
+ * preflight blocked, which fetch() reports as a network error), the same call is
+ * retried once through the same-origin /api/deriv-rest relay. API errors from
+ * Deriv itself (4xx/5xx with a body) are never retried.
+ */
 async function derivRest(path, token, options) {
   const opts = options || {};
+  const method = opts.method || "GET";
+  const appId = opts.authKind === "pat" ? ACTIVE_APP_ID : "";
   const headers = { "Authorization": "Bearer " + token };
-  if (opts.authKind === "pat" && ACTIVE_APP_ID) headers["Deriv-App-ID"] = ACTIVE_APP_ID;
+  if (appId) headers["Deriv-App-ID"] = appId;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
 
+  const attempt = async (url, extraHeaders) => {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), opts.timeout || 12000) : null;
+    let res;
+    try {
+      res = await fetch(url, {
+        method,
+        headers: Object.assign({}, headers, extraHeaders || {}),
+        body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+        cache: "no-store",
+        credentials: "omit",
+        mode: "cors",
+        signal: controller ? controller.signal : undefined
+      });
+    } catch (err) {
+      if (timer) clearTimeout(timer);
+      const e = new Error(err && err.name === "AbortError" ? "timeout" : "network");
+      e.__transport = true;
+      throw e;
+    }
+    if (timer) clearTimeout(timer);
+    let body = null;
+    try { body = await res.json(); } catch (_) {}
+    return { res, body };
+  };
+
+  const parse = ({ res, body }) => {
+    if (!res.ok) {
+      const first = body && Array.isArray(body.errors) && body.errors[0] ? body.errors[0] : {};
+      throw {
+        status: res.status,
+        code: first.code || ("HTTP_" + res.status),
+        message: first.message || ("Deriv returned HTTP " + res.status + ".")
+      };
+    }
+    return body && body.data !== undefined ? body.data : body;
+  };
+
+  let direct;
+  try {
+    direct = await attempt(CURRENT_API_BASE + path);
+  } catch (err) {
+    if (!err || !err.__transport) throw err;
+    // The browser could not complete the cross-origin call: relay it same-origin.
+    let relayed;
+    try {
+      relayed = await relayRest(path, { method, token, authKind: opts.authKind, appId, body: opts.body, timeout: opts.timeout });
+    } catch (e2) {
+      if (e2 && e2.__transport && e2.message === "timeout") {
+        throw { code: "TIMEOUT", message: "Deriv did not answer in time. Please retry." };
+      }
+      throw { code: "NETWORK", message: "Could not reach Deriv. Check this connection and try again." };
+    }
+    return parse(relayed);
+  }
+  return parse(direct);
+}
+
+/** Same-origin relay of one Options REST call, used when the direct call cannot be read. */
+async function relayRest(path, payload) {
   const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-  const timer = controller ? setTimeout(() => controller.abort(), opts.timeout || 12000) : null;
+  const timer = controller ? setTimeout(() => controller.abort(), payload.timeout || 15000) : null;
   let res;
   try {
-    res = await fetch(CURRENT_API_BASE + path, {
-      method: opts.method || "GET",
-      headers,
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+    res = await fetch("/api/deriv-rest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path,
+        method: payload.method || "GET",
+        token: payload.token,
+        authKind: payload.authKind || "",
+        appId: payload.appId || "",
+        body: payload.body === undefined ? null : payload.body
+      }),
       cache: "no-store",
-      credentials: "omit",
-      mode: "cors",
-      signal: controller ? controller.signal : undefined
+      credentials: "omit"
     });
   } catch (err) {
     if (timer) clearTimeout(timer);
-    if (err && err.name === "AbortError") throw { code: "TIMEOUT", message: "Deriv did not answer in time. Please retry." };
-    throw { code: "NETWORK", message: "Could not reach Deriv. Check this site's network access and try again." };
+    const e = new Error(err && err.name === "AbortError" ? "timeout" : "network");
+    e.__transport = true;
+    throw e;
   }
   if (timer) clearTimeout(timer);
-
   let body = null;
   try { body = await res.json(); } catch (_) {}
-  if (!res.ok) {
-    const first = body && Array.isArray(body.errors) && body.errors[0] ? body.errors[0] : {};
-    throw {
-      status: res.status,
-      code: first.code || ("HTTP_" + res.status),
-      message: first.message || ("Deriv returned HTTP " + res.status + ".")
-    };
+  if (!res.ok && body && (body.error === "deriv_unreachable" || body.error === "bad_deriv_response")) {
+    const e = new Error("network");
+    e.__transport = true;
+    throw e;
   }
-  return body && body.data !== undefined ? body.data : body;
+  return { res, body };
 }
 
 async function fetchOptionsAccounts(token, authKind) {

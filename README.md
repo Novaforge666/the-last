@@ -2,9 +2,10 @@
 
 A zero-build trading terminal for Deriv volatility indices. The whole UI lives
 in **`index.html`** (HTML + CSS + vanilla JS inline): no frameworks, no
-bundler, no mock data. The only server-side code is one Vercel Function,
-`api/deriv-oauth-token.js`, which performs the OAuth 2.0 code → token exchange
-that Deriv requires a backend to do.
+bundler, no mock data. The only server-side code is two small Vercel Functions:
+`api/deriv-oauth-token.js` (the OAuth 2.0 code → token exchange Deriv requires a
+backend to do) and `api/deriv-rest.js` (a narrow same-origin relay used only
+when the browser cannot read Deriv's REST responses because of CORS).
 
 Market data, quotes, proposals, balances and trades come from Deriv's official
 Options API:
@@ -30,7 +31,8 @@ Core plumbing: a WebSocket helper with `req_id` request/response matching,
 auto-reconnect with backoff, a 30-second ping heartbeat, subscription restore
 after a reconnect, **OAuth 2.0 login (Authorization Code + PKCE)**, an optional
 **API-token login** (PAT → REST account discovery → single-use OTP WebSocket),
-an account picker for logins with several Options accounts, and a header with
+an account picker for logins with several Options accounts, REST calls that fall
+back to a same-origin relay when CORS blocks the direct read, and a header with
 account id, Demo/Real badge, live `balance` subscription and logout.
 
 ## 1. Register the application
@@ -86,6 +88,13 @@ public app id.
    never sends an `authorize` message. OTP URLs expire, so every reconnect mints
    a fresh one through the stored token.
 
+REST calls (`GET /accounts`, `POST /otp`) go to `https://api.derivws.com`
+directly. If the browser cannot read that response (a CORS preflight rejection
+surfaces as a plain network error in `fetch`), the same call is retried once
+through `POST /api/deriv-rest`. That relay accepts only those two Options paths,
+forwards the caller's Bearer token (and `Deriv-App-ID` for PATs) verbatim,
+stores and logs nothing, and returns Deriv's status and body unchanged.
+
 Properties:
 
 - Tokens live in `sessionStorage` only. Closing the tab forgets them.
@@ -112,9 +121,9 @@ then the returned `wss://…/ws/demo|real?otp=…` URL.
 The repository is deployed on Vercel with no build step:
 
 - `index.html` is served from the repository root.
-- `api/deriv-oauth-token.js` is picked up automatically as a Node.js Function
-  (plain `module.exports = handler(req, res)`, global `fetch`, no dependencies,
-  no environment variables required).
+- `api/deriv-oauth-token.js` and `api/deriv-rest.js` are picked up automatically
+  as Node.js Functions (plain `module.exports = handler(req, res)`, global
+  `fetch`, no dependencies, no environment variables required).
 
 To deploy your own copy:
 
@@ -126,9 +135,13 @@ To deploy your own copy:
 
 Any static host can serve the guest view, but OAuth login needs an equivalent
 same-origin POST endpoint that forwards the exchange to
-`https://auth.deriv.com/oauth2/token`. A purely static host has nowhere to keep
-the token exchange off the browser, so the **API token** path is the fallback
-there.
+`https://auth.deriv.com/oauth2/token` (and, for browsers that block Deriv's
+CORS, a relay equivalent to `api/deriv-rest.js`). A purely static host has
+nowhere to keep the token exchange off the browser, so the **API token** path is
+the fallback there.
+
+The repository is deployed at **<https://the-last-weld.vercel.app>**, with the
+domain `the-last-weld.vercel.app` attached to the project.
 
 For local development, `vercel dev` serves both the page and the Function at
 `http://localhost:3000/`. The Function's redirect-URI allowlist accepts

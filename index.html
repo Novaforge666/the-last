@@ -693,6 +693,76 @@ footer.foot .links a:hover{color:var(--acc)}
   .readout{font-size:9px;gap:7px;padding:6px 8px}
   .readout .ro-dim{display:none}
 }
+
+/* ---------------------------------------------------------------------------
+   18. DBOTS STYLES — Deriv Bot (.xml) importer and runner
+   --------------------------------------------------------------------------- */
+.dbots-drop{
+  border:1.5px dashed var(--line-3);border-radius:var(--radius);
+  background:radial-gradient(120% 160% at 50% 0%, rgba(250,204,21,.07), transparent 70%), var(--bg-2);
+  padding:26px 20px;text-align:center;cursor:pointer;
+  transition:border-color .16s ease,background .16s ease,transform .16s ease;
+}
+.dbots-drop:hover{border-color:var(--acc-line);background:var(--panel-2)}
+.dbots-drop.drag{border-color:var(--acc);background:rgba(250,204,21,.09);transform:translateY(-1px)}
+.dbots-drop .ico{
+  width:44px;height:44px;border-radius:12px;margin:0 auto 12px;
+  display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:13px;
+  color:var(--acc-ink);background:var(--acc);box-shadow:0 12px 26px -14px rgba(250,204,21,.9);
+}
+.dbots-drop b{display:block;font-family:var(--display);font-size:15px;font-weight:700}
+.dbots-drop span{display:block;color:var(--dim);font-size:11.5px;margin-top:5px}
+
+.dbots-list{display:flex;flex-direction:column;gap:8px}
+.dbots-item{
+  display:flex;align-items:flex-start;gap:10px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-2);
+  padding:11px 12px;cursor:pointer;transition:border-color .16s ease,background .16s ease;
+}
+.dbots-item:hover{border-color:var(--line-3);background:var(--panel-2)}
+.dbots-item.active{border-color:var(--acc-line);background:rgba(250,204,21,.06)}
+.dbots-item .dot-tag{width:7px;height:7px;border-radius:2px;background:var(--line-3);margin-top:6px;flex:0 0 auto}
+.dbots-item.active .dot-tag{background:var(--acc);box-shadow:0 0 10px rgba(250,204,21,.85)}
+.dbots-item .nm{font-family:var(--display);font-size:13px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.dbots-item .sub{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:3px;letter-spacing:.04em}
+.dbots-item .del{margin-left:auto;background:transparent;border:0;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;border-radius:var(--radius-xs)}
+.dbots-item .del:hover{color:#fca5a5;background:rgba(239,68,68,.12)}
+
+.dbots-tags{display:flex;flex-wrap:wrap;gap:6px}
+.dbots-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.05em;
+  border:1px solid var(--line-2);border-radius:var(--radius-pill);
+  background:var(--bg-2);color:var(--muted);padding:4px 9px;white-space:nowrap;
+}
+.dbots-tag b{color:var(--txt);font-weight:600}
+.dbots-tag.acc{border-color:var(--acc-line);background:var(--acc-soft);color:var(--acc)}
+.dbots-tag.warn{border-color:rgba(251,146,60,.34);background:rgba(251,146,60,.09);color:#fdba74}
+
+.dbots-issues{display:flex;flex-direction:column;gap:6px}
+.dbots-issue{
+  display:flex;gap:8px;align-items:flex-start;
+  font-size:11.5px;line-height:1.5;padding:8px 10px;border-radius:var(--radius-xs);
+  border:1px solid var(--line);background:var(--bg-2);
+}
+.dbots-issue .k{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;flex:0 0 auto;margin-top:2px}
+.dbots-issue.err{border-color:rgba(239,68,68,.32);background:rgba(239,68,68,.07)}
+.dbots-issue.err .k{color:#fca5a5}
+.dbots-issue.warn{border-color:rgba(251,146,60,.3);background:rgba(251,146,60,.07)}
+.dbots-issue.warn .k{color:#fdba74}
+.dbots-issue.info .k{color:var(--blue)}
+
+.dbots-blocks{
+  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:11px;font-family:var(--mono);font-size:11px;line-height:1.75;
+  max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+}
+.dbots-blocks .ev-t{color:#7dd3fc}
+.dbots-blocks .ev-b{color:#e4e4e7}
+.dbots-blocks .ev-l{color:var(--up)}
+.dbots-blocks .ev-r{color:#fca5a5}
+.dbots-blocks .ev-m{color:var(--dim)}
+.dbots-file{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.dbots-run{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -766,8 +836,9 @@ footer.foot .links a:hover{color:var(--acc)}
   <div class="tabbar-inner" role="tablist">
     <button class="tab active" data-tab="manual" role="tab"><span class="n">01</span>Manual Trade</button>
     <button class="tab" data-tab="bots" role="tab"><span class="n">02</span>Auto Bots <span class="pill hidden" id="botTabPill">RUN</span></button>
-    <button class="tab" data-tab="analysis" role="tab"><span class="n">03</span>Analysis</button>
-    <button class="tab" data-tab="signals" role="tab"><span class="n">04</span>Entry Points</button>
+    <button class="tab" data-tab="dbots" role="tab"><span class="n">03</span>DBots <span class="pill hidden" id="dbotsTabPill">RUN</span></button>
+    <button class="tab" data-tab="analysis" role="tab"><span class="n">04</span>Analysis</button>
+    <button class="tab" data-tab="signals" role="tab"><span class="n">05</span>Entry Points</button>
   </div>
 </nav>
 
@@ -1097,7 +1168,129 @@ footer.foot .links a:hover{color:var(--acc)}
   </section>
 
   <!-- ================================================================== -->
-  <!-- TAB 3 — ANALYSIS                                                   -->
+  <!-- TAB 3 — DBOTS (Deriv Bot XML)                                      -->
+  <!-- ================================================================== -->
+  <section class="tabpane" id="pane-dbots" role="tabpanel">
+
+    <div class="cols bot">
+      <!-- ------- Import + library ------- -->
+      <div class="stack-12">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Import Deriv Bot</h3>
+            <div class="spacer"></div>
+            <span class="tiny dim mono" id="dbotsLibCount">0 saved</span>
+          </div>
+          <div class="panel-body stack-12">
+            <div class="dbots-drop" id="dbotsDrop" role="button" tabindex="0"
+                 aria-label="Choose a Deriv Bot XML file, or drop one here">
+              <div class="ico">XML</div>
+              <b>Drop a bot .xml here, or click to choose</b>
+              <span>File → Save in Deriv Bot, or DBot → Download. The file stays in this browser.</span>
+            </div>
+            <input type="file" id="dbotsFile" accept=".xml,text/xml,application/xml" class="hidden" />
+            <div class="hint" id="dbotsImportHint">
+              Nothing is uploaded anywhere. The XML is parsed in this tab, kept in
+              <span class="mono">localStorage</span> and can be edited block by block below.
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Bot library</h3>
+            <div class="spacer"></div>
+            <button class="btn ghost xs" id="dbotsLoadSample">Load sample</button>
+          </div>
+          <div class="panel-body">
+            <div class="dbots-list" id="dbotsList"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Parsed blocks</h3>
+            <div class="spacer"></div>
+            <span class="tiny dim mono" id="dbotsBlockInfo">—</span>
+          </div>
+          <div class="panel-body">
+            <div class="dbots-blocks" id="dbotsBlocks"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ------- Selected bot ------- -->
+      <div class="stack-12">
+        <div class="panel">
+          <div class="panel-head">
+            <h3 id="dbotsName">No bot selected</h3>
+            <div class="spacer"></div>
+            <span class="status-pill" id="dbotsStatus"><i class="dot"></i><span>Idle</span></span>
+          </div>
+          <div class="panel-body stack-12">
+            <div class="dbots-file" id="dbotsFileInfo">—</div>
+            <div class="dbots-tags" id="dbotsTags"></div>
+            <div class="dbots-issues" id="dbotsIssues"></div>
+            <div class="row" style="margin-top:4px">
+              <button class="btn ghost sm" id="dbotsExport">Download XML</button>
+              <button class="btn ghost sm" id="dbotsDelete">Remove bot</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Run settings</h3></div>
+          <div class="panel-body">
+            <div class="grid g-2">
+              <label class="field">
+                <span class="lbl">Stake (USD)</span>
+                <input type="number" id="dbotsStake" value="1" min="0.35" step="0.35" inputmode="decimal" />
+              </label>
+              <label class="field">
+                <span class="lbl">Take profit (USD)</span>
+                <input type="number" id="dbotsTP" value="5" min="0" step="0.5" inputmode="decimal" />
+              </label>
+              <label class="field">
+                <span class="lbl">Stop loss (USD)</span>
+                <input type="number" id="dbotsSL" value="10" min="0" step="0.5" inputmode="decimal" />
+              </label>
+              <label class="field">
+                <span class="lbl">Cooldown (seconds)</span>
+                <input type="number" id="dbotsCooldown" value="0" min="0" step="1" inputmode="numeric" />
+              </label>
+            </div>
+            <div class="dbots-tags" style="margin-top:12px">
+              <span class="dbots-tag">Account <b id="dbotsAcct">Not logged in</b></span>
+              <span class="dbots-tag" id="dbotsMarketTag">—</span>
+            </div>
+            <div class="dbots-run" style="margin-top:12px">
+              <button class="btn primary" id="dbotsStart">▶ Start DBot</button>
+              <button class="btn danger" id="dbotsStop" disabled>■ Stop</button>
+            </div>
+            <div class="hint" id="dbotsRunHint">
+              The bot is evaluated on every live tick in this tab. Structural rules
+              (Trade definitions, Before/After purchase) run as written; blocks the
+              runner cannot execute are reported as warnings instead of being faked.
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Event log</h3>
+            <div class="spacer"></div>
+            <span class="tiny dim mono" id="dbotsLogCount">0 entries</span>
+          </div>
+          <div class="panel-body tight">
+            <div class="log" id="dbotsLog" style="height:240px" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- TAB 4 — ANALYSIS                                                   -->
   <!-- ================================================================== -->
   <section class="tabpane" id="pane-analysis" role="tabpanel">
     <div class="cols analysis">
@@ -1203,7 +1396,7 @@ footer.foot .links a:hover{color:var(--acc)}
   </section>
 
   <!-- ================================================================== -->
-  <!-- TAB 4 — ENTRY POINTS                                               -->
+  <!-- TAB 5 — ENTRY POINTS                                               -->
   <!-- ================================================================== -->
   <section class="tabpane" id="pane-signals" role="tabpanel">
 
@@ -2554,6 +2747,7 @@ function subscribeBalance() {
 
 function logout() {
   if (state.bot.running) stopBot("Logged out — bot stopped.");
+  if (DBots.running) DBots.stop("Logged out — DBot stopped.");
   clearSession(null);
   state.token = null; state.auth = null; state.balance = null; state.accountType = null;
   state.authMode = null; state.apiStyle = "options-v1"; state.optionsAccount = null; state.optionsApplied = false; state.authExpiresAt = null;
@@ -2735,6 +2929,10 @@ function switchTab(name) {
   if (name === "signals") {
     ensureAnalysisData();
     renderSignals();
+  }
+  if (name === "dbots") {
+    DBots.render();
+    if (DBots.running && DBots.cfg) Markets.ensure(DBots.cfg.market).catch(() => {});
   }
   if (name === "manual") renderTickPanel(state.market);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3371,7 +3569,7 @@ function renderTrades() {
 }
 
 /* ---------------------------------------------------------------------------
-   16. TAB 3 — ANALYSIS
+   16. TAB 4 — ANALYSIS
    --------------------------------------------------------------------------- */
 function ensureAnalysisData() {
   Markets.ensure(state.market).catch(err => {
@@ -3510,7 +3708,7 @@ function renderStreaks(digits, n) {
 }
 
 /* ---------------------------------------------------------------------------
-   17. TAB 4 — SIGNAL ENGINE
+   17. TAB 5 — SIGNAL ENGINE
    ---------------------------------------------------------------------------
    A "signal" here is a description of the recent tick distribution, not a
    forecast. Expected hit rates for synthetic indices are fixed by the
@@ -3868,7 +4066,7 @@ function renderScan(results) {
 }
 
 /* ---------------------------------------------------------------------------
-   18. TAB 2 — AUTO BOTS
+   19. TAB 2 — AUTO BOTS
    ---------------------------------------------------------------------------
    Rules of the house (deliberate safety rails):
      · only ONE contract open at a time;
@@ -4345,7 +4543,7 @@ function botOnContractClosed(c) {
 }
 
 /* ---------------------------------------------------------------------------
-   19. LOGIN BUTTONS + BOOT
+   21. LOGIN BUTTONS + BOOT
    --------------------------------------------------------------------------- */
 $("#btnLogin").addEventListener("click", startLogin);
 $("#accountPickDisconnect").addEventListener("click", disconnectFromAccountPicker);
@@ -4384,7 +4582,7 @@ $("#patFind").addEventListener("click", async () => {
   }
 });
 $("#btnLogout").addEventListener("click", async () => {
-  if (state.bot.running) {
+  if (state.bot.running || DBots.running) {
     const ok = await confirmDialog("Stop the bot?", "A bot is running. Logging out stops it first.", "Stop and log out", true);
     if (!ok) return;
   }
@@ -4456,6 +4654,7 @@ async function boot() {
   renderStrategyParams();
   renderBotStatus();
   renderBotStats();
+  DBots.render();
   pushLog("sys", "Terminal ready · app id " + (ACTIVE_APP_ID || "not configured") + " · OAuth PKCE and API token supported");
   if (!APP_ID_IS_REAL) {
     setBanner("warn",
@@ -4484,6 +4683,1341 @@ async function boot() {
 
 document.addEventListener("DOMContentLoaded", boot);
 if (document.readyState !== "loading") boot();
+</script>
+<script type="text/xml" id="dbotsSample">
+<xml xmlns="http://www.w3.org/1999/xhtml" is_dbot="true" collection="false">
+  <variables>
+    <variable id="v_stake">Stake</variable>
+    <variable id="v_streak">LowStreak</variable>
+    <variable id="v_tp">TakeProfit</variable>
+    <variable id="v_sl">StopLoss</variable>
+  </variables>
+
+  <!-- ========== TRADE PARAMETERS ========== -->
+  <block type="trade_definition" id="b_trade_def" deletable="false" x="0" y="0">
+    <statement name="TRADE_OPTIONS">
+      <block type="trade_definition_market" id="b_market" deletable="false" movable="false">
+        <field name="MARKET_LIST">synthetic_index</field>
+        <field name="SUBMARKET_LIST">random_index</field>
+        <field name="SYMBOL_LIST">1HZ100V</field>
+        <next>
+          <block type="trade_definition_tradetype" id="b_tradetype" deletable="false" movable="false">
+            <field name="TRADETYPE_CATEGORY_LIST">digits</field>
+            <field name="TRADETYPE_LIST">overunder</field>
+            <next>
+              <block type="trade_definition_contracttype" id="b_contracttype" deletable="false" movable="false">
+                <field name="TYPE_LIST">DIGITOVER</field>
+                <next>
+                  <block type="trade_definition_candleinterval" id="b_candle" deletable="false" movable="false">
+                    <field name="CANDLEINTERVAL_LIST">60</field>
+                    <next>
+                      <block type="trade_definition_restartbuysell" id="b_restart_bs" deletable="false" movable="false">
+                        <field name="TIME_MACHINE_ENABLED">FALSE</field>
+                        <next>
+                          <block type="trade_definition_restartonerror" id="b_restart_err" deletable="false" movable="false">
+                            <field name="RESTARTONERROR">TRUE</field>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+
+    <!-- Initial values -->
+    <statement name="INITIALIZATION">
+      <block type="variables_set" id="b_init_stake">
+        <field name="VAR" id="v_stake">Stake</field>
+        <value name="VALUE">
+          <block type="math_number"><field name="NUM">1</field></block>
+        </value>
+        <next>
+          <block type="variables_set" id="b_init_streak">
+            <field name="VAR" id="v_streak">LowStreak</field>
+            <value name="VALUE">
+              <block type="math_number"><field name="NUM">0</field></block>
+            </value>
+            <next>
+              <block type="variables_set" id="b_init_tp">
+                <field name="VAR" id="v_tp">TakeProfit</field>
+                <value name="VALUE">
+                  <block type="math_number"><field name="NUM">5</field></block>
+                </value>
+                <next>
+                  <block type="variables_set" id="b_init_sl">
+                    <field name="VAR" id="v_sl">StopLoss</field>
+                    <value name="VALUE">
+                      <block type="math_number"><field name="NUM">10</field></block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+
+    <!-- Duration 1 tick, prediction 3 -->
+    <statement name="SUBMARKET">
+      <block type="trade_definition_tradeoptions" id="b_tradeoptions">
+        <mutation xmlns="http://www.w3.org/1999/xhtml" has_first_barrier="false" has_second_barrier="false" has_prediction="true"></mutation>
+        <field name="DURATIONTYPE_LIST">t</field>
+        <value name="DURATION">
+          <shadow type="math_number"><field name="NUM">1</field></shadow>
+        </value>
+        <value name="AMOUNT">
+          <shadow type="math_number"><field name="NUM">1</field></shadow>
+          <block type="variables_get" id="b_amount_var">
+            <field name="VAR" id="v_stake">Stake</field>
+          </block>
+        </value>
+        <value name="PREDICTION">
+          <shadow type="math_number"><field name="NUM">3</field></shadow>
+        </value>
+      </block>
+    </statement>
+  </block>
+
+  <!-- ========== BEFORE PURCHASE: entry pattern ========== -->
+  <!-- Count consecutive ticks whose last digit is 0-3. Enter Over 3 after 3 in a row. -->
+  <block type="before_purchase" id="b_before" deletable="false" x="0" y="700">
+    <statement name="BEFORE_PURCHASE_STACK">
+      <block type="controls_if" id="b_if_low">
+        <mutation else="1"></mutation>
+        <value name="IF0">
+          <block type="logic_compare" id="b_cmp_low">
+            <field name="OP">LTE</field>
+            <value name="A">
+              <block type="last_digit" id="b_lastdigit"></block>
+            </value>
+            <value name="B">
+              <block type="math_number"><field name="NUM">3</field></block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="math_change" id="b_streak_inc">
+            <field name="VAR" id="v_streak">LowStreak</field>
+            <value name="DELTA">
+              <block type="math_number"><field name="NUM">1</field></block>
+            </value>
+          </block>
+        </statement>
+        <statement name="ELSE">
+          <block type="variables_set" id="b_streak_reset">
+            <field name="VAR" id="v_streak">LowStreak</field>
+            <value name="VALUE">
+              <block type="math_number"><field name="NUM">0</field></block>
+            </value>
+          </block>
+        </statement>
+        <next>
+          <block type="controls_if" id="b_if_enter">
+            <value name="IF0">
+              <block type="logic_compare" id="b_cmp_enter">
+                <field name="OP">GTE</field>
+                <value name="A">
+                  <block type="variables_get">
+                    <field name="VAR" id="v_streak">LowStreak</field>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="math_number"><field name="NUM">3</field></block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="purchase" id="b_purchase">
+                <field name="PURCHASE_LIST">DIGITOVER</field>
+              </block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <!-- ========== DURING PURCHASE ========== -->
+  <block type="during_purchase" id="b_during" deletable="false" x="0" y="1200"></block>
+
+  <!-- ========== AFTER PURCHASE: reset streak, flat stake, TP/SL ========== -->
+  <block type="after_purchase" id="b_after" deletable="false" x="0" y="1350">
+    <statement name="AFTERPURCHASE_STACK">
+      <block type="variables_set" id="b_after_reset">
+        <field name="VAR" id="v_streak">LowStreak</field>
+        <value name="VALUE">
+          <block type="math_number"><field name="NUM">0</field></block>
+        </value>
+        <next>
+          <block type="controls_if" id="b_if_limits">
+            <value name="IF0">
+              <block type="logic_operation" id="b_and">
+                <field name="OP">AND</field>
+                <value name="A">
+                  <block type="logic_compare">
+                    <field name="OP">LT</field>
+                    <value name="A">
+                      <block type="total_profit"></block>
+                    </value>
+                    <value name="B">
+                      <block type="variables_get">
+                        <field name="VAR" id="v_tp">TakeProfit</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="logic_compare">
+                    <field name="OP">GT</field>
+                    <value name="A">
+                      <block type="total_profit"></block>
+                    </value>
+                    <value name="B">
+                      <block type="math_single">
+                        <field name="OP">NEG</field>
+                        <value name="NUM">
+                          <block type="variables_get">
+                            <field name="VAR" id="v_sl">StopLoss</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="trade_again" id="b_trade_again"></block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>
+</script>
+
+<script>
+/* The built-in sample DBot is stored verbatim in the XML island above. */
+const DBOTS_SAMPLE_XML = (function () {
+  const el = document.getElementById("dbotsSample");
+  return el ? el.textContent.trim() : "";
+})();
+
+/* ---------------------------------------------------------------------------
+   20. TAB 3 — DBOTS (Deriv Bot .xml import, analysis and runner)
+   ---------------------------------------------------------------------------
+   Deriv Bot (DBot) saves a strategy as a Blockly XML file:
+     <xml is_dbot="true"> … trade_definition / before_purchase /
+     during_purchase / after_purchase …
+   This module parses that file in the browser, shows exactly what it
+   understood, and can run the supported block subset against live ticks.
+   Blocks the runner cannot execute are reported instead of being emulated:
+   nothing is traded on a guess.
+   --------------------------------------------------------------------------- */
+const DBOTS_STORE_KEY = "tickforge.dbots.v1";
+const DBOTS_MAX_FILE  = 2 * 1024 * 1024;
+
+const DBOTS_DOC_URL = "https://deriv.com/deriv-bot";
+
+/* DBot contract type names → the contract codes this terminal trades. */
+const DBOT_CONTRACTS = {
+  DIGITOVER: "DIGITOVER", DIGITUNDER: "DIGITUNDER",
+  DIGITEVEN: "DIGITEVEN", DIGITODD: "DIGITODD",
+  DIGITMATCH: "DIGITMATCH", DIGITDIFF: "DIGITDIFF",
+  CALL: "CALL", PUT: "PUT", RISE: "CALL", FALL: "PUT"
+};
+
+/* Human labels for the block types a DBot file is made of. */
+const DBOT_BLOCK_HINT = {
+  trade_definition: "trade setup",
+  trade_definition_market: "market",
+  trade_definition_tradetype: "trade category",
+  trade_definition_contracttype: "contract type",
+  trade_definition_candleinterval: "candle interval",
+  trade_definition_restartbuysell: "restart buy/sell",
+  trade_definition_restartonerror: "restart on error",
+  trade_definition_tradeoptions: "trade options",
+  before_purchase: "before purchase",
+  during_purchase: "during purchase",
+  after_purchase: "after purchase",
+  purchase: "buy",
+  trade_again: "trade again",
+  variables_set: "set variable",
+  variables_get: "read variable",
+  math_change: "change variable",
+  math_number: "number",
+  math_arithmetic: "arithmetic",
+  math_single: "math operator",
+  math_modulo: "modulo",
+  math_round: "round",
+  logic_compare: "compare",
+  logic_operation: "and / or",
+  logic_negate: "not",
+  logic_boolean: "true / false",
+  controls_if: "if",
+  controls_repeat_ext: "repeat",
+  controls_whileUntil: "while / until",
+  last_digit: "last digit",
+  total_profit: "total profit",
+  notify: "notify",
+  text_join: "join text",
+  text: "text"
+};
+
+/* Block types the runner evaluates. Anything else is surfaced as a warning. */
+const DBOT_EXPR_BLOCKS = ["math_number","math_constant","text","variables_get","last_digit","total_profit",
+  "math_arithmetic","math_single","math_modulo","math_round","logic_compare","logic_operation",
+  "logic_negate","logic_boolean"];
+const DBOT_STMT_BLOCKS = ["variables_set","math_change","controls_if","controls_repeat_ext",
+  "controls_whileUntil","purchase","trade_again","notify","text_print"];
+
+const DBots = {
+  library: [],
+  selectedId: null,
+  running: false,
+  starting: false,
+  busy: false,
+  cooldownUntil: 0,
+  cfg: null,                // analysis of the selected bot
+  vars: {},                 // live Blockly variables while running
+  totalProfit: 0,
+  pl: 0, wins: 0, losses: 0,
+  pending: null,            // contract id in flight
+  lastEpoch: 0,
+  lastSeenTick: null,
+  startedAt: 0,
+  logs: [],
+  stake: 1, tp: 0, sl: 0, cooldown: 0,
+  purchaseContract: "",
+
+  /* ---------------- persistence ---------------- */
+
+  load() {
+    let raw = null;
+    try { raw = localStorage.getItem(DBOTS_STORE_KEY); } catch (_) { return; }
+    /* First visit: the bundled over-3 bot is already in the library. */
+    if (raw === null || raw === undefined) {
+      const sample = (typeof DBOTS_SAMPLE_XML === "string" && DBOTS_SAMPLE_XML) ? DBOTS_SAMPLE_XML : "";
+      this.library = [];
+      if (sample) {
+        this.library.push({ id: "dbot_sample_over3", name: "over3_1tick_bot.xml", xml: sample, addedAt: Date.now() });
+        this.selectedId = "dbot_sample_over3";
+        this.save();
+      }
+      return;
+    }
+    if (!raw) return;
+    try {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        this.library = arr.filter(b => b && b.id && b.xml).map(b => ({
+          id: String(b.id), name: String(b.name || "bot.xml"), xml: String(b.xml),
+          addedAt: num(b.addedAt)
+        }));
+      }
+    } catch (_) { /* a corrupt library is not worth a broken page */ }
+  },
+
+  save() {
+    try { localStorage.setItem(DBOTS_STORE_KEY, JSON.stringify(this.library.slice(0, 40))); } catch (_) {
+      toast("Storage full", "The bot library could not be saved in this browser.", "warn");
+    }
+  },
+
+  /* ---------------- parsing ---------------- */
+
+  /** Turn one <block> element (and its chain) into a plain object. */
+  blockFromEl(el) {
+    if (!el || el.nodeType !== 1) return null;
+    const tag = el.tagName.toLowerCase();
+    if (tag !== "block" && tag !== "shadow") return null;
+    const b = {
+      type: el.getAttribute("type") || "unknown",
+      fields: {}, values: {}, shadows: {}, statements: {}, mutation: null, next: null
+    };
+    Array.from(el.childNodes).filter(n => n.nodeType === 1).forEach(child => {
+      const ct = child.tagName.toLowerCase();
+      if (ct === "field") b.fields[child.getAttribute("name") || ""] = child.textContent;
+      else if (ct === "mutation") {
+        b.mutation = {};
+        Array.from(child.attributes).forEach(a => { b.mutation[a.name] = a.value; });
+      } else if (ct === "value" || ct === "statement") {
+        const slot = child.getAttribute("name") || "";
+        const kids = Array.from(child.childNodes).filter(n => n.nodeType === 1);
+        /* A <shadow> is a plain <block> in DBot files. Inside a value, any block
+           that is not a <block> element is treated as that slot's default. */
+        const inner = kids.find(c => c.tagName.toLowerCase() === "block");
+        const shadow = kids.find(c => c.tagName.toLowerCase() === "shadow") ||
+                       kids.find(c => c.tagName.toLowerCase() === "block" && c !== inner);
+        if (ct === "value") {
+          if (shadow) b.shadows[slot] = this.blockFromEl(shadow);
+          if (inner) b.values[slot] = this.blockFromEl(inner);
+        } else if (inner) {
+          b.statements[slot] = this.blockFromEl(inner);
+        }
+      } else if (ct === "next") {
+        const nx = Array.from(child.childNodes).filter(n => n.nodeType === 1).find(c => c.tagName.toLowerCase() === "block");
+        if (nx) b.next = this.blockFromEl(nx);
+      }
+    });
+    return b;
+  },
+
+  /** Walk a block chain / tree depth-first. */
+  walk(block, fn, depth) {
+    let b = block;
+    const d = depth || 0;
+    let guard = 0;
+    while (b && guard++ < 5000) {
+      fn(b, d);
+      Object.keys(b.values).forEach(k => this.walk(b.values[k], fn, d + 1));
+      Object.keys(b.shadows).forEach(k => this.walk(b.shadows[k], fn, d + 1));
+      Object.keys(b.statements).forEach(k => this.walk(b.statements[k], fn, d + 1));
+      b = b.next;
+    }
+  },
+
+  /** Value of a <value> slot, falling back to its <shadow> default. */
+  slot(block, name) {
+    if (!block) return null;
+    const b = block.values && block.values[name] ? block.values[name] : null;
+    if (b) return b;
+    return (block.shadows && block.shadows[name]) || null;
+  },
+
+  numberSlot(block, name, fallback) {
+    if (!block) return fallback;
+    // A written <block> wins; a <shadow> is the editor's default and is used
+    // when the slot has no real block (DBot always writes shadows there).
+    const written = block.values && block.values[name] ? block.values[name] : null;
+    const shadow = block.shadows && block.shadows[name] ? block.shadows[name] : null;
+    for (const n of [written, shadow]) {
+      if (!n) continue;
+      if (n.type === "math_number") {
+        const v = Number(n.fields.NUM);
+        if (Number.isFinite(v)) return v;
+      }
+      if (n.type === "variables_get") {
+        // A variable in the slot is resolved by the runner, not here.
+        return fallback;
+      }
+    }
+    return fallback;
+  },
+
+  /** Parse + analyse an XML document. Returns { ok, cfg } or throws a message. */
+  parse(text) {
+    let doc;
+    try {
+      doc = new DOMParser().parseFromString(text, "application/xml");
+    } catch (e) {
+      throw new Error("The browser could not parse this XML.");
+    }
+    const perr = doc.getElementsByTagName("parsererror")[0];
+    if (perr) {
+      const detail = String(perr.textContent || "").replace(/\s+/g, " ").trim().slice(0, 160);
+      throw new Error("Not well-formed XML" + (detail ? " — " + detail : "."));
+    }
+    const root = doc.documentElement;
+    if (!root || root.tagName.toLowerCase() !== "xml") {
+      throw new Error("This file does not start with an <xml> element, so it is not a Deriv Bot file.");
+    }
+    const topEls = Array.from(root.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "block");
+    if (!topEls.length) throw new Error("No <block> elements were found — there is no strategy inside this file.");
+
+    const roots = topEls.map(el => this.blockFromEl(el)).filter(Boolean);
+    const all = [];
+    roots.forEach(r => this.walk(r, b => all.push(b)));
+
+    const findRoot = type => roots.find(b => b.type === type) || null;
+    const tradeDef = findRoot("trade_definition");
+    const before = findRoot("before_purchase");
+    const after = findRoot("after_purchase");
+    const during = findRoot("during_purchase");
+
+    if (!tradeDef && !before) {
+      throw new Error("No trade_definition or before_purchase block — this XML is a Blockly file, but not a Deriv Bot strategy.");
+    }
+
+    /* --- trade definition --- */
+    const defBlocks = [];
+    if (tradeDef) {
+      Object.keys(tradeDef.statements).forEach(k => this.walk(tradeDef.statements[k], b => defBlocks.push(b)));
+    }
+    const pick = type => defBlocks.find(b => b.type === type) || all.find(b => b.type === type) || null;
+
+    const marketB  = pick("trade_definition_market");
+    const typeB    = pick("trade_definition_tradetype");
+    const contractB= pick("trade_definition_contracttype");
+    const optionsB = pick("trade_definition_tradeoptions");
+    const repeatB  = pick("trade_definition_restartonerror");
+
+    const symbol = marketB ? String(marketB.fields.SYMBOL_LIST || "").trim() : "";
+    const rawContract = contractB ? String(contractB.fields.TYPE_LIST || "").trim().toUpperCase() : "";
+    const contract = DBOT_CONTRACTS[rawContract] || rawContract;
+
+    const durationUnit = optionsB ? String(optionsB.fields.DURATIONTYPE_LIST || "t") : "t";
+    const duration = optionsB ? this.numberSlot(optionsB, "DURATION", 1) : 1;
+    /* The Over/Under digit is the PREDICTION of the trade-options block.
+       `numberSlot` reads a <value>, but DBot writes the digit inside a
+       <shadow> there, so the shadow chain is consulted as well. */
+    const prediction = optionsB ? this.numberSlot(optionsB, "PREDICTION", null) : null;
+    const barrier1 = optionsB ? this.numberSlot(optionsB, "BARRIER", null) : null;
+    const barrier = prediction != null ? prediction : barrier1;
+    /* DBot stores the Over/Under digit as the PREDICTION value, but some files
+       (and some DBot versions) carry it as a field on the trade-options block
+       or only on the purchase block, so every shape is read. */
+    const digitFromFields = optionsB && optionsB.fields
+      ? ["PREDICTION","PREDICTION_VALUE","BARRIER","BARRIER_DIGIT"].map(k => optionsB.fields[k]).find(v => v != null && String(v).trim() !== "" && Number.isFinite(Number(v)))
+      : null;
+
+    /* --- variables --- */
+    const vars = {};
+    all.forEach(b => {
+      if (b.type === "variables_set" && b.fields.VAR) {
+        const name = String(b.fields.VAR);
+        if (!(name in vars)) {
+          const v = b.values.VALUE;
+          if (v && v.type === "math_number") vars[name] = Number(v.fields.NUM);
+          else if (v && v.type === "logic_boolean") vars[name] = v.fields.BOOL === "TRUE";
+          else if (v && v.type === "text") vars[name] = v.fields.TEXT || "";
+        }
+      }
+    });
+
+    /* --- purchase contract used by the buy block --- */
+    let purchaseContract = contract;
+    all.forEach(b => {
+      if (b.type === "purchase" && b.fields.PURCHASE_LIST) {
+        const p = String(b.fields.PURCHASE_LIST).trim().toUpperCase();
+        purchaseContract = DBOT_CONTRACTS[p] || p;
+      }
+    });
+
+    let finalBarrier = barrier;
+    if (finalBarrier == null && digitFromFields != null) finalBarrier = Number(digitFromFields);
+    if (finalBarrier == null) {
+      const fieldHit = all.map(b => b.fields && b.fields.PREDICTION).find(v => v != null && String(v).trim() !== "" && Number.isFinite(Number(v)));
+      if (fieldHit != null) finalBarrier = Number(fieldHit);
+    }
+
+    /* --- issues / warnings --- */
+    const issues = [];
+    const unsupported = new Set();
+    all.forEach(b => {
+      if (b.type === "purchase" || b.type === "trade_again") return;
+      if (Object.prototype.hasOwnProperty.call(DBOT_BLOCK_HINT, b.type)) return;
+      if (["trade_definition_restartbuysell","trade_definition_candleinterval","comment","variables_get","variables_set"].indexOf(b.type) >= 0) return;
+      unsupported.add(b.type);
+    });
+    /* Only expression/statement blocks actually reachable from the three
+       lifecycle stacks can stop a run, so flag those separately. */
+    const reachable = (block, out) => this.walk(block, b => out.push(b));
+    const live = [];
+    if (before && before.statements.BEFORE_PURCHASE_STACK) reachable(before.statements.BEFORE_PURCHASE_STACK, live);
+    if (after && after.statements.AFTERPURCHASE_STACK) reachable(after.statements.AFTERPURCHASE_STACK, live);
+    if (during && during.statements.DURING_PURCHASE_STACK) reachable(during.statements.DURING_PURCHASE_STACK, live);
+
+    const blocking = new Set();
+    live.forEach(b => {
+      if (DBOT_EXPR_BLOCKS.indexOf(b.type) >= 0) return;
+      if (DBOT_STMT_BLOCKS.indexOf(b.type) >= 0) return;
+      blocking.add(b.type);
+    });
+
+    const market = symbol && MARKETS[symbol] ? symbol : "";
+    if (!symbol) issues.push({ level: "err", text: "No market is set in the trade definition." });
+    else if (!market) issues.push({ level: "err", text: "Market “" + symbol + "” is not one of the volatility indices this terminal streams." });
+    if (!contract) issues.push({ level: "err", text: "No contract type is set in the trade definition." });
+    else if (!CONTRACT_LABEL[contract]) issues.push({ level: "err", text: "Contract “" + contract + "” is not supported by the ticket yet." });
+    if (contract && DIGIT_CONTRACTS.indexOf(contract) >= 0 && finalBarrier == null) {
+      issues.push({ level: "warn", text: "A digit contract needs a barrier, but the file carries no prediction value. Defaulting to 3." });
+    }
+    if (!before && !during) issues.push({ level: "warn", text: "This bot has no before_purchase logic, so it would never place a trade." });
+    if (durationUnit !== "t" && durationUnit !== "s") {
+      issues.push({ level: "warn", text: "Duration unit “" + durationUnit + "” is passed through as-is; Deriv may reject it." });
+    }
+    Array.from(blocking).forEach(t => {
+      issues.push({ level: "warn", text: "Block “" + t + "” is not supported by the runner — the bot will refuse to start rather than trade on a guess." });
+    });
+    if (repeatB && String(repeatB.fields.RESTARTONERROR) === "TRUE") {
+      issues.push({ level: "info", text: "“Restart on error” is set in the file; the runner keeps running after a rejected order." });
+    }
+    if (!issues.some(i => i.level === "err")) {
+      issues.unshift({ level: "info", text: "Parsed " + all.length + " blocks · " +
+        (MARKETS[market] ? MARKETS[market].name : symbol || "no market") + " · " +
+        (CONTRACT_LABEL[contract] || contract || "no contract") +
+        (DIGIT_CONTRACTS.indexOf(contract) >= 0 && finalBarrier != null ? " · barrier " + finalBarrier : "") +
+        " · " + duration + (durationUnit === "t" ? " tick" + (duration === 1 ? "" : "s") : " " + durationUnit) });
+    }
+
+    const cfg = {
+      symbol, market, contract, purchaseContract, barrier: finalBarrier == null ? 3 : finalBarrier,
+      duration, durationUnit, vars, issues, blockCount: all.length,
+      blocking: Array.from(blocking),
+      trees: { root: roots, tradeDef, before, after, during },
+      types: Array.from(new Set(all.map(b => b.type))).sort()
+    };
+    return cfg;
+  },
+
+  /* ---------------- library ---------------- */
+
+  add(text, name) {
+    if (!text || !text.trim()) { toast("Empty file", "That XML file has no content.", "warn"); return null; }
+    if (text.length > DBOTS_MAX_FILE) { toast("File too large", "Deriv Bot files are far smaller than 2 MB.", "warn"); return null; }
+    let cfg;
+    try { cfg = this.parse(text); }
+    catch (err) {
+      toast("XML rejected", (err && err.message) || "This is not a Deriv Bot file.", "err");
+      return null;
+    }
+    const cleanName = String(name || "bot.xml").replace(/\.xml$/i, "") + ".xml";
+    /* The bundled over-3 bot is the template that ships with the page, so
+       importing it again (or under a new name) replaces that one entry instead
+       of piling up duplicates. Any other bot is keyed by name + content. */
+    const isBundled = text.replace(/\s+/g, "") === ((typeof DBOTS_SAMPLE_XML === "string" ? DBOTS_SAMPLE_XML : "").replace(/\s+/g, ""));
+    this.library = this.library.filter(b => isBundled
+      ? !(b.id === "dbot_sample_over3" || b.xml.replace(/\s+/g, "") === text.replace(/\s+/g, ""))
+      : !(b.xml === text && b.name === cleanName));
+    const rec = {
+      id: "dbot_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: cleanName,
+      xml: text, addedAt: Date.now()
+    };
+    this.library.unshift(rec);
+    if (this.library.length > 40) this.library.length = 40;
+    this.selectedId = rec.id;
+    this.save();
+    this.select(rec.id);
+    toast("Bot imported", rec.name + " · " + cfg.blockCount + " blocks · " + (CONTRACT_LABEL[cfg.contract] || cfg.contract), "ok");
+    return rec;
+  },
+
+  selected() {
+    return this.library.find(b => b.id === this.selectedId) || null;
+  },
+
+  select(id) {
+    const rec = this.library.find(b => b.id === id);
+    if (!rec) { this.selectedId = null; this.cfg = null; this.render(); return; }
+    this.selectedId = id;
+    try {
+      this.cfg = this.parse(rec.xml);
+    } catch (err) {
+      this.cfg = null;
+      toast("Could not read this bot", (err && err.message) || "Unknown parse error.", "err");
+    }
+    if (this.cfg) this.applyDefaults();
+    this.render();
+  },
+
+  applyDefaults() {
+    const v = this.cfg ? this.cfg.vars : {};
+    const pickVar = names => {
+      for (const n of names) {
+        for (const key of Object.keys(v)) {
+          if (key.toLowerCase() === n.toLowerCase() && typeof v[key] === "number") return v[key];
+        }
+      }
+      return null;
+    };
+    const stake = pickVar(["Stake", "StakeAmount", "Amount"]);
+    const tp = pickVar(["TakeProfit", "TP"]);
+    const sl = pickVar(["StopLoss", "SL"]);
+    if (stake != null && stake >= 0.35) $id("dbotsStake").value = String(stake);
+    if (tp != null) $id("dbotsTP").value = String(tp);
+    if (sl != null) $id("dbotsSL").value = String(sl);
+  },
+
+  remove(id) {
+    const rec = this.library.find(b => b.id === id);
+    if (!rec) return;
+    if (this.running && this.selectedId === id) this.stop("Bot removed.");
+    this.library = this.library.filter(b => b.id !== id);
+    if (this.selectedId === id) {
+      this.selectedId = this.library[0] ? this.library[0].id : null;
+      this.cfg = null;
+      if (this.selectedId) this.select(this.selectedId);
+    }
+    this.save();
+    this.render();
+    toast("Bot removed", rec.name, "info");
+  },
+
+  download() {
+    const rec = this.selected();
+    if (!rec) return;
+    try {
+      const blob = new Blob([rec.xml], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = rec.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch (e) {
+      toast("Download failed", "The browser could not create the file.", "err");
+    }
+  },
+
+  /* ---------------- interpreter ---------------- */
+
+  runtime(tick) {
+    const t = tick || this.lastSeenTick || null;
+    return {
+      vars: this.vars,
+      lastDigit: t ? lastDigit(t.quote) : null,
+      totalProfit: this.totalProfit,
+      steps: 0,
+      log: msg => this.log("sys", "notify: " + msg)
+    };
+  },
+
+  /** The live value of the file's Stake variable, or the panel stake. */
+  stakeValue() {
+    const key = Object.keys(this.vars || {}).find(k => /^(stake|stakeamount|amount)$/i.test(k));
+    if (!key) return this.stake;
+    const v = Number(this.vars[key]);
+    return Number.isFinite(v) && v >= 0.35 ? v : this.stake;
+  },
+
+  varName(block) {
+    return block && block.fields ? String(block.fields.VAR == null ? "" : block.fields.VAR) : "";
+  },
+
+  truthy(v) { return !!v; },
+
+  value(block, rt) {
+    if (!block) return undefined;
+    rt.steps++;
+    if (rt.steps > 100000) return undefined;
+    const f = block.fields;
+    switch (block.type) {
+      case "math_number": return Number(f.NUM);
+      case "math_constant":
+        return f.CONSTANT === "PI" ? Math.PI : f.CONSTANT === "E" ? Math.E : f.CONSTANT === "GOLDEN_RATIO" ? 1.618033988749895 : Number(f.NUM);
+      case "text": return f.TEXT == null ? "" : String(f.TEXT);
+      case "logic_boolean": return String(f.BOOL).toUpperCase() === "TRUE";
+      case "variables_get": {
+        const n = this.varName(block);
+        return Object.prototype.hasOwnProperty.call(rt.vars, n) ? rt.vars[n] : 0;
+      }
+      case "last_digit": return rt.lastDigit == null ? 0 : rt.lastDigit;
+      case "total_profit": return rt.totalProfit;
+      case "math_arithmetic": {
+        const a = Number(this.value(this.slot(block, "A"), rt));
+        const b = Number(this.value(this.slot(block, "B"), rt));
+        switch (f.OP) {
+          case "ADD": return a + b;
+          case "MINUS": return a - b;
+          case "MULTIPLY": return a * b;
+          case "DIVIDE": return b === 0 ? 0 : a / b;
+          case "POWER": return Math.pow(a, b);
+          default: return NaN;
+        }
+      }
+      case "math_single": {
+        const v = Number(this.value(this.slot(block, "NUM"), rt));
+        switch (f.OP) {
+          case "NEG": return -v;
+          case "ABS": return Math.abs(v);
+          case "ROOT": return Math.sqrt(v);
+          case "POW10": return Math.pow(10, v);
+          default: return NaN;
+        }
+      }
+      case "math_modulo": {
+        const a = Number(this.value(this.slot(block, "DIVIDEND"), rt));
+        const b = Number(this.value(this.slot(block, "DIVISOR"), rt));
+        return b === 0 ? 0 : a % b;
+      }
+      case "math_round": {
+        const v = Number(this.value(this.slot(block, "NUM"), rt));
+        if (f.OP === "ROUNDUP") return Math.ceil(v);
+        if (f.OP === "ROUNDDOWN") return Math.floor(v);
+        return Math.round(v);
+      }
+      case "logic_compare": {
+        const a = this.value(this.slot(block, "A"), rt);
+        const b = this.value(this.slot(block, "B"), rt);
+        switch (f.OP) {
+          case "EQ": return a === b;
+          case "NEQ": return a !== b;
+          case "LT": return a < b;
+          case "LTE": return a <= b;
+          case "GT": return a > b;
+          case "GTE": return a >= b;
+          default: return false;
+        }
+      }
+      case "logic_operation": {
+        const a = this.truthy(this.value(this.slot(block, "A"), rt));
+        if (f.OP === "AND") return a && this.truthy(this.value(this.slot(block, "B"), rt));
+        return a || this.truthy(this.value(this.slot(block, "B"), rt));
+      }
+      case "logic_negate": return !this.truthy(this.value(this.slot(block, "BOOL"), rt));
+      case "math_change": return undefined;
+      default:
+        rt.unsupported = rt.unsupported || new Set();
+        rt.unsupported.add(block.type);
+        return undefined;
+    }
+  },
+
+  runStack(block, rt) {
+    let b = block;
+    let guard = 0;
+    while (b) {
+      if (++guard > 5000) { this.log("warn", "Statement limit reached for one evaluation."); return null; }
+      const sig = this.statement(b, rt);
+      if (sig) return sig;
+      b = b.next;
+    }
+    return null;
+  },
+
+  statement(b, rt) {
+    rt.steps++;
+    const f = b.fields || {};
+    switch (b.type) {
+      case "variables_set": {
+        rt.vars[this.varName(b)] = this.value(this.slot(b, "VALUE"), rt);
+        return null;
+      }
+      case "math_change": {
+        const n = this.varName(b);
+        const cur = Number(rt.vars[n]);
+        rt.vars[n] = (Number.isFinite(cur) ? cur : 0) + Number(this.value(this.slot(b, "DELTA"), rt) || 0);
+        return null;
+      }
+      case "controls_if": {
+        const elseif = b.mutation && b.mutation.elseif ? Number(b.mutation.elseif) : 0;
+        for (let i = 0; i <= elseif; i++) {
+          if (this.truthy(this.value(b.values["IF" + i], rt))) {
+            return this.runStack(b.statements["DO" + i], rt);
+          }
+        }
+        if (b.mutation && b.mutation.else) return this.runStack(b.statements.ELSE, rt);
+        return null;
+      }
+      case "controls_repeat_ext": {
+        const times = clamp(Math.round(Number(this.value(this.slot(b, "TIMES"), rt)) || 0), 0, 500);
+        for (let i = 0; i < times; i++) {
+          const sig = this.runStack(b.statements.DO, rt);
+          if (sig) return sig;
+        }
+        return null;
+      }
+      case "controls_whileUntil": {
+        const until = String(f.MODE).toUpperCase() === "UNTIL";
+        for (let i = 0; i < 500; i++) {
+          const cond = this.truthy(this.value(this.slot(b, "BOOL"), rt));
+          if (until ? cond : !cond) break;
+          const sig = this.runStack(b.statements.DO, rt);
+          if (sig) return sig;
+        }
+        return null;
+      }
+      case "purchase": return "purchase";
+      case "trade_again": return "trade_again";
+      case "notify":
+      case "text_print": {
+        const msg = this.value(this.slot(b, "MESSAGE") || this.slot(b, "TEXT"), rt);
+        this.log("sys", "notify: " + (msg == null ? "" : msg));
+        return null;
+      }
+      default:
+        rt.unsupported = rt.unsupported || new Set();
+        rt.unsupported.add(b.type);
+        return null;
+    }
+  },
+
+  /* ---------------- run loop ---------------- */
+
+  start() {
+    const rec = this.selected();
+    if (!rec) { toast("No bot", "Import a Deriv Bot XML file first.", "warn"); return; }
+    if (this.running || this.starting) return;
+    if (!state.auth || !state.token) { toast("Login required", "Log in to Deriv before running a DBot.", "warn"); return; }
+    let cfg;
+    try { cfg = this.parse(rec.xml); } catch (err) { toast("XML rejected", (err && err.message) || "Could not parse this bot.", "err"); return; }
+    if (cfg.blocking.length) {
+      toast("Unsupported blocks", "This bot uses " + cfg.blocking.join(", ") + " — the runner will not guess.", "warn");
+      return;
+    }
+    if (!cfg.market) { toast("Market unsupported", cfg.symbol ? ("“" + cfg.symbol + "” is not streamed by this terminal.") : "The bot has no market.", "warn"); return; }
+
+    const stake = Math.max(0.35, num($id("dbotsStake").value, 1));
+    const tp = Math.max(0, num($id("dbotsTP").value, 0));
+    const sl = Math.max(0, num($id("dbotsSL").value, 0));
+    const cooldown = Math.max(0, num($id("dbotsCooldown").value, 0));
+    if (state.balance != null && stake > num(state.balance)) { toast("Low balance", "The stake is larger than the available balance.", "err"); return; }
+
+    this.cfg = cfg;
+    this.stake = stake; this.tp = tp; this.sl = sl; this.cooldown = cooldown;
+    this.purchaseContract = cfg.purchaseContract || cfg.contract;
+    this.vars = Object.assign({}, cfg.vars);
+    /* The panel overrides the file's own Stake / TakeProfit / StopLoss. */
+    Object.keys(this.vars).forEach(key => {
+      const k = key.toLowerCase();
+      if (k === "stake" || k === "stakeamount" || k === "amount") this.vars[key] = stake;
+      if (k === "takeprofit" || k === "tp") this.vars[key] = tp;
+      if (k === "stoploss" || k === "sl") this.vars[key] = sl;
+    });
+    this.totalProfit = 0;
+    this.pl = 0; this.wins = 0; this.losses = 0;
+    this.pending = null; this.busy = false; this.lastEpoch = 0;
+    this.cooldownUntil = 0;
+    this.startedAt = Date.now();
+
+    const begin = () => {
+      this.running = true;
+      $id("dbotsTabPill").classList.remove("hidden");
+      this.renderStatus();
+      this.log("sys", "Started " + rec.name + " · " + MARKETS[cfg.market].name + " · " +
+        (CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) +
+        (DIGIT_CONTRACTS.indexOf(this.purchaseContract) >= 0 ? " barrier " + cfg.barrier : "") +
+        " · stake " + money(stake) + " · TP " + (tp ? money(tp) : "none") + " · SL " + (sl ? money(sl) : "none"));
+      Markets.ensure(cfg.market).then(() => {
+        this.log("sys", "Streaming " + MARKETS[cfg.market].name + " ticks. Waiting for an entry…");
+      }).catch(err => {
+        this.log("err", "Could not subscribe to " + MARKETS[cfg.market].name + ": " + apiMessage(err));
+        this.stop("No market data.");
+      });
+    };
+
+    if (state.accountType === "real") {
+      this.starting = true;
+      confirmDialog(
+        "Run this DBot on a REAL account?",
+        "Imported bot <b>" + esc(rec.name) + "</b> will spend <b>real money</b> on account <b>" + esc(state.auth.loginid) + "</b>.<br><br>" +
+        "Market: <b>" + esc(MARKETS[cfg.market].name) + "</b><br>Contract: <b>" + esc(CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) + "</b>" +
+        (DIGIT_CONTRACTS.indexOf(this.purchaseContract) >= 0 ? " · barrier <b>" + esc(cfg.barrier) + "</b>" : "") + "<br>" +
+        "Stake: <b>" + esc(money(stake)) + "</b><br>Stop loss: <b>" + esc(sl ? money(sl) : "none") + "</b> · Take profit: <b>" + esc(tp ? money(tp) : "none") + "</b><br><br>" +
+        "A DBot file is not a guarantee of profit. Only run this with money you can afford to lose.",
+        "I understand — run on REAL", true
+      ).then(ok => {
+        this.starting = false;
+        if (!ok) { this.log("warn", "Start cancelled on the real account."); this.renderStatus(); return; }
+        begin();
+      });
+      this.renderStatus();
+      return;
+    }
+    begin();
+  },
+
+  stop(reason) {
+    if (!this.running && !this.pending) { this.renderStatus(); return; }
+    const wasRunning = this.running;
+    this.running = false;
+    this.busy = false;
+    this.pending = null;
+    socket.forget("dbotpoc");
+    $id("dbotsTabPill").classList.add("hidden");
+    this.renderStatus();
+    if (wasRunning) {
+      if (reason) this.log("sys", "Stopped — " + reason);
+      toast("DBot stopped", (reason || "Session ended.") + " Session P/L " + money(this.pl), "info");
+    }
+  },
+
+  onTick(sym) {
+    if (!this.running || this.busy || this.pending) return;
+    const cfg = this.cfg;
+    if (!cfg || sym !== cfg.market) return;
+    const buf = Markets.buf(sym);
+    const last = buf.ticks[buf.ticks.length - 1];
+    if (!last) return;
+    if (last.epoch === this.lastEpoch) return;
+    this.lastEpoch = last.epoch;
+    this.lastSeenTick = last;
+    if (Date.now() < this.cooldownUntil) return;
+    if (this.tp > 0 && this.pl >= this.tp) { this.stop("take profit reached (" + money(this.pl) + ")."); return; }
+    if (this.sl > 0 && this.pl <= -Math.abs(this.sl)) { this.stop("stop loss reached (" + money(this.pl) + ")."); return; }
+    if (!cfg.trees.before || !cfg.trees.before.statements.BEFORE_PURCHASE_STACK) return;
+
+    const rt = this.runtime(last);
+    let sig = null;
+    try { sig = this.runStack(cfg.trees.before.statements.BEFORE_PURCHASE_STACK, rt); }
+    catch (err) { this.log("err", "Evaluation error: " + ((err && err.message) || err)); this.stop("Evaluation error."); return; }
+    if (rt.unsupported && rt.unsupported.size) {
+      this.log("err", "Unsupported block(s): " + Array.from(rt.unsupported).join(", ") + " — stopping instead of guessing.");
+      this.stop("Unsupported block in the running path.");
+      return;
+    }
+    if (sig === "purchase") {
+      this.busy = true;
+      this.placeTrade(this.stakeValue(), "entry at digit " + rt.lastDigit + ", streak " + this.streakText())
+        .catch(err => {
+          this.log("err", "Trade failed: " + apiMessage(err));
+          this.busy = false;
+          if (this.pending == null) this.cooldownUntil = Date.now() + this.cooldown * 1000;
+        });
+    }
+  },
+
+  streakText() {
+    const keys = Object.keys(this.vars).filter(k => /streak/i.test(k));
+    return keys.length ? keys.map(k => k + "=" + this.vars[k]).join(" ") : "—";
+  },
+
+  async placeTrade(stake, why) {
+    const cfg = this.cfg;
+    const contract = this.purchaseContract;
+    const barrier = cfg.barrier;
+    const dur = Math.max(1, Math.round(cfg.duration || 1));
+    const unit = cfg.durationUnit === "s" ? "s" : "t";
+    const propReq = {
+      proposal: 1, amount: stake.toFixed(2), basis: "stake",
+      contract_type: contract, currency: state.currency || "USD",
+      duration: dur, duration_unit: unit
+    };
+    Object.assign(propReq, symbolPayload(cfg.market));
+    if (DIGIT_CONTRACTS.indexOf(contract) >= 0) propReq.barrier = String(barrier);
+
+    this.log("buy", "Entry · " + why);
+    const presp = await socket.request(propReq, 20000, "dbot proposal");
+    const p = presp.proposal;
+    if (!p) throw { code: "NO_PROPOSAL", message: "No proposal returned." };
+    if (state.balance != null && num(p.ask_price) > num(state.balance)) {
+      throw { code: "LOW_BALANCE", message: "Balance too low for this stake." };
+    }
+    const bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "dbot buy");
+    const c = bresp.buy;
+    this.pending = c.contract_id;
+    this.log("buy", "Bought " + c.contract_id + " · " + money(c.buy_price) + " → payout " + money(c.payout) +
+      " · " + dur + (unit === "t" ? " tick" + (dur === 1 ? "" : "s") : "s") +
+      (DIGIT_CONTRACTS.indexOf(contract) >= 0 ? " · barrier " + barrier : ""));
+    renderBalance();
+    this.watch(c.contract_id);
+    this.busy = false;
+  },
+
+  watch(contractId) {
+    socket.forget("dbotpoc");
+    const handle = msg => {
+      const c = msg && msg.proposal_open_contract;
+      if (!c) return;
+      state.openContract = c;
+      renderOpenContract();
+      if (!c.is_sold) return;
+      socket.forget("dbotpoc");
+      this.pending = null;
+      state.openContract = null;
+      renderOpenContract();
+      finishContract(c);
+      this.onClosed(c);
+    };
+    socket.stream("dbotpoc", { proposal_open_contract: 1, contract_id: contractId }, handle, handle).catch(err => {
+      this.log("warn", "Contract watcher: " + apiMessage(err));
+      this.pending = null;
+      this.busy = false;
+    });
+  },
+
+  onClosed(c) {
+    const cfg = this.cfg;
+    const profit = num(c.profit);
+    const won = profit >= 0;
+    this.pl += profit;
+    this.totalProfit = this.pl;
+    if (won) this.wins++; else this.losses++;
+    /* Refresh the "last digit" the after_purchase blocks read. */
+    const buf = cfg ? Markets.buf(cfg.market) : null;
+    if (buf && buf.ticks.length) this.lastSeenTick = buf.ticks[buf.ticks.length - 1];
+    this.log(won ? "win" : "loss", "Result " + (won ? "WIN" : "LOSS") + " · " + c.contract_id + " · " +
+      (profit >= 0 ? "+" : "") + money(profit) + " · session " + money(this.pl));
+    renderBalance();
+
+    /* Safety gates run before the file's own after_purchase logic. */
+    if (this.tp > 0 && this.pl >= this.tp) { this.stop("take profit reached (" + money(this.pl) + ")."); return; }
+    if (this.sl > 0 && this.pl <= -Math.abs(this.sl)) { this.stop("stop loss reached (" + money(this.pl) + ")."); return; }
+    if (!this.running || !cfg) return;
+
+    let sig = null;
+    if (cfg.trees.after && cfg.trees.after.statements.AFTERPURCHASE_STACK) {
+      const rt = this.runtime();
+      try { sig = this.runStack(cfg.trees.after.statements.AFTERPURCHASE_STACK, rt); }
+      catch (err) { this.log("err", "After-purchase error: " + ((err && err.message) || err)); this.stop("Evaluation error."); return; }
+      if (rt.unsupported && rt.unsupported.size) {
+        this.log("err", "Unsupported block(s): " + Array.from(rt.unsupported).join(", "));
+        this.stop("Unsupported block in after_purchase.");
+        return;
+      }
+    }
+    if (sig !== "trade_again") {
+      this.stop("after_purchase finished without “trade again”.");
+      return;
+    }
+    this.cooldownUntil = Date.now() + this.cooldown * 1000;
+    this.renderStatus();
+  },
+
+  /* ---------------- rendering ---------------- */
+
+  render() {
+    this.renderLibrary();
+    this.renderSelected();
+    this.renderBlocks();
+    this.renderStatus();
+  },
+
+  renderLibrary() {
+    const host = $id("dbotsList");
+    if (!host) return;
+    $id("dbotsLibCount").textContent = this.library.length + " saved";
+    if (!this.library.length) {
+      host.innerHTML = '<div class="empty">No bots yet. Import a .xml file above, or press “Load sample”.</div>';
+      return;
+    }
+    host.innerHTML = this.library.map(rec => {
+      let summary = "could not parse";
+      try {
+        const c = this.parse(rec.xml);
+        summary = (MARKETS[c.market] ? MARKETS[c.market].short : (c.symbol || "—")) + " · " +
+          (CONTRACT_LABEL[c.contract] || c.contract || "—") +
+          (DIGIT_CONTRACTS.indexOf(c.contract) >= 0 ? " " + c.barrier : "");
+      } catch (_) {}
+      return '<div class="dbots-item' + (rec.id === this.selectedId ? " active" : "") + '" data-id="' + esc(rec.id) + '" role="button" tabindex="0">' +
+        '<i class="dot-tag"></i>' +
+        "<div style='min-width:0'>" +
+          '<div class="nm">' + esc(rec.name) + "</div>" +
+          '<div class="sub">' + esc(summary) + "</div>" +
+        "</div>" +
+        '<button class="del" data-del="' + esc(rec.id) + '" title="Remove this bot" aria-label="Remove this bot">✕</button>' +
+      "</div>";
+    }).join("");
+    host.querySelectorAll("[data-id]").forEach(el => {
+      const pick = () => this.select(el.dataset.id);
+      el.addEventListener("click", e => {
+        if (e.target.closest("[data-del]")) return;
+        pick();
+      });
+      el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    });
+    host.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", e => { e.stopPropagation(); this.remove(btn.dataset.del); });
+    });
+  },
+
+  renderSelected() {
+    const rec = this.selected();
+    const nameEl = $id("dbotsName");
+    const fileEl = $id("dbotsFileInfo");
+    const tagEl = $id("dbotsTags");
+    const issueEl = $id("dbotsIssues");
+    if (!nameEl) return;
+    if (!rec) {
+      nameEl.textContent = "No bot selected";
+      fileEl.textContent = "Import a .xml file to see its trade definition here.";
+      tagEl.innerHTML = "";
+      issueEl.innerHTML = "";
+      $id("dbotsExport").disabled = true;
+      $id("dbotsDelete").disabled = true;
+      $id("dbotsStart").disabled = true;
+      $id("dbotsBlockInfo").textContent = "—";
+      return;
+    }
+    $id("dbotsExport").disabled = false;
+    $id("dbotsDelete").disabled = false;
+    nameEl.textContent = rec.name.replace(/\.xml$/i, "");
+    const when = rec.addedAt ? new Date(rec.addedAt).toLocaleString([], { hour12: false }) : "—";
+    fileEl.textContent = rec.name + " · " + (this.cfg ? this.cfg.blockCount + " blocks" : "unparsed") + " · added " + when;
+
+    const cfg = this.cfg;
+    if (!cfg) {
+      tagEl.innerHTML = '<span class="dbots-tag warn">not parseable</span>';
+      issueEl.innerHTML = "";
+      $id("dbotsStart").disabled = true;
+      return;
+    }
+    const tags = [];
+    tags.push('<span class="dbots-tag">Market <b>' + esc(MARKETS[cfg.market] ? MARKETS[cfg.market].name : (cfg.symbol || "—")) + "</b></span>");
+    const traded = cfg.purchaseContract || cfg.contract;
+    tags.push('<span class="dbots-tag acc">' + esc(CONTRACT_LABEL[traded] || traded || "—") +
+      (DIGIT_CONTRACTS.indexOf(traded) >= 0 ? " <b>" + cfg.barrier + "</b>" : "") + "</span>");
+    tags.push('<span class="dbots-tag">Duration <b>' + esc(cfg.duration) + (cfg.durationUnit === "t" ? " tick" + (cfg.duration === 1 ? "" : "s") : " " + esc(cfg.durationUnit)) + "</b></span>");
+    const varKeys = Object.keys(cfg.vars);
+    if (varKeys.length) tags.push('<span class="dbots-tag">Vars <b>' + esc(varKeys.join(", ")) + "</b></span>");
+    if (cfg.blocking.length) tags.push('<span class="dbots-tag warn">' + cfg.blocking.length + " unsupported</span>");
+    tagEl.innerHTML = tags.join("");
+
+    issueEl.innerHTML = cfg.issues.slice(0, 6).map(i =>
+      '<div class="dbots-issue ' + esc(i.level) + '"><span class="k">' + esc(i.level) + "</span><span>" + esc(i.text) + "</span></div>"
+    ).join("");
+
+    const start = $id("dbotsStart");
+    start.disabled = this.running || cfg.issues.some(i => i.level === "err") || cfg.blocking.length > 0;
+    $id("dbotsBlockInfo").textContent = cfg.blockCount + " blocks";
+  },
+
+  renderBlocks() {
+    const host = $id("dbotsBlocks");
+    if (!host) return;
+    const cfg = this.cfg;
+    if (!cfg) {
+      host.innerHTML = '<span class="ev-m">No bot selected.</span>';
+      return;
+    }
+    const lines = [];
+    const label = b => {
+      const bits = [];
+      const f = b.fields || {};
+      ["SYMBOL_LIST","MARKET_LIST","SUBMARKET_LIST","TRADETYPE_LIST","TYPE_LIST","DURATIONTYPE_LIST",
+       "PURCHASE_LIST","OP","VAR","BOOL","CONSTANT","MODE","TEXT","NUM"].forEach(k => {
+        if (f[k] != null && String(f[k]).trim() !== "" && k !== "NUM") bits.push(k.replace(/_LIST$/, "").toLowerCase() + "=" + String(f[k]).trim());
+      });
+      return bits.length ? " · " + bits.join(" · ") : "";
+    };
+    const emit = (block, depth) => {
+      let b = block;
+      let n = 0;
+      while (b && n++ < 500) {
+        const hint = DBOT_BLOCK_HINT[b.type] ? "  " + DBOT_BLOCK_HINT[b.type] : "";
+        lines.push('<span class="' + (b.type.indexOf("trade_definition") === 0 ? "ev-t" : b.type === "purchase" ? "ev-l" : b.type === "trade_again" ? "ev-r" : "ev-b") + '">' +
+          "  ".repeat(Math.min(depth, 8)) + esc(b.type) + "</span>" +
+          (hint ? '<span class="ev-m">' + esc(hint) + "</span>" : "") +
+          '<span class="ev-m">' + esc(label(b)) + "</span>");
+        Object.keys(b.values).forEach(k => {
+          lines.push('<span class="ev-m">' + "  ".repeat(Math.min(depth + 1, 9)) + "↳ " + esc(k) + "</span>");
+          emit(b.values[k], depth + 2);
+        });
+        Object.keys(b.statements).forEach(k => {
+          lines.push('<span class="ev-m">' + "  ".repeat(Math.min(depth + 1, 9)) + "▸ " + esc(k) + "</span>");
+          emit(b.statements[k], depth + 2);
+        });
+        Object.keys(b.shadows).forEach(k => {
+          if (b.values[k]) return;
+          emit(b.shadows[k], depth + 2);
+        });
+        b = b.next;
+      }
+    };
+    cfg.trees.root.forEach(r => emit(r, 0));
+    host.innerHTML = lines.join("\n");
+  },
+
+  renderStatus() {
+    const pill = $id("dbotsStatus");
+    if (pill) {
+      const label = this.running ? "Running" : (this.pl || this.losses || this.wins ? "Stopped" : "Idle");
+      pill.classList.toggle("running", this.running);
+      pill.innerHTML = '<i class="dot"></i><span>' + label + "</span>";
+    }
+    const startBtn = $id("dbotsStart");
+    const stopBtn = $id("dbotsStop");
+    if (startBtn) startBtn.disabled = this.running || !this.cfg || !!(this.cfg && (this.cfg.blocking.length || this.cfg.issues.some(i => i.level === "err")));
+    if (stopBtn) stopBtn.disabled = !this.running;
+    const acct = $id("dbotsAcct");
+    if (acct) acct.textContent = state.auth ? (state.auth.loginid + (state.accountType === "real" ? " · real" : " · demo")) : "Not logged in";
+    const hint = $id("dbotsRunHint");
+    if (hint) {
+      hint.innerHTML = !state.auth
+        ? "Log in to Deriv before starting a DBot. Importing, inspecting and exporting XML works without an account."
+        : "The bot is evaluated on every live tick in this tab. Structural rules (Trade definitions, Before/After purchase) run as written; blocks the runner cannot execute are reported as warnings instead of being faked.";
+    }
+    const tag = $id("dbotsMarketTag");
+    if (tag) {
+      tag.innerHTML = this.running
+        ? 'Session <b class="ok">' + money(this.pl) + "</b> · " + this.wins + " W / " + this.losses + " L"
+        : "Session <b>" + money(this.pl) + "</b>";
+    }
+    const pillTab = $id("dbotsTabPill");
+    if (pillTab) pillTab.classList.toggle("hidden", !this.running);
+    const count = $id("dbotsLogCount");
+    if (count) count.textContent = this.logs.length + " entries";
+  },
+
+  log(kind, msg) {
+    const t = new Date().toLocaleTimeString([], { hour12: false });
+    this.logs.push({ t, kind: kind || "sys", msg: String(msg) });
+    if (this.logs.length > 400) this.logs.shift();
+    const host = $id("dbotsLog");
+    if (!host) return;
+    const ln = document.createElement("div");
+    ln.className = "ln " + (kind || "sys");
+    ln.innerHTML = '<span class="ts">' + esc(t) + '</span><span class="msgt">' + esc(msg) + "</span>";
+    host.appendChild(ln);
+    host.scrollTop = host.scrollHeight;
+    while (host.children.length > 400) host.firstElementChild.remove();
+    const c = $id("dbotsLogCount");
+    if (c) c.textContent = this.logs.length + " entries";
+  },
+
+  /* ---------------- wiring ---------------- */
+
+  readFile(file) {
+    if (!file) return;
+    if (file.size > DBOTS_MAX_FILE) { toast("File too large", "That file is over 2 MB and is not a DBot strategy.", "warn"); return; }
+    if (!/\.xml$/i.test(file.name) && file.type && file.type.indexOf("xml") < 0) {
+      toast("Wrong file", "Choose the .xml file that Deriv Bot saved.", "warn");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => { this.add(String(reader.result || ""), file.name); };
+    reader.onerror = () => toast("Read failed", "The browser could not read that file.", "err");
+    reader.readAsText(file);
+  },
+
+  init() {
+    this.load();
+    const drop = $id("dbotsDrop");
+    const input = $id("dbotsFile");
+    if (drop && input) {
+      drop.addEventListener("click", () => input.click());
+      drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
+      input.addEventListener("change", () => { this.readFile(input.files && input.files[0]); input.value = ""; });
+      ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+      ["dragleave", "dragend", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+      drop.addEventListener("drop", e => {
+        const f = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+        this.readFile(f);
+      });
+    }
+    const sample = $id("dbotsLoadSample");
+    if (sample) sample.addEventListener("click", () => {
+      if (typeof DBOTS_SAMPLE_XML === "string" && DBOTS_SAMPLE_XML) this.add(DBOTS_SAMPLE_XML, "over3_1tick_bot.xml");
+      else toast("Sample missing", "The built-in sample could not be found.", "err");
+    });
+    const start = $id("dbotsStart");
+    if (start) start.addEventListener("click", () => this.start());
+    const stop = $id("dbotsStop");
+    if (stop) stop.addEventListener("click", () => this.stop("Stopped by user."));
+    const exp = $id("dbotsExport");
+    if (exp) exp.addEventListener("click", () => this.download());
+    const del = $id("dbotsDelete");
+    if (del) del.addEventListener("click", async () => {
+      const rec = this.selected();
+      if (!rec) return;
+      const ok = await confirmDialog("Remove this bot?", "<b>" + esc(rec.name) + "</b> will be removed from this browser's library.", "Remove", true);
+      if (ok) this.remove(rec.id);
+    });
+    if (this.library.length) this.select(this.library[0].id);
+    else this.render();
+  }
+};
+
+/* Keep session numbers fresh while the tab is open. */
+Markets.onChange((sym, tick) => {
+  if (!DBots.running || !tick) return;
+  if (!DBots.cfg || sym !== DBots.cfg.market) return;
+  DBots.onTick(sym);
+});
+setInterval(() => {
+  if (DBots.running) DBots.renderStatus();
+}, 5000);
+
+DBots.init();
+
 </script>
 </body>
 </html>

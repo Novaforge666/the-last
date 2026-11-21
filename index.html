@@ -16,30 +16,34 @@
   TICKFORGE — SINGLE-FILE DERIV TERMINAL
   ============================================================================
   WHAT THIS IS
-    One self-contained index.html (HTML + CSS + vanilla JS, no build step,
-    no frameworks, no mock data). Every number on screen comes from the
-    official Deriv WebSocket API: wss://ws.derivws.com/websockets/v3
+    The UI is a single-file index.html (HTML + CSS + vanilla JS, no build step,
+    no frameworks, no mock data). OAuth 2.0 Authorization Code + PKCE needs a
+    same-origin token exchange, so Vercel also serves /api/deriv-oauth-token.
+    Every market number comes from Deriv's official Options API:
+    wss://api.derivws.com/trading/v1/options/ws/public for guest data and an
+    authenticated single-use OTP WebSocket after login.
 
-  STEP 1 — GET AN APP ID (required)
-    a) Go to https://api.deriv.com and sign up / log in.
-    b) Open "Dashboard" -> "Applications" (https://app.deriv.com/account/api-token
-       is for tokens; the app registration lives on api.deriv.com).
-    c) Create an application, choose the "Trading" / "Trading information"
-       scopes, and add the URL where you will host this file as an
-       "OAuth redirect URL" (e.g. https://your-site.vercel.app/).
-    d) Copy the generated App ID (a number, e.g. 12345).
-    e) Paste it into the APP_ID constant at the very top of the <script> below.
+  STEP 1 — REGISTER AN APP (required)
+    a) Go to https://developers.deriv.com -> Dashboard and sign in.
+    b) For "Log in": create an OAuth 2.0 application with the trade scope.
+       Set the redirect URL to exactly the production site URL, e.g.
+       https://your-site.vercel.app/
+    c) Copy the generated client_id/app id into the APP_ID constant at the top
+       of the <script> below. This deployment uses the user's registered app.
+    d) For the optional "API token" button: create a PAT-type application (or
+       use the same dashboard account if it permits both types), then create a
+       Personal Access Token with the trade scope.
 
   STEP 2 — HOST IT
-    Any static host works: Vercel, Netlify, GitHub Pages, Cloudflare Pages,
-    or even a plain Apache/Nginx folder. It is a single file — just drop
-    index.html in the web root. No server-side code, no build command.
-    The redirect URL you registered in step 1(c) must match the hosting URL.
+    Vercel serves index.html from the root and api/deriv-oauth-token.js as a
+    Function. Any static host can serve the guest view, but OAuth login needs
+    an equivalent same-origin POST endpoint that forwards the PKCE exchange to
+    https://auth.deriv.com/oauth2/token. The redirect URL you registered must
+    match the hosting URL exactly.
 
-  NOTE ON THE FALLBACK APP ID
-    While APP_ID is still the placeholder, the page falls back to Deriv's
-    public app id 1089 so you can see live ticks immediately. With a public
-    app id, login/OAuth and real trading will not work — set your own id.
+  NO FALLBACK APP ID
+    Without APP_ID the page shows live ticks only. Login and trading remain
+    disabled instead of silently falling back to Deriv's public demo app.
 
   RISK WARNING
     Deriv volatility indices are synthetic products. Trading them carries a
@@ -1243,7 +1247,7 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
     <h4 id="patTitle">Log in with API token</h4>
     <div class="pat-help">
       Create a token at <a href="https://developers.deriv.com" target="_blank" rel="noopener noreferrer">developers.deriv.com</a>
-      with the <b>trade</b> scope. Tokens beginning with <span class="mono">pat_</span> use the current Deriv Options API: this page keeps the token in this browser tab only and exchanges it for a single-use WebSocket URL. Other Deriv API tokens use the legacy <span class="mono">authorize</span> call.
+      with the <b>trade</b> scope. Tokens beginning with <span class="mono">pat_</span> use the current Deriv Options API: this page keeps the token in this browser tab only and exchanges it for a single-use WebSocket URL.
     </div>
     <label class="field">
       <span class="lbl">API token</span>
@@ -1254,6 +1258,18 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
     <div class="actions">
       <button class="btn ghost sm" id="patCancel">Cancel</button>
       <button class="btn primary sm" id="patFind">Find accounts</button>
+    </div>
+  </div>
+</div>
+
+<!-- Account picker used after OAuth login when Deriv returns multiple accounts and no demo default -->
+<div class="modal-back hidden" id="accountPickBack" role="dialog" aria-modal="true" aria-labelledby="accountPickTitle">
+  <div class="modal">
+    <h4 id="accountPickTitle">Choose Options account</h4>
+    <p>Deriv returned these Options accounts for this login. Pick the account to connect. A real account requires confirmation before trading.</p>
+    <div class="pat-accounts" id="accountPickList"></div>
+    <div class="actions">
+      <button class="btn ghost sm" id="accountPickDisconnect">Disconnect</button>
     </div>
   </div>
 </div>
@@ -1271,35 +1287,34 @@ footer.foot .links{margin-top:8px;display:flex;gap:14px;justify-content:center;f
    =========================================================================== */
 
 /* ---------------------------------------------------------------------------
-   0. CONFIGURATION — PUT YOUR APP ID HERE (this is the only place)
+   0. CONFIGURATION — YOUR DERIV APPLICATION ID (the only place)
    ---------------------------------------------------------------------------
-   Register your application at https://api.deriv.com  ->  Dashboard ->
-   Applications -> "New application". Give it the "Trading" scope and add the
-   URL where this file is hosted as an OAuth redirect URL, then copy the
-   numeric App ID below.
+   Register an application at https://developers.deriv.com -> Dashboard:
+   - for "Log in" (OAuth): choose an OAuth 2.0 app, select the trade scope and
+     set the redirect URL to exactly where this file is hosted, e.g.
+     https://the-last-weld.vercel.app/
+   - for the "API token" button: choose a PAT-type app and create a PAT with
+     the trade scope.
 
-   While the placeholder is unchanged the page uses Deriv's public app id
-   1089, which allows live market data but NOT OAuth login or trading.
+   OAuth uses Authorization Code + PKCE and exchanges the code through the
+   same-origin /api/deriv-oauth-token function (Deriv does not issue refresh
+   tokens). The browser never sees a client secret; no secret is configured.
+   Live market data works without an application id.
    --------------------------------------------------------------------------- */
-/* Deriv app id — registered at https://api.deriv.com (see the header comment).
-   It may be numeric (e.g. 12345) or an alphanumeric id such as 350V848Kr6DwMKS6qzG73.
-   Leave it as "YOUR_APP_ID" to browse live market data with Deriv's public app id. */
+/* Deriv application id — may be numeric or alphanumeric (see header comment). */
 const APP_ID = "350V848Kr6DwMKS6qzG73";
 
-const LEGACY_WS_URL = "wss://ws.derivws.com/websockets/v3";
 const CURRENT_PUBLIC_WS_URL = "wss://api.derivws.com/trading/v1/options/ws/public";
 const CURRENT_API_BASE = "https://api.derivws.com";
-const WS_URL        = LEGACY_WS_URL; // OAuth uses the legacy endpoint; PAT uses current API endpoints.
-const OAUTH_URL     = "https://oauth.deriv.com/oauth2/authorize";
+const OAUTH_AUTHORIZE_URL = "https://auth.deriv.com/oauth2/auth";
 const PING_MS       = 30000;   // heartbeat interval required by Deriv
 const PING_TIMEOUT  = 8000;    // treat the socket as dead if a ping stalls
 const RECONNECT_MAX = 15000;   // backoff ceiling
 const HISTORY_COUNT = 1000;    // ticks used by the Analysis tab
 const BUFFER_MAX    = 2000;    // ticks kept in memory per market
 
-/* Is the configured id usable? A Deriv app id is numeric. */
 const APP_ID_IS_REAL = /^[A-Za-z0-9_-]{4,64}$/.test(String(APP_ID).trim()) && String(APP_ID).trim() !== "YOUR_APP_ID";
-const ACTIVE_APP_ID = APP_ID_IS_REAL ? String(APP_ID).trim() : "1089";
+const ACTIVE_APP_ID = APP_ID_IS_REAL ? String(APP_ID).trim() : "";
 
 /* Volatility indices. `pip` is the number of decimals Deriv reports. */
 const MARKETS = {
@@ -1399,10 +1414,12 @@ const state = {
   auth: null,                  // authorize payload
   balance: null,
   accountType: null,           // "demo" | "real" | null
-  apiStyle: "options-v1",     // options-v1 | legacy
+  apiStyle: "options-v1",     // Deriv Options API session
   loginPending: false,
   authMode: null,             // "pat" | "oauth" | null
-  patAccount: null,           // account selected from GET /trading/v1/options/accounts
+  optionsAccount: null,        // account selected from GET /trading/v1/options/accounts
+  authExpiresAt: null,         // OAuth access-token expiry (ms epoch), if known
+  loginFailed: false,          // keep the OAuth/token error banner on screen
   proposal: null,              // last proposal response
   proposalAt: 0,
   proposalSeq: 0,
@@ -1891,37 +1908,128 @@ function runWhile(digits, pred) {
 }
 
 /* ---------------------------------------------------------------------------
-   6. AUTH (OAuth redirect -> token1 / acct1 -> authorize)
+   6. AUTH — Options API sessions (OAuth 2.0 PKCE or Personal Access Token)
    --------------------------------------------------------------------------- */
-const TOKEN_KEY = "tickforge.token1";
-const ACCT_KEY  = "tickforge.acct1";
 const PAT_TOKEN_KEY = "tickforge.pat.token";
 const PAT_ACCOUNT_KEY = "tickforge.pat.account";
+const OAUTH_TOKEN_KEY = "tickforge.oauth.token";
+const OAUTH_ACCOUNT_KEY = "tickforge.oauth.account";
+const OAUTH_EXPIRES_KEY = "tickforge.oauth.expires";
+const PKCE_VERIFIER_KEY = "tickforge.pkce.verifier";
+const PKCE_STATE_KEY = "tickforge.pkce.state";
 
-let patDraftToken = null; // token currently shown in the token dialog; never rendered or logged
+let accountPickResolve = null; // open Options-account picker promise, if any
 
 function isPat(token) {
   return /^pat_[A-Za-z0-9_-]{8,}$/.test(String(token || "").trim());
 }
 
-/** Options API accepts underlying_symbol; the legacy socket expects symbol. */
+/** The Options API uses underlying_symbol for every trading request. */
 function symbolPayload(sym) {
-  return state.apiStyle === "legacy" ? { symbol: sym } : { underlying_symbol: sym };
+  return { underlying_symbol: sym };
 }
 
-function getStoredPatToken() {
-  try { return sessionStorage.getItem(PAT_TOKEN_KEY) || ""; } catch (_) { return ""; }
+function storageGet(key) {
+  try { return sessionStorage.getItem(key) || ""; } catch (_) { return ""; }
 }
-function getStoredPatAccountId() {
-  try { return sessionStorage.getItem(PAT_ACCOUNT_KEY) || ""; } catch (_) { return ""; }
+function storageSet(key, value) {
+  try { sessionStorage.setItem(key, value); } catch (_) {}
+}
+function storageRemove(key) {
+  try { sessionStorage.removeItem(key); } catch (_) {}
+}
+function getStoredPatToken() { return storageGet(PAT_TOKEN_KEY); }
+function getStoredPatAccountId() { return storageGet(PAT_ACCOUNT_KEY); }
+function getStoredOauthAccountId() { return storageGet(OAUTH_ACCOUNT_KEY); }
+
+function base64Url(bytes) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function randomBytes(length) {
+  if (!window.crypto || !window.crypto.getRandomValues) {
+    throw new Error("This browser cannot generate secure random values.");
+  }
+  return window.crypto.getRandomValues(new Uint8Array(length));
+}
+async function sha256Base64Url(input) {
+  const digest = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return base64Url(new Uint8Array(digest));
+}
+async function makePkce() {
+  const verifier = base64Url(randomBytes(64));
+  const challenge = await sha256Base64Url(verifier);
+  const stateValue = base64Url(randomBytes(24));
+  return { verifier, challenge, state: stateValue };
+}
+function currentRedirectUri() {
+  return location.origin + location.pathname;
+}
+function oauthAuthorizeUrl(challenge, oauthState) {
+  const redirect = currentRedirectUri();
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: ACTIVE_APP_ID,
+    redirect_uri: redirect,
+    scope: "trade",
+    state: oauthState,
+    code_challenge: challenge,
+    code_challenge_method: "S256"
+  });
+  return OAUTH_AUTHORIZE_URL + "?" + params.toString();
+}
+
+async function startLogin() {
+  if (!APP_ID_IS_REAL) {
+    toast("OAuth app ID required", "Set APP_ID to an OAuth 2.0 application registered at developers.deriv.com.", "warn");
+    return;
+  }
+  state.loginFailed = false;
+  try {
+    const pkce = await makePkce();
+    storageSet(PKCE_VERIFIER_KEY, pkce.verifier);
+    storageSet(PKCE_STATE_KEY, pkce.state);
+    state.loginPending = true;
+    setBanner("info", "<b>Redirecting to Deriv…</b> Authorise this application, then you will return here.");
+    location.assign(oauthAuthorizeUrl(pkce.challenge, pkce.state));
+  } catch (err) {
+    const msg = (err && err.message) ? err.message : "Could not start OAuth login.";
+    setBanner("err", "<b>OAuth unavailable.</b> " + esc(msg));
+    toast("OAuth unavailable", msg, "err");
+  }
+}
+
+/** Remove OAuth callback parameters from the address bar without leaving them in history. */
+function cleanOAuthUrl() {
+  try {
+    const u = new URL(location.href);
+    ["code", "state", "error", "error_description"].forEach(k => u.searchParams.delete(k));
+    history.replaceState({}, document.title, u.pathname + (u.search ? u.search : "") + (u.hash || ""));
+  } catch (_) {}
+}
+function getStoredOauthSession() {
+  const token = storageGet(OAUTH_TOKEN_KEY);
+  const expiresAt = Number(storageGet(OAUTH_EXPIRES_KEY) || 0);
+  if (!token) return null;
+  if (expiresAt && expiresAt <= Date.now() + 60000) {
+    storageRemove(OAUTH_TOKEN_KEY); storageRemove(OAUTH_ACCOUNT_KEY); storageRemove(OAUTH_EXPIRES_KEY);
+    return null;
+  }
+  return { token, expiresAt: expiresAt || null };
+}
+
+function hasOAuthCallback() {
+  try {
+    const q = new URLSearchParams(location.search);
+    return q.has("code") || q.has("error");
+  } catch (_) { return false; }
 }
 
 async function derivRest(path, token, options) {
   const opts = options || {};
-  const headers = {
-    "Authorization": "Bearer " + token,
-    "Deriv-App-ID": ACTIVE_APP_ID
-  };
+  const headers = { "Authorization": "Bearer " + token };
+  if (opts.authKind === "pat" && ACTIVE_APP_ID) headers["Deriv-App-ID"] = ACTIVE_APP_ID;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
 
   const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -1957,14 +2065,14 @@ async function derivRest(path, token, options) {
   return body && body.data !== undefined ? body.data : body;
 }
 
-async function fetchPatAccounts(token) {
-  const data = await derivRest("/trading/v1/options/accounts", token);
+async function fetchOptionsAccounts(token, authKind) {
+  const data = await derivRest("/trading/v1/options/accounts", token, { authKind });
   const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
   return list.filter(a => a && a.account_id && a.status !== "inactive");
 }
 
-async function fetchPatWsUrl(accountId, token) {
-  const data = await derivRest("/trading/v1/options/accounts/" + encodeURIComponent(accountId) + "/otp", token, { method: "POST" });
+async function fetchOptionsWsUrl(accountId, token, authKind) {
+  const data = await derivRest("/trading/v1/options/accounts/" + encodeURIComponent(accountId) + "/otp", token, { method: "POST", authKind });
   const url = data && data.url;
   try {
     const u = new URL(url);
@@ -1975,11 +2083,34 @@ async function fetchPatWsUrl(accountId, token) {
   }
 }
 
-function makePatProvider(accountId) {
+function getSessionToken(kind) {
+  return kind === "pat" ? getStoredPatToken() : (getStoredOauthSession() || {}).token || "";
+}
+function getSessionAccountId(kind) {
+  return kind === "pat" ? getStoredPatAccountId() : getStoredOauthAccountId();
+}
+function storeSession(kind, token, accountId, expiresAt) {
+  if (kind === "pat") {
+    storageSet(PAT_TOKEN_KEY, token);
+    storageSet(PAT_ACCOUNT_KEY, accountId);
+  } else {
+    storageSet(OAUTH_TOKEN_KEY, token);
+    storageSet(OAUTH_ACCOUNT_KEY, accountId);
+    storageSet(OAUTH_EXPIRES_KEY, String(expiresAt || 0));
+  }
+  state.token = token;
+  state.authMode = kind;
+  state.authExpiresAt = expiresAt || null;
+}
+function clearSession(kind) {
+  if (!kind || kind === "pat") { storageRemove(PAT_TOKEN_KEY); storageRemove(PAT_ACCOUNT_KEY); }
+  if (!kind || kind === "oauth") { storageRemove(OAUTH_TOKEN_KEY); storageRemove(OAUTH_ACCOUNT_KEY); storageRemove(OAUTH_EXPIRES_KEY); }
+}
+function makeOptionsProvider(accountId, kind) {
   return async () => {
-    const token = getStoredPatToken();
-    if (!token) throw { code: "PAT_MISSING", message: "The token is no longer in this tab. Please log in again." };
-    return fetchPatWsUrl(accountId, token);
+    const token = getSessionToken(kind);
+    if (!token) throw { code: "TOKEN_MISSING", message: "This login is no longer in this tab. Please log in again." };
+    return fetchOptionsWsUrl(accountId, token, kind);
   };
 }
 
@@ -1994,7 +2125,6 @@ function clearPatError() {
   if (box) box.classList.add("hidden");
 }
 function openTokenDialog() {
-  patDraftToken = null;
   const input = $("#patInput");
   const list = $("#patAccounts");
   if (input) input.value = "";
@@ -2006,7 +2136,6 @@ function openTokenDialog() {
   setTimeout(() => { if (input) input.focus(); }, 30);
 }
 function closeTokenDialog() {
-  patDraftToken = null;
   $("#patBack").classList.add("hidden");
   clearPatError();
   const input = $("#patInput");
@@ -2015,8 +2144,40 @@ function closeTokenDialog() {
   if (list) list.replaceChildren();
 }
 
-function renderPatAccounts(accounts, token) {
-  patDraftToken = token;
+function showAccountPicker(accounts, token, kind) {
+  return new Promise(resolve => {
+    accountPickResolve = resolve;
+    const host = $("#accountPickList");
+    if (!host) return resolve(null);
+    host.replaceChildren();
+    accounts.forEach(account => {
+      const isReal = account.account_type === "real";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pat-account" + (isReal ? " real" : "");
+      btn.innerHTML =
+        '<span><b>' + esc(account.account_id) + '</b><small>' +
+          esc(String(account.account_type || "").toUpperCase()) + ' · ' + esc(account.currency || "USD") +
+          ' balance ' + esc(money(account.balance, account.currency || "USD")) +
+        '</small></span><span class="go">Connect</span>';
+      btn.addEventListener("click", async () => {
+        const ok = await connectOptionsAccount(account, token, kind, { skipRealConfirm: false });
+        if (ok) { $("#accountPickBack").classList.add("hidden"); accountPickResolve = null; resolve(account); }
+      });
+      host.appendChild(btn);
+    });
+    $("#accountPickBack").classList.remove("hidden");
+  });
+}
+function disconnectFromAccountPicker() {
+  clearSession("oauth");
+  state.token = null; state.authMode = null; state.authExpiresAt = null;
+  $("#accountPickBack").classList.add("hidden");
+  if (accountPickResolve) { const r = accountPickResolve; accountPickResolve = null; r(null); }
+  setBanner("warn", "<b>Deriv login not completed.</b> No account was selected. Live market data is still available.");
+}
+
+function renderOptionsAccounts(accounts, token, kind) {
   const host = $("#patAccounts");
   if (!host) return;
   host.replaceChildren();
@@ -2036,90 +2197,187 @@ function renderPatAccounts(accounts, token) {
         esc(String(account.account_type || "").toUpperCase()) + ' · ' + esc(account.currency || "USD") +
         ' balance ' + esc(money(account.balance, account.currency || "USD")) +
       '</small></span><span class="go">Connect</span>';
-    btn.addEventListener("click", () => connectPatAccount(account, token, false));
+    btn.addEventListener("click", () => connectOptionsAccount(account, token, kind, { skipRealConfirm: false }));
     host.appendChild(btn);
   });
 }
 
-async function connectPatAccount(account, token, silent) {
+async function chooseOptionsAccount(accounts, token, kind) {
+  const stored = getSessionAccountId(kind);
+  if (stored) {
+    const found = accounts.find(a => a.account_id === stored);
+    if (found) return { account: found, skipRealConfirm: true };
+  }
+  const demo = accounts.find(a => a.status !== "inactive" && String(a.account_type || "").toLowerCase() === "demo");
+  if (demo) return { account: demo, skipRealConfirm: false };
+  if (accounts.length === 1) return { account: accounts[0], skipRealConfirm: false };
+  const picked = await showAccountPicker(accounts, token, kind);
+  return picked ? { account: picked, skipRealConfirm: true } : null;
+}
+
+async function connectOptionsAccount(account, token, kind, opts) {
+  opts = opts || {};
   clearPatError();
-  if (account.account_type === "real" && !silent) {
+  const isReal = String(account.account_type || "").toLowerCase() === "real";
+  if (isReal && !opts.skipRealConfirm) {
     const ok = await confirmDialog(
       "Connect real account?",
       "You are connecting a <b>real-money</b> Options account. Trades placed here spend real funds. Continue?",
       "Connect real account",
       true
     );
-    if (!ok) return;
+    if (!ok) return false;
   }
 
-  const find = $("#patFind");
+  const find = kind === "pat" ? $("#patFind") : null;
   if (find) { find.disabled = true; find.textContent = "Connecting…"; }
   try {
-    const url = await fetchPatWsUrl(account.account_id, token);
-    try {
-      sessionStorage.setItem(PAT_TOKEN_KEY, token);
-      sessionStorage.setItem(PAT_ACCOUNT_KEY, account.account_id);
-    } catch (_) {}
-
-    state.authMode = "pat";
+    const url = await fetchOptionsWsUrl(account.account_id, token, kind);
+    const expiresAt = kind === "oauth" ? Number(storageGet(OAUTH_EXPIRES_KEY) || 0) : null;
+    storeSession(kind, token, account.account_id, expiresAt);
     state.apiStyle = "options-v1";
-    state.patAccount = account;
-    state.patApplied = false;
+    state.optionsAccount = account;
+    state.optionsApplied = false;
     state.auth = null;
     state.balance = null;
-    socket.restart(url, false, makePatProvider(account.account_id));
-    closeTokenDialog();
-    setBanner("info", "<b>API token connected.</b> Authorising " + esc(String(account.account_type || "").toUpperCase()) + " account <span class='mono'>" + esc(account.account_id) + "</span>…");
-  } catch (err) {
-    showPatError((err && err.message) ? err.message : "Could not connect this account.");
-    if (find) { find.disabled = false; find.textContent = "Find accounts"; }
-  }
-}
-
-async function restoreStoredPat() {
-  const token = getStoredPatToken();
-  const accountId = getStoredPatAccountId();
-  if (!token || !accountId) return false;
-  try {
-    setBanner("info", "<b>Restoring API token session…</b>");
-    const accounts = await fetchPatAccounts(token);
-    const account = accounts.find(a => a.account_id === accountId);
-    if (!account) throw { code: "AccountNotFound", message: "The stored Options account is no longer available." };
-    const url = await fetchPatWsUrl(accountId, token);
-    state.authMode = "pat";
-    state.apiStyle = "options-v1";
-    state.patAccount = account;
-    state.patApplied = false;
-    socket.restart(url, false, makePatProvider(accountId));
+    socket.restart(url, false, makeOptionsProvider(account.account_id, kind));
+    if (kind === "pat") closeTokenDialog();
+    setBanner("info", "<b>" + (kind === "oauth" ? "OAuth" : "API token") + " connected.</b> Authorising " +
+      esc(String(account.account_type || "").toUpperCase()) + " account <span class='mono'>" + esc(account.account_id) + "</span>…");
     return true;
   } catch (err) {
-    try { sessionStorage.removeItem(PAT_TOKEN_KEY); sessionStorage.removeItem(PAT_ACCOUNT_KEY); } catch (_) {}
-    state.authMode = null;
-    state.apiStyle = "options-v1";
-    const msg = (err && err.message) ? err.message : "Unknown error.";
-    setBanner("err", "<b>API token restore failed.</b> " + esc(msg) + " Live market data is still available.");
+    const msg = (err && err.message) ? err.message : "Could not connect this account.";
+    if (kind === "pat") showPatError(msg);
+    else { setBanner("err", "<b>Could not connect.</b> " + esc(msg)); toast("Login failed", msg, "err"); }
+    if (find) { find.disabled = false; find.textContent = "Find accounts"; }
     return false;
   }
 }
 
-function applyPatAccount() {
-  const account = state.patAccount;
+async function finishOptionsLogin(token, kind) {
+  setBanner("info", "<b>Deriv authorised.</b> Loading your Options accounts…");
+  let accounts;
+  try {
+    accounts = await fetchOptionsAccounts(token, kind);
+  } catch (err) {
+    const status = err && err.status;
+    const msg = (err && err.message) ? err.message : "Unknown error.";
+    if (status === 401 || status === 403) clearSession(kind);
+    state.loginFailed = true;
+    setBanner("err", "<b>Account lookup failed.</b> " + esc(msg));
+    toast("Login failed", msg, "err");
+    return false;
+  }
+  if (!accounts.length) {
+    setBanner("warn", "<b>No Options accounts found.</b> This Deriv login did not return an active Options trading account.");
+    return false;
+  }
+  const choice = await chooseOptionsAccount(accounts, token, kind);
+  if (!choice) return false;
+  return connectOptionsAccount(choice.account, token, kind, { skipRealConfirm: choice.skipRealConfirm });
+}
+
+async function exchangeOAuthCode(code, verifier, redirectUri) {
+  const res = await fetch("/api/deriv-oauth-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    credentials: "omit",
+    body: JSON.stringify({
+      grant_type: "authorization_code",
+      client_id: ACTIVE_APP_ID,
+      code: code,
+      code_verifier: verifier,
+      redirect_uri: redirectUri
+    })
+  });
+  let body = null;
+  try { body = await res.json(); } catch (_) {}
+  if (!res.ok) {
+    const description = body && (body.error_description || body.message || body.error);
+    throw { status: res.status, code: (body && body.error) || "oauth_exchange_failed", message: description || ("Token exchange failed with HTTP " + res.status + ".") };
+  }
+  if (!body || !body.access_token) throw { code: "oauth_bad_response", message: "Deriv did not return an access token." };
+  const lifetime = Number(body.expires_in || 0);
+  const expiresAt = lifetime > 0 ? Date.now() + lifetime * 1000 : 0;
+  storeSession("oauth", body.access_token, "", expiresAt); // account id is stored after selection
+  return { token: body.access_token, expiresAt };
+}
+
+async function handleOAuthCallback() {
+  const q = new URLSearchParams(location.search);
+  const redirectUri = currentRedirectUri();
+  const oauthError = q.get("error");
+  const code = q.get("code");
+  const returnedState = q.get("state");
+  const verifier = storageGet(PKCE_VERIFIER_KEY);
+  const expectedState = storageGet(PKCE_STATE_KEY);
+  cleanOAuthUrl();
+  storageRemove(PKCE_VERIFIER_KEY);
+  storageRemove(PKCE_STATE_KEY);
+
+  if (oauthError) {
+    state.loginFailed = true;
+    setBanner("err", "<b>OAuth login denied.</b> " + esc(q.get("error_description") || oauthError));
+    return false;
+  }
+  if (!code) return false;
+  if (!verifier || !expectedState || returnedState !== expectedState) {
+    state.loginFailed = true;
+    setBanner("err", "<b>OAuth state mismatch.</b> The login response did not match this browser. Start the login again.");
+    return false;
+  }
+  try {
+    const session = await exchangeOAuthCode(code, verifier, redirectUri);
+    return await finishOptionsLogin(session.token, "oauth");
+  } catch (err) {
+    const msg = (err && err.message) ? err.message : "Deriv did not accept the login code.";
+    state.loginFailed = true;
+    setBanner("err", "<b>OAuth login failed.</b> " + esc(msg));
+    toast("OAuth login failed", msg, "err");
+    return false;
+  }
+}
+
+async function restoreStoredOptionsSession() {
+  const oauth = getStoredOauthSession();
+  if (oauth && oauth.token) {
+    state.token = oauth.token;
+    state.authMode = "oauth";
+    state.authExpiresAt = oauth.expiresAt;
+    setBanner("info", "<b>Restoring OAuth session…</b>");
+    return finishOptionsLogin(oauth.token, "oauth");
+  }
+
+  const token = getStoredPatToken();
+  const accountId = getStoredPatAccountId();
+  if (!token || !accountId) return false;
+  state.token = token;
+  state.authMode = "pat";
+  state.authExpiresAt = null;
+  setBanner("info", "<b>Restoring API token session…</b>");
+  return finishOptionsLogin(token, "pat");
+}
+
+function applyOptionsAuth() {
+  const account = state.optionsAccount;
   if (!account) return;
+  const kind = state.authMode === "oauth" ? "oauth" : "pat";
   const isDemo = String(account.account_type || "").toLowerCase() !== "real";
-  const firstConnect = !state.patApplied;
+  const firstConnect = !state.optionsApplied;
   state.auth = {
     loginid: account.account_id,
     is_virtual: isDemo,
     currency: account.currency || "USD",
     balance: num(account.balance),
-    is_pat: true
+    is_pat: kind === "pat"
   };
   state.currency = state.auth.currency;
   state.accountType = isDemo ? "demo" : "real";
   state.balance = num(account.balance);
-  state.patApplied = true;
-  try { sessionStorage.setItem(PAT_ACCOUNT_KEY, account.account_id); } catch (_) {}
+  state.optionsApplied = true;
+  state.loginFailed = false;
+  storeSession(kind, getSessionToken(kind), account.account_id, kind === "oauth" ? (getStoredOauthSession() || {}).expiresAt : null);
 
   renderAuth();
   renderOpenContract();
@@ -2127,148 +2385,14 @@ function applyPatAccount() {
   loadProfitTable();
   ticketDirty = true;
   scheduleProposal(true);
-  pushLog("sys", "Authorized " + account.account_id + " (" + (isDemo ? "demo" : "real") + ", " + state.currency + ") via API token.");
+  pushLog("sys", "Authorized " + account.account_id + " (" + (isDemo ? "demo" : "real") + ", " + state.currency + ") via " + (kind === "oauth" ? "OAuth" : "API token") + ".");
   if (firstConnect) {
     toast("Logged in", "Account " + account.account_id + " · " + (isDemo ? "Demo" : "Real") + " balance " + money(account.balance), "ok");
   }
   if (state.bot.running) stopBot("Account changed — bot stopped.");
 }
 
-async function connectLegacyToken(token) {
-  try { sessionStorage.setItem(TOKEN_KEY, token); } catch (_) {}
-  state.authMode = "oauth";
-  state.apiStyle = "legacy";
-  state.token = token;
-  setBanner("info", "<b>Legacy token accepted.</b> Authorising…");
-  socket.restart(LEGACY_WS_URL, true);
-}
-
-function oauthUrl() {
-  const redirect = location.origin + location.pathname;
-  return OAUTH_URL + "?app_id=" + encodeURIComponent(ACTIVE_APP_ID) +
-         "&l=en&brand=deriv&redirect_uri=" + encodeURIComponent(redirect);
-}
-
-function startLogin() {
-  if (!APP_ID_IS_REAL) {
-    toast("App ID required", "Set your own App ID at the top of the script — OAuth login only works with your registered app.", "warn");
-  }
-  state.loginPending = true;
-  state.authMode = "oauth";
-  state.apiStyle = "legacy";
-  try { sessionStorage.setItem("tickforge.loginStarted", "1"); } catch (_) {}
-  // OAuth/authorize uses the legacy WebSocket endpoint.
-  restartForOAuth();
-  location.href = oauthUrl();
-}
-
-function restartForOAuth() {
-  socket.restart(LEGACY_WS_URL, true);
-}
-
-/** Read token1 / acct1 that Deriv appended to the redirect URL, then authorize. */
-function consumeOAuthParams() {
-  const q = new URLSearchParams(location.search);
-  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
-  const token = q.get("token1") || hash.get("token1") || hash.get("token");
-  const acct  = q.get("acct1") || hash.get("acct1") || hash.get("acct");
-  if (!token) return false;
-
-  let stored = null;
-  try { stored = sessionStorage.getItem("tickforge.loginStarted"); } catch (_) {}
-  if (!stored && !confirm("A Deriv token was found in this URL. Use it to log in?\n\nOnly accept tokens you requested yourself.")) {
-    cleanUrl();
-    return false;
-  }
-
-  state.token = token;
-  state.pendingAcct = acct;
-  state.authMode = "oauth";
-  state.apiStyle = "legacy";
-  try { sessionStorage.setItem(TOKEN_KEY, token); } catch (_) {}
-  cleanUrl();
-  return true;
-}
-
-/* Remove token/acct from the address bar so it is not left in history or shared. */
-function cleanUrl() {
-  try {
-    const u = new URL(location.href);
-    ["token1", "acct1", "token", "acct", "cur1", "lang"].forEach(k => u.searchParams.delete(k));
-    if (u.hash) {
-      const h = new URLSearchParams(u.hash.replace(/^#/, ""));
-      ["token1", "acct1", "token", "acct"].forEach(k => h.delete(k));
-      const rest = h.toString();
-      u.hash = rest ? "#" + rest : "";
-    }
-    history.replaceState({}, document.title, u.pathname + (u.search || "") + (u.hash || ""));
-  } catch (_) {}
-  try { sessionStorage.removeItem("tickforge.loginStarted"); } catch (_) {}
-}
-
-async function doAuthorize(token) {
-  if (!token) return null;
-  try {
-    const resp = await socket.request({ authorize: token }, 25000, "authorize");
-    applyAuthorize(resp);
-    return resp;
-  } catch (err) {
-    const msg = apiMessage(err);
-    // 401 / invalid token -> forget it rather than retrying forever.
-    if (String(err && err.code) === "InvalidToken" || /invalid|expired|token/i.test(msg)) {
-      try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
-      state.token = null;
-      state.authMode = null;
-      state.apiStyle = "options-v1";
-    }
-    toast("Login failed", msg, "err");
-    renderAuth();
-    return null;
-  }
-}
-
-function applyAuthorize(resp) {
-  const a = resp.authorize;
-  if (!a) return;
-  state.auth = a;
-  state.authMode = "oauth";
-  state.apiStyle = "legacy";
-  state.currency = a.currency || "USD";
-  state.accountType = a.is_virtual ? "demo" : "real";
-  state.balance = a.balance;
-  state.token = a.token || state.token;
-  try { if (state.token) sessionStorage.setItem(TOKEN_KEY, state.token); } catch (_) {}
-  renderAuth();
-  renderOpenContract();
-  subscribeBalance();
-  loadProfitTable();
-  ticketDirty = true;
-  scheduleProposal(true);
-  pushLog("sys", "Authorized " + a.loginid + " (" + (a.is_virtual ? "demo" : "real") + ", " + a.currency + ").");
-  toast("Logged in", "Account " + a.loginid + " · " + (a.is_virtual ? "Demo" : "Real") + " balance " + money(a.balance), "ok");
-  // If a bot was left running while the account changed, stop it for safety.
-  if (state.bot.running) stopBot("Account changed — bot stopped.");
-}
-
-function logout() {
-  if (state.bot.running) stopBot("Logged out — bot stopped.");
-  try {
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(PAT_TOKEN_KEY);
-    sessionStorage.removeItem(PAT_ACCOUNT_KEY);
-  } catch (_) {}
-  state.token = null; state.auth = null; state.balance = null; state.accountType = null;
-  state.authMode = null; state.apiStyle = "options-v1"; state.patAccount = null; state.patApplied = false;
-  state.proposal = null; state.trades = [];
-  socket.forget("balance");
-  socket.forget("poc");
-  socket.forget("botpoc");
-  socket.forgetAllOfType("proposal_open_contract");
-  socket.restart(CURRENT_PUBLIC_WS_URL, false);
-  renderAuth(); renderBalance(); renderProposal(); renderOpenContract(); renderTrades();
-  toast("Logged out", "You are now viewing live market data only.", "info");
-}
-
+/** Live balance subscription on the authenticated Options socket. */
 function subscribeBalance() {
   if (!state.auth) return;
   socket.stream("balance", { balance: 1 }, msg => {
@@ -2280,6 +2404,21 @@ function subscribeBalance() {
   }, resp => {
     if (resp.balance) { state.balance = resp.balance.balance; renderBalance(); }
   }).catch(err => toast("Balance", apiMessage(err), "err"));
+}
+
+function logout() {
+  if (state.bot.running) stopBot("Logged out — bot stopped.");
+  clearSession(null);
+  state.token = null; state.auth = null; state.balance = null; state.accountType = null;
+  state.authMode = null; state.apiStyle = "options-v1"; state.optionsAccount = null; state.optionsApplied = false; state.authExpiresAt = null;
+  state.proposal = null; state.trades = [];
+  socket.forget("balance");
+  socket.forget("poc");
+  socket.forget("botpoc");
+  socket.forgetAllOfType("proposal_open_contract");
+  socket.restart(CURRENT_PUBLIC_WS_URL, false);
+  renderAuth(); renderBalance(); renderProposal(); renderOpenContract(); renderTrades();
+  toast("Logged out", "You are now viewing live market data only.", "info");
 }
 
 /* Human-readable API error text. */
@@ -2328,7 +2467,7 @@ function renderAuth() {
   }
   updateBuyState();
   validateBotSettings();
-  if (!loggedIn) setBanner(null);
+  if (!loggedIn) { if (!state.loginFailed) setBanner(null); }
   else if (state.accountType === "real") {
     setBanner("warn", "<b>Real account in use.</b> Orders placed here spend real money. The auto bot asks for confirmation before it runs on a real account.");
   } else setBanner("okay", "<b>Demo account connected.</b> Trades here use virtual funds.");
@@ -2349,7 +2488,7 @@ function renderReadout() {
   const bal = $id("roBal");
   if (bal) bal.textContent = state.auth && state.balance != null ? money(state.balance) : "—";
   const app = $id("roApp");
-  if (app) app.textContent = "TICKFORGE_LIVE · APP " + ACTIVE_APP_ID;
+  if (app) app.textContent = "TICKFORGE_LIVE · APP " + (ACTIVE_APP_ID || "NOT SET");
 }
 
 function renderBalance() {
@@ -2382,7 +2521,13 @@ socket.on("status", ({ status, detail }) => {
   if (status === "open") {
     dot.classList.add("live");
     txt.textContent = "Live" + (socket.lastPing ? " · " + socket.lastPing + "ms" : "");
-    if (!(state.authMode === "pat" && state.patAccount && !state.auth)) setBanner(null);
+    if ((state.authMode === "pat" || state.authMode === "oauth") && state.optionsAccount && !state.auth) {
+      setBanner("info", "<b>Authorising…</b> Establishing an authenticated Options session.");
+    } else if (!state.auth && !state.loginFailed) {
+      // Only clear a banner that this handler owns; auth and error banners stay put.
+      const b = $id("globalBanner");
+      if (b && b.classList.contains("info")) setBanner(null);
+    }
   } else if (status === "connecting") {
     dot.classList.add("wait"); txt.textContent = "Connecting…";
   } else if (status === "reconnecting") {
@@ -2410,7 +2555,7 @@ socket.on("error", e => {
 });
 
 socket.on("restored", () => {
-  if (state.auth && state.token) doAuthorize(state.token).then(() => loadProfitTable());
+  if (state.auth) loadProfitTable();
 });
 
 Markets.onChange((sym, tick, buf) => {
@@ -2869,6 +3014,20 @@ function subscribeOpenContract(contractId) {
     .catch(err => toast("Open contract", apiMessage(err), "err"));
 }
 
+/* Options API contracts carry underlying_symbol (legacy used underlying/symbol)
+   and entry_spot (legacy used entry_tick). Read both so either shape renders. */
+function contractSymbol(c) {
+  return (c && (c.underlying_symbol || c.underlying || c.symbol)) || state.market;
+}
+function contractEntrySpot(c) {
+  if (!c) return null;
+  return c.entry_spot != null ? c.entry_spot : (c.entry_tick != null ? c.entry_tick : null);
+}
+function contractExitSpot(c) {
+  if (!c) return null;
+  return c.exit_spot != null ? c.exit_spot : (c.sell_spot != null ? c.sell_spot : null);
+}
+
 function finishContract(c) {
   const pl = num(c.profit);
   state.localTrades.unshift({
@@ -2878,9 +3037,9 @@ function finishContract(c) {
     payout: num(c.payout),
     profit: pl,
     status: c.status || (pl >= 0 ? "won" : "lost"),
-    entry_tick_time: c.entry_tick_time,
-    exit_tick_time: c.exit_tick_time,
-    symbol: c.underlying || c.symbol
+    entry_tick_time: c.entry_tick_time || c.purchase_time,
+    exit_tick_time: c.exit_tick_time || c.sell_time,
+    symbol: contractSymbol(c)
   });
   if (state.localTrades.length > 60) state.localTrades.pop();
   renderTrades();
@@ -2914,7 +3073,7 @@ function renderOpenContract() {
     '<div class="open-card">' +
       '<div class="top">' +
         "<div>" +
-          '<div style="font-weight:700;font-size:14px">' + esc(CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " + esc(MARKETS[c.underlying] ? MARKETS[c.underlying].name : (c.underlying || "")) + "</div>" +
+          '<div style="font-weight:700;font-size:14px">' + esc(CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " + esc(MARKETS[contractSymbol(c)] ? MARKETS[contractSymbol(c)].name : contractSymbol(c)) + "</div>" +
           '<div class="cid">contract ' + esc(c.contract_id) + " · " + esc(c.purchase_time ? dateTimeStr(c.purchase_time) : "") + "</div>" +
         "</div>" +
         '<div style="text-align:right">' +
@@ -2926,8 +3085,8 @@ function renderOpenContract() {
       '<div class="kv-grid" style="margin-top:11px">' +
         '<div class="meta-line"><span class="k">Stake</span><span class="v">' + esc(money(buy)) + "</span></div>" +
         '<div class="meta-line"><span class="k">Payout</span><span class="v">' + esc(money(c.payout)) + "</span></div>" +
-        '<div class="meta-line"><span class="k">Entry spot</span><span class="v">' + esc(fmtPrice(c.entry_tick, c.underlying)) + "</span></div>" +
-        '<div class="meta-line"><span class="k">Current spot</span><span class="v">' + esc(fmtPrice(c.current_spot, c.underlying)) + "</span></div>" +
+        '<div class="meta-line"><span class="k">Entry spot</span><span class="v">' + esc(contractEntrySpot(c) == null ? "—" : fmtPrice(contractEntrySpot(c), contractSymbol(c))) + "</span></div>" +
+        '<div class="meta-line"><span class="k">' + (c.is_sold ? "Exit spot" : "Current spot") + '</span><span class="v">' + esc(fmtPrice(c.is_sold ? contractExitSpot(c) : c.current_spot, contractSymbol(c))) + "</span></div>" +
         '<div class="meta-line"><span class="k">Barrier</span><span class="v">' + esc(c.barrier || "—") + "</span></div>" +
         '<div class="meta-line"><span class="k">Ticks left</span><span class="v">' + (c.tick_count != null ? esc(c.tick_count) : "—") + "</span></div>" +
         '<div class="meta-line"><span class="k">Expires</span><span class="v">' + esc(c.date_expiry ? timeStr(c.date_expiry) : "—") + "</span></div>" +
@@ -4042,6 +4201,7 @@ function botOnContractClosed(c) {
    19. LOGIN BUTTONS + BOOT
    --------------------------------------------------------------------------- */
 $("#btnLogin").addEventListener("click", startLogin);
+$("#accountPickDisconnect").addEventListener("click", disconnectFromAccountPicker);
 $("#btnToken").addEventListener("click", openTokenDialog);
 $("#patCancel").addEventListener("click", closeTokenDialog);
 $("#patBack").addEventListener("click", e => { if (e.target.id === "patBack") closeTokenDialog(); });
@@ -4058,24 +4218,16 @@ $("#patFind").addEventListener("click", async () => {
   if (!token) { showPatError("Paste an API token first."); return; }
 
   if (!isPat(token)) {
-    const ok = await confirmDialog(
-      "Use legacy token?",
-      "This does not look like a <span class='mono'>pat_</span> token. It will be used with Deriv's legacy <span class='mono'>authorize</span> call instead. Continue?",
-      "Use legacy token",
-      false
-    );
-    if (!ok) return;
-    closeTokenDialog();
-    await connectLegacyToken(token);
+    showPatError("Only pat_ tokens are accepted here. For an OAuth login, use the Log in button.");
     return;
   }
 
   btn.disabled = true;
   btn.textContent = "Finding accounts…";
   try {
-    const accounts = await fetchPatAccounts(token);
+    const accounts = await fetchOptionsAccounts(token, "pat");
     if (!accounts.length) throw { code: "NoAccounts", message: "No active Options accounts were returned for this token." };
-    renderPatAccounts(accounts, token);
+    renderOptionsAccounts(accounts, token, "pat");
     btn.disabled = false;
     btn.textContent = "Find accounts";
   } catch (err) {
@@ -4092,14 +4244,12 @@ $("#btnLogout").addEventListener("click", async () => {
   logout();
 });
 
-/* Authorize once the socket is open (and after every reconnect). */
+/* Mark the Options session as authorised once the authenticated socket opens. */
 socket.on("status", ({ status }) => {
   if (status !== "open") return;
-  if (state.authMode === "pat") {
-    if (!state.auth) applyPatAccount();
-    return;
+  if ((state.authMode === "pat" || state.authMode === "oauth") && state.optionsAccount && !state.auth) {
+    applyOptionsAuth();
   }
-  if (state.token && !state.auth) doAuthorize(state.token);
 });
 
 /* Reconnect sanity: the header dot is updated by the status handler above. */
@@ -4143,7 +4293,7 @@ setInterval(() => {
   const appEl = $("#footApp");
   if (appEl) {
     appEl.classList.remove("hidden");
-    appEl.textContent = "app " + ACTIVE_APP_ID + (APP_ID_IS_REAL ? "" : " (fallback)");
+    appEl.textContent = ACTIVE_APP_ID ? ("app " + ACTIVE_APP_ID) : "app not configured";
   }
 })();
 
@@ -4159,39 +4309,23 @@ async function boot() {
   renderStrategyParams();
   renderBotStatus();
   renderBotStats();
-  pushLog("sys", "Terminal ready · app id " + ACTIVE_APP_ID + (APP_ID_IS_REAL ? "" : " (public fallback — set APP_ID for your own app)") + " · API token supported");
+  pushLog("sys", "Terminal ready · app id " + (ACTIVE_APP_ID || "not configured") + " · OAuth PKCE and API token supported");
   if (!APP_ID_IS_REAL) {
     setBanner("warn",
-      "<b>Set your App ID.</b> The script is running with Deriv's public app id <span class='mono'>" + ACTIVE_APP_ID +
-      "</span> so market data works, but <b>login and trading need your own app id</b> from " +
-      "<a href='https://api.deriv.com' target='_blank' rel='noopener noreferrer'>api.deriv.com</a>. " +
-      "Open the file, replace <span class='mono'>YOUR_APP_ID</span> at the top of the script, and redeploy.");
+      "<b>OAuth login not configured.</b> Live market data works. Register an OAuth 2.0 application and set its app id as <span class='mono'>APP_ID</span>, or use the <b>API token</b> button with a PAT-type application.");
   }
 
-  // 1) Pull a token out of the OAuth redirect before touching the socket.
-  const hadToken = consumeOAuthParams();
+  // 1) Complete any OAuth callback or restore a stored Options session before opening the public socket.
   let transportStarted = false;
-  if (!hadToken) {
-    try { const saved = sessionStorage.getItem(TOKEN_KEY); if (saved) state.token = saved; } catch (_) {}
-  }
-  const hasLegacyToken = !!state.token;
-  if (hasLegacyToken) {
-    // OAuth/authorize uses the legacy endpoint.
-    socket.url = LEGACY_WS_URL;
-    socket.appendAppId = true;
-    state.apiStyle = "legacy";
-    state.authMode = "oauth";
-  }
+  if (hasOAuthCallback()) transportStarted = await handleOAuthCallback();
+  else transportStarted = await restoreStoredOptionsSession();
 
   if ($("#botMarket")) $("#botMarket").value = state.market;
 
   chart.canvas = $("#chart");
   chart.resize();
 
-  // 2) Connect. Authorization happens from the "open" status handler.
-  if (!hasLegacyToken) {
-    transportStarted = await restoreStoredPat();
-  }
+  // 2) Connect. An authenticated Options socket uses a fresh OTP per connection.
   if (!transportStarted) socket.connect();
 
   // 3) Load the selected market.

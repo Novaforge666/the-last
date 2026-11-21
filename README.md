@@ -24,6 +24,7 @@ Options API:
 | --- | --- |
 | **Manual Trade** | Live tick with a highlighted last digit, canvas line chart, last-digit strip, contract ticket (Over / Under / Even / Odd / Matches / Differs / Rise / Fall), live payout preview from `proposal`, Buy via `buy`, open-contract panel (`proposal_open_contract`) and recent trades (`profit_table`). |
 | **Auto Bots** | Four strategies — digit streak, digit frequency threshold, even/odd imbalance, martingale recovery. Settings for market, contract, stake, take profit, stop loss, max consecutive losses and cooldown. Live log, session P/L and win rate. Demo by default; a real account needs an explicit confirmation. |
+| **DBots** | Imports Deriv Bot (DBot) strategies as `.xml` files — drag and drop, file picker, or the bundled sample. Each bot is parsed into its trade definition (market, contract, barrier, duration), variables, before / during / after purchase stacks and full block tree, then stored in `localStorage`. The runner executes the supported block subset on every live tick, buys through `proposal` + `buy`, watches the contract, applies take profit / stop loss and logs everything. Unsupported blocks are listed and **block the run** rather than being emulated. Export downloads the XML again. |
 | **Analysis** | Last 1000 ticks loaded with `ticks_history` and kept live, digit distribution bars with a 25/50/100/500/1000 window switch, even/odd ratio, Over/Under probability table for every barrier, colour-coded last-digit strip, hot/cold digits and streaks. |
 | **Entry Points** | Six signal cards (Over 2, Over 3, Over 4, Under 7, Under 6, Under 5) with hit rate, trend arrow, strength rating and an Entry now / Wait badge, driven by adjustable rules (recent streak ending, cold digit zone). “Trade this” pre-fills the manual ticket, “Quick” places a 1-tick trade, and a scan ranks all ten volatility markets by best signal, with an optional sound alert. |
 
@@ -116,6 +117,53 @@ Under the hood this is `GET /trading/v1/options/accounts` with
 `Authorization: Bearer …` + `Deriv-App-ID: …`, then `POST …/{account_id}/otp`,
 then the returned `wss://…/ws/demo|real?otp=…` URL.
 
+## 3b. DBots — running Deriv Bot `.xml` files
+
+Deriv Bot saves a strategy as a Blockly XML file (`<xml is_dbot="true">` with
+`trade_definition`, `before_purchase`, `during_purchase` and `after_purchase`
+blocks). The **DBots** tab reads that format directly:
+
+1. **Import** — drop the `.xml` on the drop zone, click it, or press
+   *Load sample* to load `over3_1tick_bot.xml` (Over 3 on Volatility 100 (1s),
+   1 tick, entry after three digits ≤ 3 in a row). The file is parsed in the
+   browser and kept in `localStorage`; nothing is uploaded.
+2. **Inspect** — the panel shows what was understood: market, contract,
+   barrier, duration, every variable with its initial value, a warning list,
+   and the full block tree. Anything the parser could not resolve is stated
+   explicitly (for example a contract type it cannot trade).
+3. **Run** — *Run settings* overrides Stake, Take profit, Stop loss and
+   Cooldown; the file's own `Stake` / `TakeProfit` / `StopLoss` variables are
+   used as defaults. On a **real** account a confirmation dialog is required
+   first. The bot needs a login (OAuth or API token) but nothing else.
+4. **Export** — *Download XML* saves the stored file back out unchanged.
+
+### Supported block subset
+
+| Area | Blocks |
+| --- | --- |
+| Trade definition | `trade_definition_market`, `trade_definition_tradetype`, `trade_definition_contracttype`, `trade_definition_tradeoptions` (duration, prediction/barrier, amount), restart-on-error |
+| Before / after purchase | `variables_set`, `variables_get`, `math_change`, `controls_if` (including `elseif` / `else`), `controls_repeat_ext`, `controls_whileUntil`, `purchase`, `trade_again`, `notify`, `text_print` |
+| Expressions | `math_number`, `math_constant`, `text`, `logic_boolean`, `last_digit`, `total_profit`, `math_arithmetic`, `math_single`, `math_modulo`, `math_round`, `logic_compare`, `logic_operation`, `logic_negate` |
+
+Contracts map straight across: Digit Over / Under / Even / Odd / Matches /
+Differs and Rise / Fall. The Over/Under digit is read from the `PREDICTION`
+value (or the trade-option field, or a purchase-block field), including the
+`<shadow>` blocks DBot writes there.
+
+### Deliberate limits
+
+- The runner is **not** a Blockly VM. A file that uses a block outside the
+  table above is flagged in the warning list and the start button stays
+  disabled — it will never trade on a guess.
+- `controls_repeat_ext` and `controls_whileUntil` are capped (500 iterations,
+  5 000 statements per evaluation) so a bad loop cannot hang the tab.
+- Trading is driven by the ticks this tab already streams; the tab must stay
+  open. Closing it stops the bot (no server-side copy runs).
+- A DBot file describes a strategy, not a guarantee. Every file is shown with
+  the same risk language as the rest of the terminal.
+- `bots/over3_1tick_bot.xml` is the copy that ships with the page (it is also
+  embedded in `index.html` for the zero-request first load).
+
 ## 4. Deploy
 
 The repository is deployed on Vercel with no build step:
@@ -153,6 +201,11 @@ Deriv volatility indices are synthetic products. Trading them carries a high
 risk of losing money rapidly. Signals, hit rates and bots on this site describe
 past ticks only and **do not guarantee profit**. This is an independent
 third-party client, not affiliated with or endorsed by Deriv.
+
+Deriv Bot `.xml` files imported on the DBots tab are third-party strategies.
+The importer shows exactly which blocks it understood and refuses to start a
+bot that uses blocks it cannot execute; that is a safety limit, not an
+endorsement of the strategy.
 
 ## Known limits
 

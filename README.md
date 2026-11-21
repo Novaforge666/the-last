@@ -175,9 +175,22 @@ third-party client, not affiliated with or endorsed by Deriv.
 
 ## Theme
 
-The UI follows the THE VERT house style: near-black blueprint canvas with a
-faint 44 px grid, 1 px hairline frames, square corners, zero drop shadows,
-IBM Plex Mono throughout, uppercase micro-labels with wide tracking, and a
-single safety-orange accent (`#FF5A1F`) for live state, calls to action and
-the highlighted last digit. A micro-label readout strip under the tabs shows
-connection, market, last quote, last digit, account and balance.
+Two references are combined:
+
+- **THE VERT** (the-vert-eight.vercel.app) supplies the identity — night-black
+  surfaces (`#070707`), rounded cards, Syne display type, Inter body copy,
+  JetBrains Mono for numbers, pill controls, and one hot yellow signal colour
+  (`#facc15`) that is only ever used for live state and the primary action.
+- **DBTraders** supplies the layout language of a trading product — a compact
+  dark shell, a tab rail, a grid of bordered cards with soft elevation, a
+  ticker/readout band, green/red market semantics (`#22c55e` / `#ef4444`), and
+  pill-shaped status chips.
+
+Concretely: the header brand is Syne `TICK*FORGE*` with a yellow rounded tile;
+tabs are a segmented pill rail with the active tab filled yellow; every panel
+is a 16 px rounded card with a subtle inner highlight; panel titles are Syne
+with a glowing yellow tick; market numbers, balances and tables use JetBrains
+Mono with tabular figures; the price chart is emerald when rising and red when
+falling; form controls are rounded with a yellow focus ring. A readout pill row
+under the tabs shows connection, market, last quote, last digit, account and
+balance.

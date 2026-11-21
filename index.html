@@ -817,7 +817,7 @@ footer.foot .links a:hover{color:var(--acc)}
 .mt-side > .panel:first-child{min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .mt-side > .panel:first-child .panel-body{overflow-y:auto;min-height:0;padding-bottom:2px}
 .mt-side > .panel:last-child{flex:0 0 auto}
-.mt-ticket{display:flex;flex-direction:column;gap:8px}
+.mt-ticket{display:flex;flex-direction:column}
 /* compact ticket spacing so the whole tab lands inside one screen */
 .mt-ticket .lbl{font-size:9.5px}
 .mt-ticket .hint{font-size:10.5px;line-height:1.45}
@@ -828,6 +828,12 @@ footer.foot .links a:hover{color:var(--acc)}
 .mt-mini .panel-body{padding:9px 11px 10px}
 /* the mini analysis panel keeps a fixed, small footprint */
 .mt-mini{flex:0 0 auto}
+/* On shorter screens the digit-edge card yields its space so the ticket
+   (and the whole pane) still fits without scrolling. */
+@media(max-height:860px){
+  .mt-side{grid-template-rows:minmax(0,1fr)}
+  .mt-side .mt-mini{display:none}
+}
 .mt-mini .mt-mini-bars{max-height:none}
 .mt-mini .panel-head{padding:6px 10px}
 .mt-mini .panel-head h3{font-size:11.5px}
@@ -908,6 +914,205 @@ footer.foot .links a:hover{color:var(--acc)}
 .mt-mini-bars .mb.cold i{background:#232326}
 .mt-mini-bars .mb b{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--dim)}
 .mt-mini-bars .mb.hot b{color:var(--acc)}
+
+/* ---------- the ticket card: dbtraders-style clean blocks ---------- */
+.mt-ticketcard{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mt-trade-head{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  padding:6px 8px;border-bottom:1px solid var(--line);flex:0 0 auto;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);
+}
+.mt-trade-name{
+  flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;
+  appearance:none;border:0;background:transparent;cursor:pointer;padding:3px 4px;
+  border-radius:5px;transition:background .14s;
+}
+.mt-trade-name:hover{background:rgba(255,255,255,.045)}
+.mt-trade-name:hover b{color:var(--acc)}
+.mt-trade-name i{
+  font-style:normal;width:20px;height:20px;border-radius:5px;display:grid;place-items:center;
+  font-size:10px;color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc-line);
+}
+.mt-trade-name b{
+  font-family:var(--display);font-size:12.5px;font-weight:700;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.mt-arrow{
+  appearance:none;cursor:pointer;flex:0 0 auto;width:24px;height:24px;
+  border:1px solid var(--line-2);border-radius:6px;background:var(--bg-2);
+  color:var(--muted);font:700 15px/1 var(--sans);display:grid;place-items:center;
+  transition:background .14s,color .14s,border-color .14s;
+}
+.mt-arrow:hover{background:var(--panel-2);color:var(--txt);border-color:var(--line-3)}
+
+/* the ticket body is the scrollable part, so the pane never grows */
+.mt-ticketcard > .panel-body{
+  overflow-y:auto;overflow-x:hidden;min-height:0;flex:1 1 auto;padding:7px 8px 8px;
+  display:flex;flex-direction:column;gap:6px;
+  scrollbar-width:thin;
+}
+
+/* one bordered block, exactly like the reference's white cards */
+.mt-block{
+  border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  background:var(--bg-2);padding:6px 9px;
+  display:flex;flex-direction:column;gap:5px;align-items:center;
+}
+.mt-block-t{
+  font-family:var(--sans);font-size:10.5px;font-weight:600;color:var(--muted);
+  align-self:stretch;text-align:center;
+}
+.mt-block-v{
+  font-family:var(--display);font-size:11.5px;font-weight:800;color:var(--txt);
+}
+.mt-block-ticks{gap:4px}
+input[type="range"]#durRange{
+  appearance:none;-webkit-appearance:none;width:100%;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--acc) 0%,var(--acc) var(--pct,44%),var(--panel-3) var(--pct,44%),var(--panel-3) 100%);
+  outline:none;cursor:pointer;
+}
+input[type="range"]#durRange::-webkit-slider-thumb{
+  -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+  background:var(--acc);border:2px solid #0a0a0a;box-shadow:0 0 0 1px var(--acc);cursor:grab;
+}
+input[type="range"]#durRange::-moz-range-thumb{
+  width:12px;height:12px;border:2px solid #0a0a0a;border-radius:50%;background:var(--acc);cursor:grab;
+}
+
+/* digit grid: 5 x 2 like the reference, white-on-dark pills */
+.mt-block-pred .mt-digits{width:100%;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.mt-block-pred .mt-digits button{
+  padding:3px 0;font-size:11px;line-height:1.35;border-radius:4px;background:var(--panel);
+  border:1px solid var(--line-2);color:var(--txt);font-family:var(--sans);font-weight:600;
+}
+.mt-block-pred .mt-digits button:hover{background:var(--panel-2);border-color:var(--line-3)}
+.mt-block-pred .mt-digits button.active{
+  background:var(--txt);color:#0a0a0a;border-color:var(--txt);box-shadow:none;
+}
+.mt-block-pred .mt-digits button.active::after{display:none}
+
+/* stake / payout tabs */
+.mt-tabs{
+  display:flex;border:1px solid var(--line-2);border-radius:var(--radius-sm);overflow:hidden;
+  background:var(--bg-2);
+}
+.mt-tabs button{
+  flex:1;appearance:none;cursor:pointer;border:0;background:transparent;
+  font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--muted);
+  padding:6px 4px;transition:background .15s,color .15s;
+}
+.mt-tabs button:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+.mt-tabs button.active{background:var(--txt);color:#0a0a0a;font-weight:700}
+
+/* stake stepper row */
+.mt-stepper-row{
+  display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px;
+  border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--bg-2);
+  padding:4px;
+}
+.mt-step{
+  appearance:none;cursor:pointer;height:26px;border:1px solid var(--line-2);border-radius:5px;
+  background:var(--panel);color:var(--txt);font:600 14px/1 var(--sans);
+  display:grid;place-items:center;transition:background .14s,border-color .14s;
+}
+.mt-step:hover{background:var(--panel-2);border-color:var(--line-3)}
+.mt-amount{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0}
+.mt-amount input{
+  width:74px;border:0;background:transparent;text-align:right;outline:none;
+  font-family:var(--mono);font-size:14px;font-weight:700;color:var(--txt);
+  -moz-appearance:textfield;
+}
+.mt-amount input::-webkit-outer-spin-button,
+.mt-amount input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.mt-amount span{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.06em}
+.mt-chips{display:flex;width:100%;gap:4px}
+.mt-chips button{flex:1 1 0;min-width:0;font-size:10.5px;padding:4px 0;justify-content:center}
+.mt-chips.hidden{display:none}
+
+/* payout line + the two direction buttons */
+.mt-trade{display:flex;flex-direction:column;gap:4px;margin-top:1px}
+.mt-payline{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+  padding:0 2px;
+}
+.mt-payline b{
+  font-family:var(--mono);font-size:11px;font-weight:700;color:var(--txt);
+  letter-spacing:0;text-transform:none;
+}
+.mt-info{
+  font-style:normal;width:12px;height:12px;border-radius:50%;flex:0 0 auto;
+  display:grid;place-items:center;font:700 8px/1 var(--sans);
+  border:1px solid var(--line-3);color:var(--dim);cursor:help;
+}
+.mt-info:hover{border-color:var(--acc-line);color:var(--acc)}
+
+.mt-dir{
+  appearance:none;cursor:pointer;width:100%;position:relative;overflow:hidden;
+  display:flex;align-items:center;gap:9px;
+  padding:9px 12px;border-radius:6px;border:1px solid transparent;
+  font-family:var(--display);font-weight:800;
+  transition:filter .15s,transform .1s,box-shadow .15s;
+}
+.mt-dir-ico{
+  width:22px;height:22px;flex:0 0 auto;border-radius:5px;display:grid;place-items:center;
+  font-size:12px;background:rgba(0,0,0,.22);
+}
+.mt-dir-t{font-size:15px;letter-spacing:.01em;flex:1 1 auto;text-align:left}
+.mt-dir-p{
+  font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:0;
+  opacity:.95;flex:0 0 auto;
+}
+.mt-dir.up{
+  background:linear-gradient(180deg,#2ee8c4,#00b39a);
+  color:#04241f;border-color:#00a48c;
+  box-shadow:0 12px 26px -16px rgba(0,196,167,.95);
+}
+.mt-dir.down{
+  background:linear-gradient(180deg,#ff6b6b,#e33d3d);
+  color:#2a0505;border-color:#c93030;
+  box-shadow:0 12px 26px -16px rgba(227,61,61,.9);
+}
+.mt-dir:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
+.mt-dir:active:not(:disabled){transform:translateY(0) scale(.995)}
+.mt-dir:disabled{
+  background:var(--panel-3);color:var(--dim);border-color:var(--line-2);
+  box-shadow:none;cursor:not-allowed;
+}
+.mt-dir.busy{opacity:.75;pointer-events:none}
+/* settlement feedback: a ring that expands and fades */
+.mt-dir.win,.mt-dir.lose{animation:mtRing .85s ease-out}
+@keyframes mtRing{
+  0%{box-shadow:0 0 0 0 currentColor}
+  100%{box-shadow:0 0 0 16px transparent}
+}
+.mt-dir.win{box-shadow:0 0 0 0 rgba(34,197,94,.55)}
+.mt-dir.lose{box-shadow:0 0 0 0 rgba(239,68,68,.55)}
+/* "armed" state for real-money double clicks */
+.mt-dir.armed{
+  background:linear-gradient(180deg,#facc15,#eab308) !important;
+  color:#231a02 !important;border-color:#d4a907 !important;
+}
+.mt-dir.busy .mt-dir-p{font-size:10.5px}
+
+/* quote metadata + compact price split */
+.mt-quote-meta{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-family:var(--mono);font-size:9px;color:var(--dim);padding:0 2px;
+  min-height:12px;
+}
+.mt-quote-meta #pvSub{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mt-ticketcard .mt-payout{
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--panel);padding:0;
+}
+.mt-ticketcard .mt-payout .split{
+  margin:0;padding:4px 8px;border-top:0;gap:8px;
+}
+.mt-ticketcard .mt-payout .split div{font-size:8.5px}
+.mt-ticketcard .mt-payout .split b{font-size:11px}
 
 /* ---------- bottom strip ---------- */
 /* Bottom strip: collapsed by default (headers only) so the chart keeps the room. */
@@ -1558,12 +1763,15 @@ button.blk-v:disabled{cursor:default}
       <!-- ---------- Ticket + compact analysis ---------- -->
       <div class="mt-side">
 
-        <div class="panel">
-          <div class="panel-head">
-            <h3 id="contractTitle">Digit Over</h3>
-            <div class="spacer"></div>
-            <button class="btn xs ghost" id="btnPickContract">Change</button>
+        <div class="panel mt-ticketcard">
+          <div class="mt-trade-head">
+            <button class="mt-arrow" id="mtLearnPrev" type="button" aria-label="Previous trade type">‹</button>
+            <button class="mt-trade-name" id="btnPickContract" type="button" title="Choose a contract type">
+              <i id="mtLearnIco">◎</i><b id="contractTitle">Over / Under</b>
+            </button>
+            <button class="mt-arrow" id="mtLearnNext" type="button" aria-label="Next trade type">›</button>
           </div>
+
           <div class="panel-body mt-ticket">
 
             <div class="mt-hidden-selects">
@@ -1601,11 +1809,16 @@ button.blk-v:disabled{cursor:default}
               </label>
             </div>
 
-            <div class="mt-barriers" id="barrierWrap">
-              <div class="mt-barrier-head">
-                <span class="lbl">Last digit prediction</span>
-                <span class="hint" id="barrierHint">Wins if the last digit is strictly greater than the barrier.</span>
-              </div>
+            <!-- ticks slider, like the reference -->
+            <div class="mt-block mt-block-ticks">
+              <span class="mt-block-t">Ticks</span>
+              <input type="range" id="durRange" min="1" max="10" step="1" value="5" aria-label="Duration in ticks" />
+              <span class="mt-block-v" id="durLabel">5 Ticks</span>
+            </div>
+
+            <!-- last digit prediction, like the reference -->
+            <div class="mt-block mt-block-pred" id="barrierWrap">
+              <span class="mt-block-t">Last Digit Prediction</span>
               <div class="mt-digits" id="digitPick" role="radiogroup" aria-label="Barrier digit">
                 <button type="button" data-d="0">0</button>
                 <button type="button" data-d="1">1</button>
@@ -1626,60 +1839,67 @@ button.blk-v:disabled{cursor:default}
               </select>
             </div>
 
-            <div class="mt-deal">
-              <div class="mt-deal-head">
-                <span class="lbl">Deal</span>
-                <span class="seg" id="stakeSeg">
-                  <button type="button" data-stake="1" class="active">1</button>
-                  <button type="button" data-stake="5">5</button>
-                  <button type="button" data-stake="10">10</button>
-                  <button type="button" data-stake="25">25</button>
-                </span>
-              </div>
-              <div class="stepper">
-                <button type="button" data-step="-1" aria-label="Decrease stake">−</button>
-                <label>
-                  <input type="number" id="stake" value="1" min="0.35" step="0.35" inputmode="decimal" aria-label="Stake in USD" />
-                  <span>USD</span>
-                </label>
-                <button type="button" data-step="1" aria-label="Increase stake">+</button>
-              </div>
+            <!-- stake / payout tabs -->
+            <div class="mt-tabs" role="tablist" id="mtTabs">
+              <button type="button" data-mt="stake" class="active" role="tab">Stake</button>
+              <button type="button" data-mt="payout" role="tab">Payout</button>
             </div>
 
-            <div class="mt-deal">
-              <div class="mt-deal-head">
-                <span class="lbl">Duration</span>
-                <span class="tiny dim">in ticks</span>
+            <div class="mt-stepper-row">
+              <button class="mt-step" type="button" data-step="-1" aria-label="Decrease stake">−</button>
+              <label class="mt-amount">
+                <input type="number" id="stake" value="10" min="0.35" step="0.35" inputmode="decimal" aria-label="Stake in USD" />
+                <span id="stakeUnit">USD</span>
+              </label>
+              <button class="mt-step" type="button" data-step="1" aria-label="Increase stake">+</button>
+            </div>
+            <span class="seg mt-chips" id="stakeSeg">
+              <button type="button" data-stake="1">1</button>
+              <button type="button" data-stake="5">5</button>
+              <button type="button" data-stake="10" class="active">10</button>
+              <button type="button" data-stake="25">25</button>
+            </span>
+
+            <div class="mt-hidden-selects">
+              <input type="number" id="dur" value="5" min="1" max="10" step="1" />
+            </div>
+
+            <!-- the two direction buttons: each one buys on the spot -->
+            <div class="mt-trade">
+              <div class="mt-payline">
+                <span>Payout <b id="ovPayout">—</b></span>
+                <i class="mt-info" tabindex="0" title="What Deriv pays if this contract wins">i</i>
               </div>
-              <div class="stepper">
-                <button type="button" data-dstep="-1" aria-label="Decrease duration">−</button>
-                <label>
-                  <input type="number" id="dur" value="5" min="1" max="10" step="1" inputmode="numeric" aria-label="Duration in ticks" />
-                  <span>ticks</span>
-                </label>
-                <button type="button" data-dstep="1" aria-label="Increase duration">+</button>
+              <button class="mt-dir up" id="btnBuy" data-dir="DIGITOVER" type="button">
+                <span class="mt-dir-ico">↗</span>
+                <span class="mt-dir-t" id="btnBuyLabel">Over</span>
+                <span class="mt-dir-p" id="ovPct">—</span>
+              </button>
+
+              <div class="mt-payline">
+                <span>Payout <b id="unPayout">—</b></span>
+                <i class="mt-info" tabindex="0" title="What Deriv pays if this contract wins">i</i>
               </div>
+              <button class="mt-dir down" id="btnBuyAlt" data-dir="DIGITUNDER" type="button">
+                <span class="mt-dir-ico">↘</span>
+                <span class="mt-dir-t" id="btnBuyAltLabel">Under</span>
+                <span class="mt-dir-p" id="unPct">—</span>
+              </button>
+            </div>
+
+            <div class="mt-quote-meta">
+              <span class="mono" id="pvAge"></span>
+              <span id="pvSub">Log in to see live payout quotes.</span>
             </div>
 
             <div class="mt-payout" id="payoutBox">
-              <div class="row" style="justify-content:space-between;align-items:baseline">
-                <span class="lbl">Payout</span>
-                <span class="tiny dim mono" id="pvAge"></span>
-              </div>
-              <div class="mt-payout-row">
-                <span class="big" id="pvPayout">—</span>
-                <span class="mt-profit" id="pvProfit">—</span>
-              </div>
-              <div class="sub" id="pvSub">Log in to see a live payout quote from Deriv.</div>
               <div class="split">
                 <div>Ask price<b id="pvAsk">—</b></div>
                 <div>Spot<b id="pvSpot">—</b></div>
+                <div>Net<b id="pvProfit">—</b></div>
               </div>
             </div>
 
-            <div class="mt-actions">
-              <button class="btn buy mt-buy-go" id="btnBuy" disabled>Buy</button>
-            </div>
             <div class="hint" id="buyHint">Log in to trade. Live prices are available without login.</div>
           </div>
         </div>
@@ -2586,7 +2806,10 @@ const state = {
   optionsAccount: null,        // account selected from GET /trading/v1/options/accounts
   authExpiresAt: null,         // OAuth access-token expiry (ms epoch), if known
   loginFailed: false,          // keep the OAuth/token error banner on screen
-  proposal: null,              // last proposal response
+  proposal: null,              // quote for the upper direction button
+  proposalAlt: null,           // quote for the lower direction button
+  stake: 10,                   // authoritative stake, even in payout mode
+  ticketMode: "stake",         // stake | payout tab
   proposalAt: 0,
   proposalSeq: 0,
   openContract: null,
@@ -3974,9 +4197,9 @@ const chart = {
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     c.clearRect(0, 0, W, H);
 
-    /* Deriv-like plot area: price gutter on the right, room for the digit strip
-       is handled by the DOM strip below the canvas. */
-    const padL = 44, padR = 6, padT = 10, padB = 6;
+    /* Deriv/dbtraders plot area: price labels on the right, time labels along
+       the bottom, a faint grid, and a soft area under the line. */
+    const padL = 6, padR = 56, padT = 12, padB = 20;
     const plotW = Math.max(1, W - padL - padR);
     const plotH = Math.max(1, H - padT - padB);
 
@@ -4000,28 +4223,48 @@ const chart = {
     const xOf = i => padL + (i / (pts.length - 1)) * plotW;
 
     /* horizontal grid + right-hand price labels */
-    c.strokeStyle = "rgba(255,255,255,.05)";
+    c.strokeStyle = "rgba(255,255,255,.045)";
     c.lineWidth = 1;
     c.font = "10px 'JetBrains Mono', ui-monospace, monospace";
-    c.textAlign = "left";
-    const rows = 4;
+    c.textAlign = "right";
+    c.textBaseline = "middle";
+    const rows = 6;
     for (let i = 0; i <= rows; i++) {
       const val = lo + ((hi - lo) / rows) * i;
       const y = Math.round(padT + plotH - (i / rows) * plotH) + 0.5;
       c.beginPath(); c.moveTo(padL, y); c.lineTo(W - padR, y); c.stroke();
-      c.fillStyle = "rgba(113,113,122,.9)";
-      c.fillText(fmtPrice(val, state.market), padL - 38, clamp(y + 3, 10, H - 4));
+      c.fillStyle = "rgba(140,140,150,.95)";
+      c.fillText(fmtPrice(val, state.market), W - padR + 48, clamp(y, 8, H - 18));
     }
+    /* a solid edge marks the price gutter, like the reference axis */
+    c.strokeStyle = "rgba(255,255,255,.09)";
+    c.beginPath(); c.moveTo(Math.round(W - padR) + 0.5, padT); c.lineTo(Math.round(W - padR) + 0.5, padT + plotH); c.stroke();
 
-    /* vertical grid: current second markers */
-    c.strokeStyle = "rgba(255,255,255,.035)";
-    for (let i = 0; i <= 6; i++) {
-      const x = Math.round(padL + (plotW / 6) * i) + 0.5;
+    /* vertical grid + time labels along the bottom */
+    c.textAlign = "center";
+    c.textBaseline = "alphabetic";
+    for (let i = 0; i <= 4; i++) {
+      const x = Math.round(padL + (plotW / 4) * i) + 0.5;
+      c.strokeStyle = "rgba(255,255,255,.032)";
       c.beginPath(); c.moveTo(x, padT); c.lineTo(x, padT + plotH); c.stroke();
+      const ep = this.epochs || [];
+      const t = ep.length ? ep[clamp(Math.round((ep.length - 1) * (i / 4)), 0, ep.length - 1)] : null;
+      if (t) {
+        const d = new Date(t * 1000);
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
+        const ss = String(d.getSeconds()).padStart(2, "0");
+        c.fillStyle = "rgba(120,120,130,.95)";
+        const label = hh + ":" + mm + ":" + ss;
+        const half = c.measureText(label).width / 2 + 2;
+        c.fillText(label, clamp(x, padL + half, W - padR - half), H - 6);
+      }
     }
 
     const rising = pts[pts.length - 1] >= pts[0];
-    const line = rising ? "#22c55e" : "#ef4444";
+    /* the reference draws a neutral line and lets the fill carry the tone;
+       we keep a subtle green/red tint so direction is readable at a glance */
+    const line = rising ? "#8ef0c0" : "#ffb3b3";
 
     /* dotted lead-in to the latest price, like the reference chart */
     const lx = xOf(pts.length - 1), ly = yOf(pts[pts.length - 1]);
@@ -4033,7 +4276,8 @@ const chart = {
 
     /* area */
     const grad = c.createLinearGradient(0, padT, 0, padT + plotH);
-    grad.addColorStop(0, rising ? "rgba(34,197,94,.22)" : "rgba(239,68,68,.20)");
+    grad.addColorStop(0, rising ? "rgba(34,197,94,.16)" : "rgba(239,68,68,.15)");
+    grad.addColorStop(0.7, rising ? "rgba(34,197,94,.04)" : "rgba(239,68,68,.035)");
     grad.addColorStop(1, "rgba(0,0,0,0)");
     c.beginPath();
     c.moveTo(xOf(0), padT + plotH);
@@ -4046,17 +4290,17 @@ const chart = {
     c.beginPath();
     pts.forEach((v, i) => { const x = xOf(i), y = yOf(v); i ? c.lineTo(x, y) : c.moveTo(x, y); });
     c.strokeStyle = line;
-    c.lineWidth = 1.8; c.lineJoin = "round"; c.lineCap = "round";
-    c.shadowColor = rising ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.32)";
-    c.shadowBlur = 8;
+    c.lineWidth = 1.5; c.lineJoin = "round"; c.lineCap = "round";
+    c.shadowColor = rising ? "rgba(34,197,94,.28)" : "rgba(239,68,68,.26)";
+    c.shadowBlur = 6;
     c.stroke();
     c.shadowBlur = 0;
 
-    /* live dot */
-    c.beginPath(); c.arc(lx, ly, 3.4, 0, Math.PI * 2);
+    /* live dot: a small filled dot with a thin ring, as in the reference */
+    c.beginPath(); c.arc(lx, ly, 2.8, 0, Math.PI * 2);
     c.fillStyle = line; c.fill();
-    c.beginPath(); c.arc(lx, ly, 7, 0, Math.PI * 2);
-    c.strokeStyle = rising ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.35)"; c.lineWidth = 1.4; c.stroke();
+    c.beginPath(); c.arc(lx, ly, 6, 0, Math.PI * 2);
+    c.strokeStyle = rising ? "rgba(34,197,94,.30)" : "rgba(239,68,68,.30)"; c.lineWidth = 1.2; c.stroke();
 
     /* the price tag follows the last point (positioned only when laid out) */
     const tag = $id("priceTag");
@@ -4288,6 +4532,42 @@ function ticketRequest() {
   return req;
 }
 
+/* The two direction buttons. dbtraders shows two contracts side by side and
+   each one executes when clicked, so the ticket keeps a quote for both. */
+function contractPair(ct) {
+  if (ct === "DIGITOVER") return { up: "DIGITOVER", down: "DIGITUNDER", upLabel: "Over", downLabel: "Under", ico: "◎" };
+  if (ct === "DIGITUNDER") return { up: "DIGITOVER", down: "DIGITUNDER", upLabel: "Over", downLabel: "Under", ico: "◎" };
+  if (ct === "DIGITEVEN") return { up: "DIGITEVEN", down: "DIGITODD", upLabel: "Even", downLabel: "Odd", ico: "⇄" };
+  if (ct === "DIGITODD") return { up: "DIGITEVEN", down: "DIGITODD", upLabel: "Even", downLabel: "Odd", ico: "⇄" };
+  if (ct === "DIGITMATCH") return { up: "DIGITMATCH", down: "DIGITDIFF", upLabel: "Matches", downLabel: "Differs", ico: "＝" };
+  if (ct === "DIGITDIFF") return { up: "DIGITMATCH", down: "DIGITDIFF", upLabel: "Matches", downLabel: "Differs", ico: "≠" };
+  if (ct === "CALL") return { up: "CALL", down: "PUT", upLabel: "Rise", downLabel: "Fall", ico: "↗" };
+  return { up: "CALL", down: "PUT", upLabel: "Rise", downLabel: "Fall", ico: "↗" };
+}
+
+/* A request for one specific contract (used for both quotes and both buys). */
+function ticketRequestFor(contractType) {
+  const ct = contractType || $id("ct").value;
+  const sym = state.market;
+  const stake = Math.max(0.35, num(state.stake != null ? state.stake : $id("stake").value, 1));
+  const duration = clamp(Math.round(num($id("dur").value, 5)), 1, 10);
+  const barrier = $id("barrier").value;
+  const req = {
+    proposal: 1,
+    amount: stake.toFixed(2),
+    basis: "stake",
+    contract_type: ct,
+    currency: state.currency || "USD",
+    duration: duration,
+    duration_unit: "t"
+  };
+  Object.assign(req, symbolPayload(sym));
+  if (ct === "DIGITOVER" || ct === "DIGITUNDER" || ct === "DIGITMATCH" || ct === "DIGITDIFF") {
+    req.barrier = String(barrier);
+  }
+  return req;
+}
+
 /* Re-quote at most every 1.5 s while ticks stream in; immediate on input edits. */
 let ticketDirty = false;
 function scheduleProposal(immediate) {
@@ -4303,87 +4583,108 @@ async function refreshProposal() {
   if (ticketDirty) ticketDirty = false;
 
   const seq = ++state.proposalSeq;
-  const req = ticketRequest();
-  const pvAge = $("#pvAge");
+  const pair = contractPair($id("ct").value);
+  const pvAge = $id("pvAge");
   if (pvAge) pvAge.textContent = "quoting…";
   try {
-    const resp = await socket.request(req, 15000, "proposal");
+    /* both legs are quoted together so each button can execute instantly */
+    const [upResp, downResp] = await Promise.all([
+      socket.request(ticketRequestFor(pair.up), 15000, "proposal"),
+      socket.request(ticketRequestFor(pair.down), 15000, "proposal")
+    ]);
     if (seq !== state.proposalSeq) return; // a newer quote is in flight
-    state.proposal = resp.proposal || null;
+    state.proposal = upResp.proposal || null;
+    state.proposalAlt = downResp.proposal || null;
     state.proposalAt = Date.now();
     renderProposal();
   } catch (err) {
     if (seq !== state.proposalSeq) return;
     state.proposal = null;
+    state.proposalAlt = null;
     renderProposal(true, apiMessage(err));
   }
 }
 
+function pctOf(p) {
+  if (!p) return null;
+  const stake = num(p.ask_price);
+  const payout = num(p.payout);
+  if (!stake) return null;
+  return Math.round((payout / stake) * 100);
+}
+
 function renderProposal(errorOnly, errMsg) {
   const p = state.proposal;
-  const box = $("#payoutBox");
+  const alt = state.proposalAlt;
   const loggedIn = !!state.auth;
+  const ratio = (p, el) => { const v = pctOf(p); if (el) el.textContent = v == null ? "—" : v + "%"; };
+
   if (!loggedIn) {
-    $("#pvPayout").textContent = "—";
-    $("#pvSub").textContent = "Log in to see a live payout quote from Deriv.";
-    $("#pvProfit").textContent = "—"; $("#pvAsk").textContent = "—"; $("#pvSpot").textContent = "—";
-    $("#pvAge").textContent = "";
+    $id("ovPayout").textContent = "—"; $id("unPayout").textContent = "—";
+    ratio(null, $id("ovPct")); ratio(null, $id("unPct"));
+    $id("pvSub").textContent = "Log in for live payouts — the buttons buy instantly.";
+    $id("pvAsk").textContent = "—"; $id("pvSpot").textContent = "—"; $id("pvProfit").textContent = "—";
+    $id("pvAge").textContent = "";
     updateBuyState();
     return;
   }
   if (errMsg || !p) {
-    $("#pvPayout").textContent = "—";
-    $("#pvSub").textContent = errMsg || "Waiting for a live quote…";
-    $("#pvProfit").textContent = "—"; $("#pvAsk").textContent = "—"; $("#pvSpot").textContent = "—";
-    $("#pvAge").textContent = errMsg ? "error" : "";
+    $id("ovPayout").textContent = "—"; $id("unPayout").textContent = "—";
+    ratio(null, $id("ovPct")); ratio(null, $id("unPct"));
+    $id("pvSub").textContent = errMsg || "Waiting for a live quote…";
+    $id("pvAsk").textContent = "—"; $id("pvSpot").textContent = "—"; $id("pvProfit").textContent = "—";
+    $id("pvAge").textContent = errMsg ? "error" : "";
     updateBuyState();
     return;
   }
-  $("#pvPayout").textContent = money(p.payout);
-  $("#pvSub").textContent = CONTRACT_LABEL[p.contract_type] || p.longcode || p.contract_type;
-  $("#pvProfit").textContent = signed(num(p.payout) - num(p.ask_price));
-  $("#pvAsk").textContent = money(p.ask_price);
-  $("#pvSpot").textContent = fmtPrice(p.spot, p.symbol || state.market);
+  $id("ovPayout").textContent = money(p.payout);
+  $id("unPayout").textContent = alt ? money(alt.payout) : "—";
+  ratio(p, $id("ovPct"));
+  ratio(alt, $id("unPct"));
+  $id("pvSub").textContent = CONTRACT_LABEL[p.contract_type] || p.longcode || p.contract_type;
+  $id("pvAsk").textContent = money(p.ask_price);
+  $id("pvSpot").textContent = fmtPrice(p.spot, p.symbol || state.market);
+  $id("pvProfit").textContent = signed(num(p.payout) - num(p.ask_price));
   const age = Math.max(0, Math.round((Date.now() - state.proposalAt) / 1000));
-  $("#pvAge").textContent = age <= 1 ? "live" : age + "s ago";
+  $id("pvAge").textContent = age <= 1 ? "live" : age + "s ago";
   updateBuyState();
 }
 
+/* Keeps the two direction buttons and the hint in step with the quote. */
 function updateBuyState() {
-  const btn = $("#btnBuy");
-  if (!btn) return;
-  const hint = $("#buyHint");
+  const up = $id("btnBuy");
+  const down = $id("btnBuyAlt");
+  if (!up || !down) return;
+  const hint = $id("buyHint");
   const loggedIn = !!state.auth;
-  const hasP = !!state.proposal;
-  const stake = num($("#stake").value, 0);
+  const stake = num(state.stake != null ? state.stake : $id("stake").value, 0);
   const bal = state.balance == null ? null : num(state.balance);
 
-  if (!loggedIn) {
-    btn.disabled = true;
-    hint.textContent = "Log in to trade. Live prices are available without login.";
-    return;
-  }
+  const setPair = (disabled, msg) => {
+    up.disabled = disabled; down.disabled = disabled;
+    if (msg != null) hint.textContent = msg;
+  };
+
+  if (!loggedIn) { setPair(true, "Log in to trade — each button buys the contract it shows."); return; }
   if (bal != null && stake > bal) {
-    btn.disabled = true;
-    hint.innerHTML = '<span class="bad">Stake is higher than your balance (' + money(bal) + ").</span> Lower the stake or top up on Deriv.";
+    setPair(true, "Stake is above your " + money(bal) + " balance.");
+    hint.innerHTML = '<span class="bad">Stake is higher than your balance (' + money(bal) + ").</span>";
     return;
   }
-  if (!hasP) {
-    btn.disabled = true;
-    hint.textContent = "The payout preview must load before buying.";
-    return;
-  }
-  if (stake < 0.35) {
-    btn.disabled = true;
-    hint.innerHTML = '<span class="bad">The minimum stake is 0.35.</span>';
-    return;
-  }
-  btn.disabled = false;
-  hint.textContent = "Buy sends a market order for " + money(num(state.proposal.ask_price)) + ".";
+  if (stake < 0.35) { setPair(true, "The minimum stake is 0.35."); return; }
+  if (!state.proposal) { setPair(true, "Waiting for a live quote from Deriv…"); return; }
+
+  const ct = $id("ct").value;
+  const barrier = $id("barrier").value;
+  if (ct === "DIGITOVER" && barrier === "9") { setPair(true, "Over 9 can never win — pick 0–8."); return; }
+  if (ct === "DIGITUNDER" && barrier === "0") { setPair(true, "Under 0 can never win — pick 1–9."); return; }
+
+  setPair(false, null);
+  const ask = num(state.proposal.ask_price);
+  hint.textContent = "One click buys " + money(ask) + " of " + (CONTRACT_LABEL[state.proposal.contract_type] || "") + " at the live price.";
 }
 
 /* Wire ticket inputs -> re-quote */
-let buyInFlight = false;
 
 ["#stake", "#dur", "#barrier", "#ct"].forEach(sel => {
   const el = $(sel);
@@ -4395,15 +4696,67 @@ let buyInFlight = false;
 /* ---- the visible ticket: steppers, stake chips, digit grid, picker ---- */
 function syncContractTitle() {
   const ct = $id("ct") ? $id("ct").value : "";
+  const pair = contractPair(ct);
   const title = $id("contractTitle");
-  if (title) title.textContent = CONTRACT_LABEL[ct] || ct || "Contract";
+  /* the header names the trade family, the buttons carry the two sides */
+  const family = (ct === "DIGITOVER" || ct === "DIGITUNDER") ? "Over / Under"
+    : (ct === "DIGITEVEN" || ct === "DIGITODD") ? "Even / Odd"
+    : (ct === "DIGITMATCH" || ct === "DIGITDIFF") ? "Matches / Differs"
+    : "Rise / Fall";
+  if (title) title.textContent = family;
+  const ico = $id("mtLearnIco");
+  if (ico) ico.textContent = pair.ico;
+  if ($id("btnBuyLabel")) $id("btnBuyLabel").textContent = pair.upLabel;
+  if ($id("btnBuyAltLabel")) $id("btnBuyAltLabel").textContent = pair.downLabel;
+  const up = $id("btnBuy"); if (up) up.dataset.dir = pair.up;
+  const down = $id("btnBuyAlt"); if (down) down.dataset.dir = pair.down;
+  /* direction matters for digit contracts only: the arrow still flips Rise/Fall */
+  const arrowUp = up ? up.querySelector(".mt-dir-ico") : null;
+  const arrowDown = down ? down.querySelector(".mt-dir-ico") : null;
+  const directional = ct === "CALL" || ct === "PUT";
+  if (arrowUp) arrowUp.textContent = directional ? "↗" : "→";
+  if (arrowDown) arrowDown.textContent = directional ? "↘" : "→";
 }
 
-function setStake(v) {
+/* the ‹ › arrows walk through the contract families */
+const CONTRACT_CYCLE = ["DIGITOVER", "DIGITEVEN", "DIGITMATCH", "CALL"];
+function cycleContract(step) {
+  const cur = $id("ct").value;
+  const familyOf = v => (v === "DIGITOVER" || v === "DIGITUNDER") ? "DIGITOVER"
+    : (v === "DIGITEVEN" || v === "DIGITODD") ? "DIGITEVEN"
+    : (v === "DIGITMATCH" || v === "DIGITDIFF") ? "DIGITMATCH" : "CALL";
+  const i = CONTRACT_CYCLE.indexOf(familyOf(cur));
+  const next = CONTRACT_CYCLE[(i + step + CONTRACT_CYCLE.length) % CONTRACT_CYCLE.length];
+  $id("ct").value = next;
+  ticketDirty = true;
+  syncContractTitle();
+  updateBarrierVisibility();
+  updateBuyState();
+  scheduleProposal(true);
+}
+
+/* the duration slider drives #dur and its caption */
+function setDurationUI(v, fromSlider) {
+  const n = clamp(Math.round(num(v, 5)), 1, 10);
+  const range = $id("durRange");
+  const label = $id("durLabel");
+  if (range && range.value !== String(n)) range.value = String(n);
+  if (range) range.style.setProperty("--pct", ((n - 1) / 9 * 100).toFixed(1) + "%");
+  if (label) label.textContent = n + (n === 1 ? " Tick" : " Ticks");
+  setDuration(n);
+  if (fromSlider) return;
+}
+
+/* setStake(v): v is always a stake in account currency.
+   opts.quiet keeps the visible amount field untouched — the payout tab uses it
+   so the number the user typed (a payout) is not overwritten by the derived stake. */
+function setStake(v, opts) {
   const el = $id("stake");
   if (!el) return;
-  el.value = Math.max(0.35, Math.round(num(v, 1) * 100) / 100).toFixed(2);
-  $$("#stakeSeg button").forEach(b => b.classList.toggle("active", Math.abs(Number(b.dataset.stake) - num(el.value)) < 0.001));
+  const stake = Math.max(0.35, Math.round(num(v, 1) * 100) / 100);
+  state.stake = stake;
+  if (!(opts && opts.quiet)) el.value = stake.toFixed(2);
+  $$("#stakeSeg button").forEach(b => b.classList.toggle("active", Math.abs(Number(b.dataset.stake) - stake) < 0.001));
   ticketDirty = true;
   updateBuyState();
   scheduleProposal(true);
@@ -4450,23 +4803,75 @@ function openContractPicker() {
 function closeContractPicker() { $id("ctPickBack").classList.add("hidden"); }
 
 function initTicket() {
+  /* stake chips + the −/+ steppers beside the amount */
   $$("#stakeSeg button").forEach(b => b.addEventListener("click", () => setStake(Number(b.dataset.stake))));
-  $$(".stepper [data-step]").forEach(b => b.addEventListener("click", () => {
-    const cur = num($id("stake").value, 1);
+  $$("[data-step]").forEach(b => b.addEventListener("click", () => {
+    const cur = num(state.stake != null ? state.stake : $id("stake").value, 1);
     const step = num(b.dataset.step) > 0 ? (cur >= 10 ? 5 : 0.35) : (cur > 10 ? 5 : 0.35);
     setStake(cur + step * (num(b.dataset.step) > 0 ? 1 : -1));
   }));
-  $$(".stepper [data-dstep]").forEach(b => b.addEventListener("click", () => {
-    setDuration(num($id("dur").value, 5) + num(b.dataset.dstep));
+  $$("[data-dstep]").forEach(b => b.addEventListener("click", () => {
+    setDurationUI(num($id("dur").value, 5) + num(b.dataset.dstep));
   }));
+
+  /* the ticks slider is the primary duration control */
+  const range = $id("durRange");
+  if (range) {
+    range.addEventListener("input", () => setDurationUI(range.value, true));
+    setDurationUI(range.value, true);
+  }
+
+  const stakeInput = $id("stake");
   $$("#digitPick button").forEach(b => b.addEventListener("click", () => setBarrierDigit(b.dataset.d)));
+
+  /* ‹ › walk the contract families */
+  const prev = $id("mtLearnPrev");
+  const next = $id("mtLearnNext");
+  if (prev) prev.addEventListener("click", () => cycleContract(-1));
+  if (next) next.addEventListener("click", () => cycleContract(1));
+
+  /* Stake / Payout tabs. "Payout" makes the amount field a payout *target*:
+     typing a payout derives the stake behind it, exactly like Deriv's toggle,
+     and the direction buttons quote that stake. */
+  $$("#mtTabs button").forEach(b => b.addEventListener("click", () => {
+    const mode = b.dataset.mt;
+    if (mode === state.ticketMode) return;
+    state.ticketMode = mode;
+    $$("#mtTabs button").forEach(x => x.classList.toggle("active", x === b));
+    const unit = $id("stakeUnit");
+    const chips = $id("stakeSeg");
+    const p = state.proposal || state.proposalAlt;
+    if (mode === "payout") {
+      if (unit) unit.textContent = "Payout";
+      if (chips) chips.classList.add("hidden");
+      /* the field now shows a payout target, the stake stays what it was */
+      if (p) stakeInput.value = Number(num(p.payout)).toFixed(2);
+    } else {
+      if (unit) unit.textContent = "USD";
+      if (chips) chips.classList.remove("hidden");
+      stakeInput.value = Number(num(state.stake, 10)).toFixed(2);
+    }
+  }));
+
+  /* In payout mode the field is a payout: convert it back to a stake. */
+  if (stakeInput) {
+    const commitAmount = () => {
+      if (state.ticketMode === "payout") {
+        const target = Math.max(0.35, num(stakeInput.value, 1));
+        const p = state.proposal || state.proposalAlt;
+        const payoutPerStake = p && num(p.ask_price) ? num(p.payout) / num(p.ask_price) : 2;
+        /* keep the payout the user typed on screen; only the stake behind it changes */
+        setStake(target / (payoutPerStake || 2), { quiet: true });
+      } else {
+        setStake(stakeInput.value);
+      }
+    };
+    stakeInput.addEventListener("change", commitAmount);
+    stakeInput.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); commitAmount(); } });
+  }
 
   const btnPick = $id("btnPickContract");
   if (btnPick) btnPick.addEventListener("click", openContractPicker);
-  const cancel = $id("ctPickCancel");
-  if (cancel) cancel.addEventListener("click", closeContractPicker);
-  const back = $id("ctPickBack");
-  if (back) back.addEventListener("click", e => { if (e.target.id === "ctPickBack") closeContractPicker(); });
 
   $$("#miniSeg button").forEach(b => b.addEventListener("click", () => {
     state.miniWindow = Number(b.dataset.mwin);
@@ -4477,92 +4882,127 @@ function initTicket() {
   $id("ct").addEventListener("change", () => {
     syncContractTitle();
     renderDigitHeat();
+    updateBarrierVisibility();
   });
 
   syncContractTitle();
+  updateBarrierVisibility();
   setStake($id("stake").value);
 }
 
 function updateBarrierVisibility() {
-  const ct = $("#ct").value;
+  const sel = $id("ct");
+  if (!sel) return;
+  const ct = sel.value;
+  /* Even/Odd need no prediction; the grid stays for the contracts that do. */
   const needs = ct === "DIGITOVER" || ct === "DIGITUNDER" || ct === "DIGITMATCH" || ct === "DIGITDIFF";
-  $("#barrierWrap").classList.toggle("hidden", !needs);
-  const hint = $("#barrierHint");
+  const wrap = $id("barrierWrap");
+  if (wrap) wrap.classList.toggle("hidden", !needs);
+  const hint = $id("barrierHint");
+  if (!hint) return;
   if (ct === "DIGITOVER") hint.textContent = "Wins if the last digit is strictly greater than this barrier.";
   else if (ct === "DIGITUNDER") hint.textContent = "Wins if the last digit is strictly less than this barrier.";
   else if (ct === "DIGITMATCH") hint.textContent = "Wins if the last digit equals this barrier.";
   else if (ct === "DIGITDIFF") hint.textContent = "Wins if the last digit differs from this barrier.";
   // Over 9 / Under 0 are impossible, keep the user out of a pointless quote.
-  if (ct === "DIGITOVER" && $("#barrier").value === "9") hint.innerHTML = '<span class="bad">Over 9 can never win — pick 0–8.</span>';
-  if (ct === "DIGITUNDER" && $("#barrier").value === "0") hint.innerHTML = '<span class="bad">Under 0 can never win — pick 1–9.</span>';
+  if (ct === "DIGITOVER" && $id("barrier").value === "9") hint.innerHTML = '<span class="bad">Over 9 can never win — pick 0–8.</span>';
+  if (ct === "DIGITUNDER" && $id("barrier").value === "0") hint.innerHTML = '<span class="bad">Under 0 can never win — pick 1–9.</span>';
   if (ct === "CALL" || ct === "PUT") hint.textContent = "Rise/Fall uses the spot at entry versus exit.";
 }
 
 /* ---------------------------------------------------------------------------
    13. TAB 1 — BUY
    --------------------------------------------------------------------------- */
-$("#btnBuy").addEventListener("click", async () => {
+/* ---------------------------------------------------------------------------
+   13. TAB 1 — ONE-CLICK BUY
+   ---------------------------------------------------------------------------
+   dbtraders executes straight from the direction button, so there is no
+   confirmation dialog here. Safety comes from the flow itself:
+     · the price clicked is the price sent (a moved price fails the order),
+     · the button locks while the order is in flight,
+     · a real-money click has to be repeated within a few seconds.
+   --------------------------------------------------------------------------- */
+let buyInFlight = false;
+
+async function instantBuy(direction) {
   if (buyInFlight) return;
   if (!state.auth || !state.token) { toast("Login required", "Log in with Deriv before buying.", "warn"); return; }
-  const req = ticketRequest();
-  const stake = num(req.amount);
+
+  const pair = contractPair($id("ct").value);
+  const contractType = direction === "down" ? pair.down : pair.up;
+  const proposal = direction === "down" ? state.proposalAlt : state.proposal;
+  const btn = direction === "down" ? $id("btnBuyAlt") : $id("btnBuy");
+  const stake = num(state.stake != null ? state.stake : $id("stake").value, 0);
+
+  if (!proposal || proposal.contract_type !== contractType) {
+    toast("No quote yet", "The payout for this contract is still loading — try again in a moment.", "warn");
+    ticketDirty = true; refreshProposal();
+    return;
+  }
   if (state.balance != null && stake > num(state.balance)) {
     toast("Low balance", "Your stake " + money(stake) + " is above the " + money(state.balance) + " balance.", "err");
     updateBuyState();
     return;
   }
-  const proposal = state.proposal;
-  if (!proposal) { toast("No quote", "Wait for the payout preview, then try again.", "warn"); return; }
-
-  const ok = await confirmDialog(
-    "Confirm purchase",
-    "<b>" + esc(CONTRACT_LABEL[proposal.contract_type] || proposal.contract_type) + "</b> on " +
-    esc(MARKETS[state.market].name) + "<br>" +
-    "Stake <b>" + esc(money(req.amount)) + "</b> · potential payout <b>" + esc(money(proposal.payout)) + "</b><br>" +
-    "Account <b>" + esc(state.auth.loginid) + "</b> (" + (state.auth.is_virtual ? "demo" : "<span style='color:#fca5a5;font-weight:700'>REAL MONEY</span>") + ")<br><br>" +
-    "<span class='tiny'>The price is reconfirmed by Deriv at execution; the final payout may differ slightly from the preview.</span>",
-    (state.accountType === "real" ? "Buy with real money" : "Buy now"),
-    state.accountType === "real"
-  );
-  if (!ok) return;
+  /* Real money needs a deliberate double click, like Deriv's own trade button. */
+  if (state.accountType === "real" && !btn.classList.contains("armed")) {
+    btn.classList.add("armed");
+    btn.querySelector(".mt-dir-t").textContent = "Tap again";
+    setTimeout(() => {
+      if (!btn.classList.contains("armed")) return;
+      btn.classList.remove("armed");
+      btn.querySelector(".mt-dir-t").textContent = direction === "down" ? pair.downLabel : pair.upLabel;
+    }, 3200);
+    toast("Confirm real money", "Tap " + (CONTRACT_LABEL[contractType] || contractType) + " again within 3 seconds to buy with real funds.", "warn");
+    return;
+  }
+  btn.classList.remove("armed");
+  btn.querySelector(".mt-dir-t").textContent = direction === "down" ? pair.downLabel : pair.upLabel;
 
   buyInFlight = true;
-  const btn = $("#btnBuy");
-  btn.disabled = true;
-  const original = btn.textContent;
-  btn.textContent = "Placing order…";
+  const label = btn.querySelector(".mt-dir-p");
+  const originalPct = label ? label.textContent : "";
+  [state.proposal, state.proposalAlt] = [null, null];
+  btn.classList.add("busy");
+  if (label) label.textContent = "buying…";
+  $id("btnBuy").disabled = true;
+  $id("btnBuyAlt").disabled = true;
 
   try {
-    // The price the user saw must match; Deriv rejects stale prices (code PriceMoved).
-    // Deriv bills the ask price for a stake-based proposal. Sending it explicitly
-    // makes a price change fail the order instead of silently spending more.
-    const payload = {
-      buy: proposal.id,
-      price: Number(proposal.ask_price || num($("#stake").value)).toFixed(2)
-    };
+    /* Send the price that was shown. Deriv rejects a stale price (PriceMoved)
+       instead of silently charging more. */
+    const payload = { buy: proposal.id, price: Number(proposal.ask_price).toFixed(2) };
     const resp = await socket.request(payload, 25000, "buy");
     const c = resp.buy;
-    toast("Contract bought", (CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · stake " + money(c.buy_price) + " · payout " + money(c.payout), "ok");
+    toast("Contract bought", (CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " + money(c.buy_price) + " → " + money(c.payout), "ok");
+    pushLog("buy", "Instant buy " + c.contract_id + " · " + money(c.buy_price) + " → " + money(c.payout));
+    state.lastBuySide = direction;
+    state.lastBuyType = c.contract_type;
     subscribeOpenContract(c.contract_id);
-    pushLog("buy", "Manual buy " + c.contract_id + " · " + money(c.buy_price) + " → " + money(c.payout));
-    state.proposal = null;
-    ticketDirty = true;
-    refreshProposal();
+    state.proposal = null; state.proposalAlt = null;
     renderBalance();
+    ticketDirty = true;
+    setTimeout(() => refreshProposal(), 600);
   } catch (err) {
     const msg = apiMessage(err);
     if (err && (err.code === "PriceMoved" || /price.*moved|rejected/i.test(msg))) {
-      toast("Price moved", "Deriv rejected that price. A fresh quote was requested — please confirm again.", "warn");
-      ticketDirty = true; refreshProposal();
+      toast("Price moved", "Deriv rejected that price — a fresh quote is loading, try once more.", "warn");
+      ticketDirty = true;
+      setTimeout(() => refreshProposal(), 200);
     } else {
       toast("Buy failed", msg, "err");
     }
   } finally {
     buyInFlight = false;
-    btn.textContent = original;
+    btn.classList.remove("busy");
+    if (label) label.textContent = originalPct;
     updateBuyState();
   }
-});
+}
+
+$("#btnBuy").addEventListener("click", () => instantBuy("up"));
+const altBtn = $("#btnBuyAlt");
+if (altBtn) altBtn.addEventListener("click", () => instantBuy("down"));
 
 /* ---------------------------------------------------------------------------
    14. TAB 1 — OPEN CONTRACT
@@ -4602,6 +5042,17 @@ function contractExitSpot(c) {
   return c.exit_spot != null ? c.exit_spot : (c.sell_spot != null ? c.sell_spot : null);
 }
 
+/* A short ring on the button that bought the contract: green on a win, red on
+   a loss. Purely visual — the numbers are already in the toast and the panel. */
+function flashTradeButton(won) {
+  const btn = state.lastBuySide === "down" ? $id("btnBuyAlt") : $id("btnBuy");
+  if (!btn) return;
+  btn.classList.remove("win", "lose");
+  void btn.offsetWidth;                    // restart the animation
+  btn.classList.add(won ? "win" : "lose");
+  setTimeout(() => btn.classList.remove("win", "lose"), 900);
+}
+
 function finishContract(c) {
   const pl = num(c.profit);
   state.localTrades.unshift({
@@ -4620,6 +5071,7 @@ function finishContract(c) {
   loadProfitTable();
   pushLog(pl >= 0 ? "win" : "loss", "Contract " + c.contract_id + " settled " + (pl >= 0 ? "won " : "lost ") + money(pl) + ".");
   toast(pl >= 0 ? "Contract won" : "Contract lost", (CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " + (pl >= 0 ? "+" : "") + money(pl), pl >= 0 ? "ok" : "warn");
+  flashTradeButton(pl >= 0);
 }
 
 /* Collapsed secondary panels open themselves when they have real news to show. */

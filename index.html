@@ -990,16 +990,19 @@ footer.foot .links a:hover{color:var(--acc)}
 /* ---- canvas (Deriv's near-black workshop) ---- */
 .bl-canvas{
   position:relative;overflow:auto;min-height:0;
+  cursor:default;
   background:
     radial-gradient(circle at 1px 1px, rgba(148,163,184,.10) 1px, transparent 0) 0 0/20px 20px,
     #0a0e14;
 }
+/* Blocks are content-sized and sit where you drop them, like Blockly:
+   the canvas is a wide surface and each stack is an inline-block column. */
 .bl-world{
-  position:relative;min-height:100%;padding:16px 18px 40px;
-  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
-  gap:18px;align-content:start;
+  position:relative;min-height:100%;padding:20px 22px 46px;
+  display:flex;align-items:flex-start;gap:26px;
+  width:max-content;min-width:100%;
 }
-.bl-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.bl-col{display:flex;flex-direction:column;gap:9px;flex:0 0 auto;width:auto;min-width:0}
 
 .bl-empty{position:absolute;inset:0;display:grid;place-items:center;padding:20px;z-index:3}
 .bl-empty.hidden{display:none}
@@ -1010,32 +1013,109 @@ footer.foot .links a:hover{color:var(--acc)}
 .bl-empty-card h4{font-family:var(--display);font-size:15px;font-weight:800;margin-bottom:6px;color:#e2e8f0}
 .bl-empty-card p{font-size:11.5px;color:#94a3b8;line-height:1.6}
 
+/* ---- quick strategy chooser ---- */
+.qs-modal{max-width:560px}
+.qs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.qs-card{
+  appearance:none;cursor:pointer;text-align:left;
+  border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--bg-2);
+  padding:10px 11px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 9px;
+  transition:border-color .15s,background .15s,transform .12s;
+}
+.qs-card:hover{border-color:var(--acc-line);background:var(--panel-2);transform:translateY(-1px)}
+.qs-card .qs-i{
+  grid-row:span 2;align-self:center;width:26px;height:26px;border-radius:7px;
+  display:grid;place-items:center;font-size:13px;color:var(--acc);
+  background:var(--acc-soft);border:1px solid var(--acc-line);
+}
+.qs-card b{font-family:var(--display);font-size:12px;font-weight:700;color:var(--txt)}
+.qs-card small{font-size:10px;color:var(--dim);line-height:1.45}
+
+/* ---- canvas editing: field pills behave like Blockly dropdowns ---- */
+.blk-hint{
+  font-family:var(--mono);font-size:8px;font-weight:400;color:rgba(255,255,255,.62);
+  letter-spacing:.06em;text-transform:none;white-space:nowrap;
+}
+button.blk-v{
+  appearance:none;cursor:pointer;border:0;text-align:right;
+  transition:box-shadow .14s,background .14s;
+}
+button.blk-v:hover{background:#dbeafe;box-shadow:0 0 0 2px rgba(47,107,255,.55)}
+button.blk-v:focus-visible{outline:2px solid #93c5fd;outline-offset:1px}
+button.blk-v.editing{background:#facc15;color:#1a1500;box-shadow:0 0 0 2px rgba(250,204,21,.7)}
+button.blk-v:disabled{cursor:default}
+
+/* the popover a click opens, anchored under the pill */
+.bl-pop{
+  position:fixed;z-index:120;min-width:168px;max-width:260px;
+  background:#0f172a;border:1px solid #2f6bff;border-radius:7px;
+  box-shadow:0 22px 48px -22px rgba(0,0,0,.95), 0 0 0 1px rgba(47,107,255,.22);
+  padding:5px;display:flex;flex-direction:column;gap:2px;
+  font-family:var(--sans);
+  animation:blpop .12s ease;
+}
+@keyframes blpop{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.bl-pop .bp-t{
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:#64748b;padding:3px 7px 4px;
+}
+.bl-pop button{
+  appearance:none;cursor:pointer;border:0;border-radius:5px;background:transparent;
+  color:#e2e8f0;font-family:var(--sans);font-size:11.5px;text-align:left;
+  padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.bl-pop button:hover{background:rgba(47,107,255,.28)}
+.bl-pop button.on{background:#2f6bff;color:#fff;font-weight:600}
+.bl-pop button .bp-k{font-family:var(--mono);font-size:9px;color:#93c5fd}
+.bl-pop button.on .bp-k{color:rgba(255,255,255,.8)}
+.bl-pop input{
+  width:100%;background:#0b1220;border:1px solid #334155;border-radius:5px;
+  color:#e2e8f0;font-family:var(--mono);font-size:12px;padding:6px 8px;outline:none;
+}
+.bl-pop input:focus{border-color:#2f6bff}
+.bl-pop .bp-apply{
+  justify-content:center;background:#2f6bff;color:#fff;font-weight:700;margin-top:3px;
+}
+.bl-pop .bp-apply:hover{background:#3d78ff}
+.bl-pop .bp-note{
+  font-family:var(--mono);font-size:8.5px;color:#64748b;padding:2px 7px 3px;line-height:1.5;
+}
+.bl-pop .bp-row{display:flex;gap:4px}
+.bl-pop .bp-row button{flex:1;justify-content:center;background:#16202e;border:1px solid #334155}
+.bl-pop .bp-row button.on{background:#2f6bff;border-color:#2f6bff}
+
 /* ---- block cards: blue header bar + white value pills on navy ---- */
 .blk{
-  border-radius:6px;overflow:hidden;min-width:0;
+  border-radius:6px;overflow:hidden;
+  width:max-content;min-width:164px;max-width:290px;
   border:1px solid #1e3a8a;
   background:#12203a;
   box-shadow:0 10px 22px -18px rgba(0,0,0,.95);
+  cursor:grab;
 }
+.blk.dragging{cursor:grabbing;z-index:6;box-shadow:0 20px 40px -18px rgba(0,0,0,.95), 0 0 0 1px #2f6bff}
+.blk.dragging .blk-h{cursor:grabbing}
 .blk-h{
   background:#2f6bff;
   color:#fff;font-family:var(--sans);font-size:10.5px;font-weight:600;
   padding:5px 8px;line-height:1.3;
   display:flex;align-items:center;justify-content:space-between;gap:6px;
 }
-.blk-b{background:#12203a;padding:6px;display:flex;flex-direction:column;gap:4px}
+.blk-b{background:#12203a;padding:5px;display:flex;flex-direction:column;gap:3px}
 .blk-row{
-  display:flex;align-items:center;justify-content:space-between;gap:7px;
-  padding:3px 5px;min-width:0;
+  display:flex;align-items:center;justify-content:space-between;gap:9px;
+  padding:2px 4px;min-width:0;
 }
 .blk-l{
-  font-family:var(--sans);font-size:10px;color:#cbd5e1;flex:0 0 auto;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:var(--sans);font-size:9.5px;color:#cbd5e1;flex:0 0 auto;
+  white-space:nowrap;
 }
+/* the white "field" pill is the editable part, exactly like a Blockly field */
 .blk-v{
-  font-family:var(--sans);font-size:10px;font-weight:600;color:#0f172a;
-  background:#fff;border-radius:3px;padding:2px 7px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%;
+  font-family:var(--sans);font-size:9.5px;font-weight:600;color:#0f172a;
+  background:#fff;border-radius:2px;padding:2px 8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:150px;flex:0 1 auto;
   box-shadow:0 1px 0 rgba(0,0,0,.35);
 }
 .blk-v.dim{color:#334155;font-weight:500}
@@ -1052,9 +1132,9 @@ footer.foot .links a:hover{color:var(--acc)}
   color:#60a5fa;font-family:var(--mono);font-size:10px;flex:0 0 auto;
 }
 .blk-line .chip{
-  font-family:var(--sans);font-size:10px;font-weight:600;color:#0f172a;
-  background:#fff;border-radius:3px;padding:2px 7px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+  font-family:var(--sans);font-size:9.5px;font-weight:600;color:#0f172a;
+  background:#fff;border-radius:2px;padding:2px 7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:250px;
 }
 .blk-line .chip.cond{background:#dbeafe;color:#1e3a8a}
 .blk-line .chip.buy{background:#facc15;color:#1a1500}
@@ -1064,11 +1144,15 @@ footer.foot .links a:hover{color:var(--acc)}
 
 /* risk disclaimer badge, bottom-left like the reference */
 .bl-risk{
-  position:absolute;left:14px;bottom:12px;z-index:2;
-  font-family:var(--sans);font-size:10px;font-weight:700;color:#1a1500;
-  background:#facc15;border-radius:4px;padding:4px 9px;
-  box-shadow:0 8px 18px -12px rgba(250,204,21,.9);
+  position:absolute;left:12px;bottom:10px;z-index:5;
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--sans);font-size:10.5px;font-weight:700;color:#1a1500;
+  background:#facc15;border-radius:3px;padding:5px 10px;
+  box-shadow:0 10px 22px -12px rgba(250,204,21,.95), 0 1px 0 rgba(255,255,255,.35) inset;
+  cursor:pointer;appearance:none;border:0;
 }
+.bl-risk:hover{filter:brightness(1.06)}
+.bl-risk::before{content:"▲";font-size:8px;line-height:1}
 
 /* floating purple AI orb */
 .bl-ai{
@@ -1838,8 +1922,14 @@ footer.foot .links a:hover{color:var(--acc)}
             <button data-bl="export" title="Download .xml" aria-label="Export XML">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5m0 0 4 4m-4-4-4 4"/><path d="M5 19h14"/></svg>
             </button>
-            <button data-bl="zoom" title="Reset zoom" aria-label="Reset zoom">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
+            <button data-bl="zoomin" title="Zoom in" aria-label="Zoom in">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M15 15l4.5 4.5M10.5 8v5M8 10.5h5"/></svg>
+            </button>
+            <button data-bl="zoomout" title="Zoom out" aria-label="Zoom out">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M15 15l4.5 4.5M8 10.5h5"/></svg>
+            </button>
+            <button data-bl="zoomreset" title="Reset canvas" aria-label="Reset canvas">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5h4M20 15v4h-4M4 5l5 5M20 19l-5-5"/></svg>
             </button>
           </div>
         </div>
@@ -1860,53 +1950,53 @@ footer.foot .links a:hover{color:var(--acc)}
 
           <div class="bl-world" id="dbotsWorld">
             <div class="bl-col">
-              <div class="blk blk-def">
+              <div data-key="trade" class="blk blk-def">
                 <div class="blk-h">5. Trade parameters</div>
                 <div class="blk-b">
-                  <div class="blk-row"><span class="blk-l">Market</span><span class="blk-v" id="blkMarket">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Trade type</span><span class="blk-v" id="blkTradeType">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Contract type</span><span class="blk-v" id="blkContract">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Candle interval</span><span class="blk-v" id="blkCandle">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Restart buy/sell</span><span class="blk-v" id="blkRestartBuy">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Restart on error</span><span class="blk-v" id="blkRestartErr">—</span></div>
+                  <div class="blk-row"><span class="blk-l">Market</span><button class="blk-v" id="blkMarket" data-edit="market" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Trade type</span><button class="blk-v" id="blkTradeType" data-edit="tradetype" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Contract type</span><button class="blk-v" id="blkContract" data-edit="contract" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Candle interval</span><button class="blk-v" id="blkCandle" data-edit="candle" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Restart buy/sell</span><button class="blk-v" id="blkRestartBuy" data-edit="restartbuy" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Restart on error</span><button class="blk-v" id="blkRestartErr" data-edit="restarterror" type="button">—</button></div>
                 </div>
               </div>
 
-              <div class="blk blk-run">
+              <div data-key="before" class="blk blk-run">
                 <div class="blk-h">8. Before purchase</div>
                 <div class="blk-b blk-tree" id="blkBefore"></div>
               </div>
             </div>
 
             <div class="bl-col">
-              <div class="blk blk-def blk-sm">
+              <div data-key="init" class="blk blk-def blk-sm">
                 <div class="blk-h">6. Initialization</div>
                 <div class="blk-b" id="blkInit"><span class="blk-empty">no variables in this file</span></div>
               </div>
 
-              <div class="blk blk-def">
+              <div data-key="submarket" class="blk blk-def">
                 <div class="blk-h">7. Submarket · trade options</div>
                 <div class="blk-b">
                   <div class="blk-row"><span class="blk-l">Submarket</span><span class="blk-v" id="blkSubLabel">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Duration</span><span class="blk-v" id="blkDuration">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Stake</span><span class="blk-v" id="blkStake">—</span></div>
-                  <div class="blk-row"><span class="blk-l">Prediction</span><span class="blk-v" id="blkPrediction">—</span></div>
+                  <div class="blk-row"><span class="blk-l">Duration</span><button class="blk-v" id="blkDuration" data-edit="duration" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Stake</span><button class="blk-v" id="blkStake" data-edit="stake" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Prediction</span><button class="blk-v" id="blkPrediction" data-edit="prediction" type="button">—</button></div>
                 </div>
               </div>
 
-              <div class="blk blk-run">
+              <div data-key="during" class="blk blk-run">
                 <div class="blk-h">9. During purchase</div>
                 <div class="blk-b blk-tree" id="blkDuring"></div>
               </div>
 
-              <div class="blk blk-run">
+              <div data-key="after" class="blk blk-run">
                 <div class="blk-h">10. After purchase</div>
                 <div class="blk-b blk-tree" id="blkAfter"></div>
               </div>
             </div>
           </div>
 
-          <span class="bl-risk" title="Trading is risky">⚠ Risk Disclaimer</span>
+          <button class="bl-risk" id="dbotsRisk" type="button" title="What this runner can and cannot do">⚠ Risk Disclaimer</button>
 
           <button class="bl-ai" id="dbotsAi" title="Show what the runner understood" aria-label="Explain this bot">
             <span>AI</span>
@@ -2260,6 +2350,49 @@ footer.foot .links a:hover{color:var(--acc)}
       <span class="mono tiny hidden" id="footApp">app —</span>
     </div>
   </footer>
+</div>
+
+<!-- =============================  QUICK STRATEGY  ============================= -->
+<div class="modal-back hidden" id="qsBack" role="dialog" aria-modal="true" aria-labelledby="qsTitle">
+  <div class="modal qs-modal">
+    <h4 id="qsTitle">Quick strategy</h4>
+    <p>Start from a template. It loads into the canvas as real blocks, and every value can be changed there.</p>
+    <div class="qs-grid" id="qsGrid">
+      <button class="qs-card" data-qs="sample" type="button">
+        <span class="qs-i">◎</span>
+        <b>Over / Under</b>
+        <small>Digit Over 3 on Volatility 100 (1s), 1 tick</small>
+      </button>
+      <button class="qs-card" data-qs="overunder" type="button">
+        <span class="qs-i">◑</span>
+        <b>Over 5 / Under 4</b>
+        <small>Digit Over 5 on Volatility 50, 5 ticks</small>
+      </button>
+      <button class="qs-card" data-qs="evenodd" type="button">
+        <span class="qs-i">⇄</span>
+        <b>Even / Odd</b>
+        <small>Digit Even on Volatility 75, 1 tick</small>
+      </button>
+      <button class="qs-card" data-qs="matches" type="button">
+        <span class="qs-i">◎</span>
+        <b>Matches / Differs</b>
+        <small>Digit Differs 7 on Volatility 100, 1 tick</small>
+      </button>
+      <button class="qs-card" data-qs="risefall" type="button">
+        <span class="qs-i">↗</span>
+        <b>Rise / Fall</b>
+        <small>Rise on Volatility 100 (1s), 5 ticks</small>
+      </button>
+      <button class="qs-card" data-qs="blank" type="button">
+        <span class="qs-i">＋</span>
+        <b>Blank workspace</b>
+        <small>Trade parameters only — no purchase logic</small>
+      </button>
+    </div>
+    <div class="actions">
+      <button class="btn ghost sm" id="qsCancel">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <!-- =============================  MODAL  ============================= -->
@@ -6042,6 +6175,7 @@ const DBOTS_SAMPLE_XML = (function () {
    nothing is traded on a guess.
    --------------------------------------------------------------------------- */
 const DBOTS_STORE_KEY = "tickforge.dbots.v1";
+const DBOTS_CANVAS_KEY = "tickforge.dbots.canvas.v1";
 const DBOTS_MAX_FILE  = 2 * 1024 * 1024;
 
 const DBOTS_DOC_URL = "https://deriv.com/deriv-bot";
@@ -6394,6 +6528,580 @@ const DBots = {
     return cfg;
   },
 
+  /* ---------------- canvas editor popover ---------------- */
+
+  /** Open the editor for one field, anchored under its pill. */
+  openEditor(field, anchorEl) {
+    this.closeEditor();
+    const model = this.editModel()[field];
+    if (!model || model.disabled) return;
+    const pop = document.createElement("div");
+    pop.className = "bl-pop";
+    pop.dataset.field = field;
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-label", model.label);
+
+    const head = document.createElement("div");
+    head.className = "bp-t";
+    head.textContent = model.label;
+    pop.appendChild(head);
+
+    if (model.kind === "select") {
+      model.options.forEach(opt => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = '<span>' + esc(opt.label) + '</span><span class="bp-k">' + esc(opt.value) + "</span>";
+        if (String(opt.value) === String(model.value)) b.classList.add("on");
+        b.addEventListener("click", () => { this.applyEdit(field, opt.value); this.closeEditor(); });
+        pop.appendChild(b);
+      });
+    } else if (model.kind === "toggle") {
+      const row = document.createElement("div");
+      row.className = "bp-row";
+      [["FALSE", false], ["TRUE", true]].forEach(([label, val]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        if (val === model.value) b.classList.add("on");
+        b.addEventListener("click", () => { this.applyEdit(field, val); this.closeEditor(); });
+        row.appendChild(b);
+      });
+      pop.appendChild(row);
+    } else if (model.kind === "digit") {
+      const grid = document.createElement("div");
+      grid.className = "bp-row";
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(5, 1fr)";
+      for (let d = 0; d <= 9; d++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = String(d);
+        if (Number(model.value) === d) b.classList.add("on");
+        b.addEventListener("click", () => { this.applyEdit(field, d); this.closeEditor(); });
+        grid.appendChild(b);
+      }
+      pop.appendChild(grid);
+    } else {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.value = String(model.value);
+      if (model.min != null) input.min = String(model.min);
+      if (model.max != null) input.max = String(model.max);
+      if (model.step != null) input.step = String(model.step);
+      pop.appendChild(input);
+      if (model.unit) {
+        const unit = document.createElement("div");
+        unit.className = "bp-note";
+        unit.textContent = model.unit;
+        pop.appendChild(unit);
+      }
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "bp-apply";
+      apply.textContent = "Apply";
+      const commit = () => {
+        let v = Number(input.value);
+        if (!Number.isFinite(v)) return;
+        if (model.min != null) v = Math.max(model.min, v);
+        if (model.max != null) v = Math.min(model.max, v);
+        this.applyEdit(field, v);
+        this.closeEditor();
+      };
+      apply.addEventListener("click", commit);
+      input.addEventListener("keydown", ev => {
+        if (ev.key === "Enter") { ev.preventDefault(); commit(); }
+        if (ev.key === "Escape") { ev.preventDefault(); this.closeEditor(); }
+      });
+      pop.appendChild(apply);
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+    }
+
+    if (model.note) {
+      const note = document.createElement("div");
+      note.className = "bp-note";
+      note.textContent = model.note;
+      pop.appendChild(note);
+    }
+
+    document.body.appendChild(pop);
+    this.pop = pop;
+    if (anchorEl) {
+      const r = anchorEl.getBoundingClientRect();
+      const w = pop.offsetWidth || 190;
+      const h = pop.offsetHeight || 120;
+      let left = Math.min(r.right - w, window.innerWidth - w - 10);
+      left = Math.max(10, left);
+      let top = r.bottom + 6;
+      if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+      pop.style.left = Math.round(left) + "px";
+      pop.style.top = Math.round(top) + "px";
+      anchorEl.classList.add("editing");
+    }
+    this.popAnchor = anchorEl;
+  },
+
+  closeEditor() {
+    if (this.pop && this.pop.parentNode) this.pop.parentNode.removeChild(this.pop);
+    if (this.popAnchor) this.popAnchor.classList.remove("editing");
+    this.pop = null; this.popAnchor = null;
+  },
+
+  /* ---------------- quick strategy templates ----------------
+     Each one is a real Deriv Bot document: it parses with the same reader as
+     an imported .xml, renders as blocks, and exports unchanged apart from
+     whatever the user edits on the canvas. */
+
+  template(kind) {
+    const head = (symbol, contract, tradetype) =>
+      '<xml xmlns="http://www.w3.org/1999/xhtml" is_dbot="true" collection="false">' +
+      '<variables>' +
+        '<variable id="v_stake">Stake</variable>' +
+        '<variable id="v_tp">TakeProfit</variable>' +
+        '<variable id="v_sl">StopLoss</variable>' +
+      '</variables>' +
+      '<block type="trade_definition" id="b_trade_def" deletable="false" x="0" y="0">' +
+        '<statement name="TRADE_OPTIONS">' +
+          '<block type="trade_definition_market" id="b_market" deletable="false" movable="false">' +
+            '<field name="MARKET_LIST">synthetic_index</field>' +
+            '<field name="SUBMARKET_LIST">random_index</field>' +
+            '<field name="SYMBOL_LIST">' + symbol + '</field>' +
+            '<next><block type="trade_definition_tradetype" id="b_tradetype" deletable="false" movable="false">' +
+              '<field name="TRADETYPE_CATEGORY_LIST">' + (tradetype === "callput" ? "callput" : "digits") + '</field>' +
+              '<field name="TRADETYPE_LIST">' + tradetype + '</field>' +
+              '<next><block type="trade_definition_contracttype" id="b_contracttype" deletable="false" movable="false">' +
+                '<field name="TYPE_LIST">' + contract + '</field>' +
+                '<next><block type="trade_definition_candleinterval" id="b_candle" deletable="false" movable="false">' +
+                  '<field name="CANDLEINTERVAL_LIST">60</field>' +
+                  '<next><block type="trade_definition_restartbuysell" id="b_restart_bs" deletable="false" movable="false">' +
+                    '<field name="TIME_MACHINE_ENABLED">FALSE</field>' +
+                    '<next><block type="trade_definition_restartonerror" id="b_restart_err" deletable="false" movable="false">' +
+                      '<field name="RESTARTONERROR">TRUE</field>' +
+                    '</block></next>' +
+                  '</block></next>' +
+                '</block></next>' +
+              '</block></next>' +
+            '</block></next>' +
+          '</block>' +
+        '</statement>' +
+        '<statement name="INITIALIZATION">' +
+          '<block type="variables_set" id="b_init_stake"><field name="VAR" id="v_stake">Stake</field>' +
+            '<value name="VALUE"><block type="math_number"><field name="NUM">1</field></block></value>' +
+            '<next><block type="variables_set" id="b_init_tp"><field name="VAR" id="v_tp">TakeProfit</field>' +
+              '<value name="VALUE"><block type="math_number"><field name="NUM">5</field></block></value>' +
+              '<next><block type="variables_set" id="b_init_sl"><field name="VAR" id="v_sl">StopLoss</field>' +
+                '<value name="VALUE"><block type="math_number"><field name="NUM">10</field></block></value>' +
+              '</block></next>' +
+            '</block></next>' +
+          '</block>' +
+        '</statement>' +
+        '<statement name="SUBMARKET">' +
+          '<block type="trade_definition_tradeoptions" id="b_options">' +
+            '<field name="DURATIONTYPE_LIST">t</field>' +
+            '<field name="CURRENCY_LIST">USD</field>' +
+            '<value name="DURATION"><shadow type="math_number" id="sh_dur"><field name="NUM">1</field></shadow></value>' +
+            '<value name="AMOUNT"><shadow type="math_number" id="sh_amount"><field name="NUM">1</field></shadow></value>' +
+            (this.templateBarrier(kind) || "") +
+          '</block>' +
+        '</statement>' +
+      '</block>' +
+      this.templateLifecycle(kind) +
+      '</xml>';
+
+    const map = {
+      sample:    ["1HZ100V", "DIGITOVER",  "overunder",     3, 1],
+      overunder: ["R_50",    "DIGITOVER",  "overunder",     5, 5],
+      evenodd:   ["R_75",    "DIGITEVEN",  "evenodd",    null, 1],
+      matches:   ["R_100",   "DIGITDIFF",  "matchesdiffers", 7, 1],
+      risefall:  ["1HZ100V", "CALL",       "callput",     null, 5],
+      blank:     ["R_50",    "DIGITOVER",  "overunder",     3, 1]
+    };
+    const m = map[kind] || map.sample;
+    let xml = head(m[0], m[1], m[2]);
+    /* the duration lives in the <shadow> of the DURATION slot */
+    if (m[4] !== 1) {
+      xml = xml.replace(/(<value name="DURATION"><shadow type="math_number" id="sh_dur"><field name="NUM">)1(<\/field>)/, "$1" + m[4] + "$2");
+    }
+    return { xml, symbol: m[0], contract: m[1], barrier: m[3], duration: m[4], kind };
+  }
+  ,
+
+  templateBarrier(kind) {
+    const map = { sample: 3, overunder: 5, matches: 7 };
+    if (!(kind in map)) return "";
+    return '<value name="PREDICTION"><shadow type="math_number" id="sh_pred"><field name="NUM">' + map[kind] + "</field></shadow></value>";
+  },
+
+  templateLifecycle(kind) {
+    if (kind === "blank") return "";
+    /* full docs pull their lifecycle stacks from the bundled sample so the
+       behaviour (streak reset, take-profit, trade again) matches a real bot */
+    const S = (typeof DBOTS_SAMPLE_XML === "string" ? DBOTS_SAMPLE_XML : "");
+    const grab = name => {
+      const open = S.indexOf('<block type="' + name + '"');
+      if (open < 0) return "";
+      /* slice from the opening block to its matching close */
+      const tag = "</block>";
+      let depth = 0, i = open;
+      while (i < S.length) {
+        const o = S.indexOf("<block", i), c = S.indexOf("</block>", i);
+        if (c < 0) return "";
+        if (o >= 0 && o < c) { depth++; i = o + 6; }
+        else { depth--; i = c + tag.length; if (depth === 0) return S.slice(open, i); }
+      }
+      return "";
+    };
+    let before = grab("before_purchase");
+    const after = grab("after_purchase");
+    const during = grab("during_purchase");
+    /* The bundled sample buys DIGITOVER inside its lifecycle; a template that
+       trades something else must not smuggle that purchase block along. */
+    const want = { sample: "DIGITOVER", overunder: "DIGITOVER", evenodd: "DIGITEVEN",
+                   matches: "DIGITDIFF", risefall: "CALL" }[kind];
+    if (want) {
+      before = before.replace(/(<block type="purchase"[\s\S]*?<field name="PURCHASE_LIST">)([A-Z_]+)(<\/field>)/,
+        (m, a, cur, b) => a + want + b);
+    }
+    return before + after + during;
+  },
+
+  /** Load a quick-strategy template into the library and select it. */
+  addTemplate(kind) {
+    const t = this.template(kind);
+    const names = {
+      sample: "over3_1tick_bot.xml", overunder: "digit_over5_bot.xml", evenodd: "digit_even_bot.xml",
+      matches: "digit_differs7_bot.xml", risefall: "rise_fall_bot.xml", blank: "new_strategy.xml"
+    };
+    const rec = this.add(t.xml, names[kind] || "new_strategy.xml");
+    if (rec) this.resetCanvas();
+    return rec;
+  },
+
+  /* ---------------- canvas navigation: drag, zoom, pan ---------------- */
+
+  /** Restore any block positions the user dragged, per bot + zoom. */
+  applyCanvasState() {
+    const world = $id("dbotsWorld");
+    if (!world) return;
+    const pos = (this.positions || {});
+    Object.keys(pos).forEach(key => {
+      const blk = world.querySelector('.blk[data-key="' + key + '"]');
+      if (!blk) return;
+      blk.style.transform = "translate(" + pos[key].x + "px," + pos[key].y + "px)";
+      blk.style.zIndex = String(3 + (pos[key].z || 0));
+    });
+    world.style.zoom = String(this.zoom || 1);
+  },
+
+  initCanvasNav() {
+    const canvas = $id("dbotsCanvas");
+    const world = $id("dbotsWorld");
+    if (!canvas || !world) return;
+    this.positions = this.positions || {};
+    this.zoom = this.zoom || 1;
+    this.zTop = this.zTop || 1;
+
+    /* drag a block by its header (or anywhere on it) */
+    canvas.addEventListener("pointerdown", ev => {
+      if (ev.target.closest("[data-edit], button, input, .bl-ai, .bl-risk")) return;
+      const blk = ev.target.closest(".blk[data-key]");
+      if (!blk) return;
+      ev.preventDefault();
+      const key = blk.dataset.key;
+      const start = this.positions[key] || { x: 0, y: 0, z: 0 };
+      const ox = ev.clientX, oy = ev.clientY;
+      const zoom = this.zoom || 1;
+      this.zTop += 1;
+      start.z = this.zTop;
+      blk.classList.add("dragging");
+      blk.style.zIndex = String(3 + start.z);
+      const move = mv => {
+        const dx = (mv.clientX - ox) / zoom;
+        const dy = (mv.clientY - oy) / zoom;
+        this.positions[key] = { x: Math.round(start.x + dx), y: Math.round(start.y + dy), z: start.z };
+        blk.style.transform = "translate(" + this.positions[key].x + "px," + this.positions[key].y + "px)";
+      };
+      const up = () => {
+        blk.classList.remove("dragging");
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        this.saveCanvasState();
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+
+    /* pan the canvas by dragging the empty surface */
+    canvas.addEventListener("pointerdown", ev => {
+      if (ev.button !== 0) return;
+      if (ev.target.closest(".blk, button, input, .bl-ai, .bl-risk")) return;
+      const ox = ev.clientX, oy = ev.clientY;
+      const sl = canvas.scrollLeft, st = canvas.scrollTop;
+      canvas.style.cursor = "grabbing";
+      const move = mv => {
+        canvas.scrollLeft = sl - (mv.clientX - ox);
+        canvas.scrollTop = st - (mv.clientY - oy);
+      };
+      const up = () => {
+        canvas.style.cursor = "";
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+
+    /* ctrl/cmd + wheel zooms, plain wheel scrolls (Blockly's behaviour) */
+    canvas.addEventListener("wheel", ev => {
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      ev.preventDefault();
+      this.setZoom((this.zoom || 1) + (ev.deltaY < 0 ? 0.1 : -0.1));
+    }, { passive: false });
+  },
+
+  setZoom(z) {
+    this.zoom = clamp(Math.round(z * 100) / 100, 0.5, 1.6);
+    const world = $id("dbotsWorld");
+    if (world) world.style.zoom = String(this.zoom);
+    const lbl = $id("dbotsZoomLabel");
+    if (lbl) lbl.textContent = Math.round(this.zoom * 100) + "%";
+    this.saveCanvasState();
+  },
+
+  resetCanvas() {
+    this.positions = {};
+    this.zoom = 1;
+    this.zTop = 1;
+    const world = $id("dbotsWorld");
+    if (world) {
+      world.querySelectorAll(".blk[data-key]").forEach(b => { b.style.transform = ""; b.style.zIndex = ""; });
+      world.style.zoom = "1";
+    }
+    const canvas = $id("dbotsCanvas");
+    if (canvas) { canvas.scrollLeft = 0; canvas.scrollTop = 0; }
+    const lbl = $id("dbotsZoomLabel");
+    if (lbl) lbl.textContent = "100%";
+    this.saveCanvasState();
+  },
+
+  saveCanvasState() {
+    try {
+      localStorage.setItem(DBOTS_CANVAS_KEY, JSON.stringify({
+        bot: this.selectedId, zoom: this.zoom || 1, positions: this.positions || {}
+      }));
+    } catch (_) { /* layout memory is a nicety, not a requirement */ }
+  },
+
+  loadCanvasState() {
+    this.positions = {};
+    this.zoom = 1;
+    let raw = null;
+    try { raw = localStorage.getItem(DBOTS_CANVAS_KEY); } catch (_) { return; }
+    if (!raw) return;
+    try {
+      const st = JSON.parse(raw);
+      if (st && st.bot && st.bot === this.selectedId) {
+        this.positions = st.positions || {};
+        this.zoom = Number(st.zoom) || 1;
+      }
+    } catch (_) { /* ignore a corrupt layout */ }
+  },
+
+  /** Wire every editable pill on the canvas. */
+  initCanvasEditor() {
+    const canvas = $id("dbotsCanvas");
+    if (!canvas) return;
+    canvas.addEventListener("click", ev => {
+      const pill = ev.target.closest("[data-edit]");
+      if (!pill) return;
+      ev.stopPropagation();
+      if (pill.disabled) return;
+      if (this.popAnchor === pill) { this.closeEditor(); return; }
+      this.openEditor(pill.dataset.edit, pill);
+    });
+    document.addEventListener("click", ev => {
+      if (!this.pop) return;
+      if (this.pop.contains(ev.target)) return;
+      if (ev.target.closest("[data-edit]")) return;
+      this.closeEditor();
+    });
+    document.addEventListener("keydown", ev => {
+      if (ev.key === "Escape" && this.pop) this.closeEditor();
+    });
+    const canvasScroll = canvas;
+    canvasScroll.addEventListener("scroll", () => this.closeEditor(), { passive: true });
+    window.addEventListener("resize", () => this.closeEditor());
+  },
+
+  /* ---------------- canvas editing ----------------
+     The canvas is a live view of the XML: clicking a value pill opens the
+     same kind of dropdown the Blockly editor shows, and the change is written
+     back into the bot's XML so exports and the runner both see it. */
+
+  /** All editable descriptors for the selected bot. */
+  editModel() {
+    const cfg = this.cfg;
+    if (!cfg) return {};
+    const c = cfg.purchaseContract || cfg.contract;
+    const digit = (typeof DIGIT_CONTRACTS !== "undefined" && DIGIT_CONTRACTS.indexOf(c) >= 0);
+    const isDigitType = /digit/i.test(String(cfg.tradeType || "")) || digit;
+    return {
+      market: {
+        label: "Market", kind: "select", value: cfg.symbol,
+        options: Object.keys(MARKETS).map(k => ({ value: k, label: MARKETS[k].name }))
+      },
+      tradetype: {
+        label: "Trade type", kind: "select", value: String(cfg.tradeType || "").toLowerCase(),
+        options: [
+          { value: "overunder", label: "Over / Under" },
+          { value: "evenodd", label: "Even / Odd" },
+          { value: "matchesdiffers", label: "Matches / Differs" },
+          { value: "callput", label: "Rise / Fall" }
+        ]
+      },
+      contract: {
+        label: "Contract type", kind: "select", value: c,
+        options: (isDigitType
+          ? ["DIGITOVER", "DIGITUNDER", "DIGITEVEN", "DIGITODD", "DIGITMATCH", "DIGITDIFF"]
+          : ["DIGITOVER", "DIGITUNDER", "DIGITEVEN", "DIGITODD", "DIGITMATCH", "DIGITDIFF", "CALL", "PUT"]
+        ).map(k => ({ value: k, label: CONTRACT_LABEL[k] || k }))
+      },
+      candle: {
+        label: "Candle interval", kind: "select", value: String(cfg.candle || "60s").replace(/s$/, ""),
+        options: ["15", "30", "60", "120", "300", "600", "900", "1800", "3600"]
+          .map(v => ({ value: v, label: v + "s" }))
+      },
+      restartbuy: {
+        label: "Restart buy/sell", kind: "toggle", value: !!cfg.restartBuy
+      },
+      restarterror: {
+        label: "Restart on error", kind: "toggle", value: !!cfg.restartOnError
+      },
+      duration: {
+        label: "Duration", kind: "number", value: cfg.duration, min: 1, max: 10, step: 1,
+        unit: cfg.durationUnit === "t" ? "ticks" : cfg.durationUnit,
+        note: "Ticks, 1 to 10, as the trade-options block allows."
+      },
+      stake: {
+        label: "Stake", kind: "number", value: this.stakeOf(cfg), min: 0.35, step: 0.35,
+        note: "Written to the Stake variable in the initialization stack."
+      },
+      prediction: {
+        label: "Prediction", kind: "digit", value: cfg.barrier, disabled: !digit,
+        note: digit ? "The digit the barrier is compared against." : "Only digit contracts use a prediction."
+      }
+    };
+  },
+
+  stakeOf(cfg) {
+    const v = (cfg && cfg.vars) || {};
+    const key = Object.keys(v).find(k => /^(stake|stakeamount|amount)$/i.test(k));
+    const val = key ? Number(v[key]) : NaN;
+    return Number.isFinite(val) ? val : 1;
+  },
+
+  /** Write one field back into the bot's XML, then re-parse and repaint. */
+  applyEdit(field, value) {
+    const rec = this.selected();
+    if (!rec) return;
+    const map = {
+      market: ["trade_definition_market", "SYMBOL_LIST", value, "market"],
+      contract: ["trade_definition_contracttype", "TYPE_LIST", value, "contract"],
+      candle: ["trade_definition_candleinterval", "CANDLEINTERVAL_LIST", value, "candle"],
+      restartbuy: ["trade_definition_restartbuysell", "TIME_MACHINE_ENABLED", value ? "TRUE" : "FALSE", "restartbuy"],
+      restarterror: ["trade_definition_restartonerror", "RESTARTONERROR", value ? "TRUE" : "FALSE", "restarterror"],
+      tradetype: ["trade_definition_tradetype", "TRADETYPE_LIST", String(value).toLowerCase(), "tradetype"]
+    };
+    const parser = new DOMParser();
+    let doc;
+    try { doc = parser.parseFromString(rec.xml, "application/xml"); } catch (_) { return; }
+    const perr = doc.getElementsByTagName("parsererror")[0];
+    if (perr) return;
+
+    const writeField = (blockType, fieldName, v) => {
+      const els = Array.from(doc.getElementsByTagName("block")).filter(el => el.getAttribute("type") === blockType);
+      if (!els.length) return false;
+      els.forEach(el => {
+        let f = Array.from(el.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "field" && n.getAttribute("name") === fieldName)[0];
+        if (!f) {
+          f = doc.createElement("field");
+          f.setAttribute("name", fieldName);
+          el.appendChild(f);
+        }
+        f.textContent = String(v);
+      });
+      return true;
+    };
+
+    /* a variable write targets the initialization block that declares it */
+    const writeVar = (name, v) => {
+      const sets = Array.from(doc.getElementsByTagName("block")).filter(el => el.getAttribute("type") === "variables_set");
+      const hit = sets.find(el => {
+        const f = Array.from(el.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "field" && n.getAttribute("name") === "VAR")[0];
+        return f && String(f.textContent).trim().toLowerCase() === name.toLowerCase();
+      });
+      if (!hit) return false;
+      const valueEl = Array.from(hit.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "value" && n.getAttribute("name") === "VALUE")[0];
+      if (!valueEl) return false;
+      let numEl = Array.from(valueEl.getElementsByTagName("block")).find(b => b.getAttribute("type") === "math_number");
+      if (!numEl) {
+        numEl = doc.createElement("block");
+        numEl.setAttribute("type", "math_number");
+        valueEl.appendChild(numEl);
+      }
+      let nf = Array.from(numEl.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "field" && n.getAttribute("name") === "NUM")[0];
+      if (!nf) {
+        nf = doc.createElement("field");
+        nf.setAttribute("name", "NUM");
+        numEl.appendChild(nf);
+      }
+      nf.textContent = String(v);
+      return true;
+    };
+
+    if (field === "stake") {
+      const key = Object.keys((this.cfg && this.cfg.vars) || {}).find(k => /^(stake|stakeamount|amount)$/i.test(k)) || "Stake";
+      if (!writeVar(key, value)) return;
+    } else if (field === "duration" || field === "prediction") {
+      const opts = Array.from(doc.getElementsByTagName("block")).find(el => el.getAttribute("type") === "trade_definition_tradeoptions");
+      if (!opts) return;
+      const slotName = field === "duration" ? "DURATION" : "PREDICTION";
+      let valueEl = Array.from(opts.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "value" && n.getAttribute("name") === slotName)[0];
+      if (!valueEl) {
+        valueEl = doc.createElement("value");
+        valueEl.setAttribute("name", slotName);
+        opts.appendChild(valueEl);
+      }
+      /* DBot keeps these defaults inside a <shadow>, so write there when present */
+      let host = Array.from(valueEl.childNodes).filter(n => n.nodeType === 1 && (n.tagName.toLowerCase() === "shadow" || n.tagName.toLowerCase() === "block"))[0];
+      if (!host) {
+        host = doc.createElement("shadow");
+        host.setAttribute("type", "math_number");
+        valueEl.appendChild(host);
+      }
+      let nf = Array.from(host.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "field" && n.getAttribute("name") === "NUM")[0];
+      if (!nf) {
+        nf = doc.createElement("field");
+        nf.setAttribute("name", "NUM");
+        host.appendChild(nf);
+      }
+      nf.textContent = String(value);
+    } else {
+      const spec = map[field];
+      if (!spec) return;
+      if (!writeField(spec[0], spec[1], spec[2])) return;
+    }
+
+    rec.xml = new XMLSerializer().serializeToString(doc);
+    rec.addedAt = rec.addedAt || Date.now();
+    this.save();
+    try { this.cfg = this.parse(rec.xml); } catch (_) { /* keep the old analysis */ }
+    /* Keep the run panel in step with the canvas, like the real builder's
+       Trade parameters panel does. */
+    if (this.cfg) this.applyDefaults();
+    this.render();
+    this.log("sys", "Edited " + field + " → " + value + " (" + rec.name + ")");
+  },
+
   /* ---------------- library ---------------- */
 
   add(text, name) {
@@ -6443,6 +7151,8 @@ const DBots = {
     }
     if (this.cfg) this.applyDefaults();
     this.render();
+    this.loadCanvasState();
+    this.applyCanvasState();
   },
 
   applyDefaults() {
@@ -6939,7 +7649,14 @@ const DBots = {
     if (init) {
       const keys = Object.keys(cfg.vars || {});
       init.innerHTML = keys.length
-        ? keys.map(k => '<div class="blk-row"><span class="blk-l">' + esc(k) + '</span><span class="blk-v">' + esc(cfg.vars[k]) + "</span></div>").join("")
+        ? keys.map(k => {
+            const editable = /^(stake|stakeamount|amount)$/i.test(k);
+            return '<div class="blk-row"><span class="blk-l">' + esc(k) + "</span>" +
+              (editable
+                ? '<button class="blk-v" data-edit="stake" type="button">' + esc(cfg.vars[k]) + "</button>"
+                : '<span class="blk-v">' + esc(cfg.vars[k]) + "</span>") +
+              "</div>";
+          }).join("")
         : '<span class="blk-empty">No variables initialised</span>';
     }
 
@@ -7290,12 +8007,9 @@ const DBots = {
       const act = btn.dataset.bl;
       if (act === "import") { if (input) input.click(); return; }
       if (act === "export") { this.download(); return; }
-      if (act === "zoom") {
-        this.zoom = this.zoom === 1 ? 0.85 : 1;
-        const world = $id("dbotsWorld");
-        if (world) world.style.zoom = String(this.zoom);
-        return;
-      }
+      if (act === "zoomin") { this.setZoom((this.zoom || 1) + 0.1); return; }
+      if (act === "zoomout") { this.setZoom((this.zoom || 1) - 0.1); return; }
+      if (act === "zoomreset") { this.resetCanvas(); return; }
       const side = $id("dbotsSide");
       const already = side && side.classList.contains("open") && btn.classList.contains("active");
       $$("[data-bl]").forEach(x => x.classList.toggle("active", x === btn));
@@ -7318,17 +8032,31 @@ const DBots = {
       this.log("sys", "Execution speed set to " + (this.fast ? "fast" : "normal") + ".");
     });
 
+    const qsBack = $id("qsBack");
+    const openQuick = () => { if (qsBack) { qsBack.classList.remove("hidden"); this.closeSide(); } };
+    const closeQuick = () => { if (qsBack) qsBack.classList.add("hidden"); };
     const qs = $id("dbotsQuick");
-    if (qs) qs.addEventListener("click", () => {
-      if (this.library.length) { this.select(this.library[0].id); toast("Strategy loaded", "The bundled strategy is on the canvas. Press Run to trade it.", "info"); }
-      else this.add(DBOTS_SAMPLE_XML, "over3_1tick_bot.xml");
-    });
+    if (qs) qs.addEventListener("click", openQuick);
+    const qsCancel = $id("qsCancel");
+    if (qsCancel) qsCancel.addEventListener("click", closeQuick);
+    if (qsBack) qsBack.addEventListener("click", ev => { if (ev.target === qsBack) closeQuick(); });
+    document.addEventListener("keydown", ev => { if (ev.key === "Escape" && qsBack && !qsBack.classList.contains("hidden")) closeQuick(); });
+    $$("#qsGrid [data-qs]").forEach(card => card.addEventListener("click", () => {
+      closeQuick();
+      this.addTemplate(card.dataset.qs);
+    }));
     const ai = $id("dbotsAi");
     if (ai) ai.addEventListener("click", () => {
       this.openSide("checks");
       const first = $id("dbotsIssues");
       if (first) first.scrollIntoView({ block: "nearest" });
     });
+    const risk = $id("dbotsRisk");
+    if (risk) risk.addEventListener("click", () =>
+      toast("Risk disclaimer",
+        "Deriv synthetic indices are independent per tick: past digits do not predict the next one, and no payout edge is implied. This runner executes the blocks in the file — it does not promise profit, and a strategy can lose its whole stake.",
+        "warn"));
+
     const jb = $id("dbotsJournalBtn");
     if (jb) jb.addEventListener("click", () => this.toggleJournal());
     const jc = $id("dbotsCloseJournal");
@@ -7346,6 +8074,9 @@ const DBots = {
     if (emptySample) emptySample.addEventListener("click", () => {
       if (DBOTS_SAMPLE_XML) this.add(DBOTS_SAMPLE_XML, "over3_1tick_bot.xml");
     });
+
+    this.initCanvasEditor();
+    this.initCanvasNav();
 
     if (this.library.length) this.select(this.library[0].id);
     else this.render();

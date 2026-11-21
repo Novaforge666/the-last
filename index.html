@@ -151,7 +151,13 @@ a:hover{text-decoration:underline}
 /* ---------------------------------------------------------------------------
    3. APP SHELL
    --------------------------------------------------------------------------- */
-.wrap{max-width:1360px;margin:0 auto;padding:0 18px 48px}
+.wrap{
+  max-width:1560px;margin:0 auto;padding:0 14px 14px;
+  /* the shell owns the viewport: panes fill it, nothing scrolls the page */
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+.tabpane{flex:1 1 auto;min-height:0;overflow:hidden;padding-top:10px}
 
 header.topbar{
   position:sticky;top:0;z-index:40;
@@ -620,16 +626,20 @@ th.num{text-align:right}
    15. FOOTER
    --------------------------------------------------------------------------- */
 footer.foot{
-  border-top:1px solid var(--line);margin-top:30px;padding:22px 0 8px;
-  text-align:center;color:var(--dim);font-size:12px;
+  flex:0 0 auto;
+  border-top:1px solid var(--line);padding:5px 16px;margin:0;
+  display:flex;align-items:center;gap:16px;
+  color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;
+  background:rgba(7,7,7,.9);
 }
 footer.foot .risk{
-  color:#fdba74;font-weight:600;margin-bottom:8px;
-  display:inline-flex;align-items:center;gap:8px;
+  color:#fdba74;font-weight:600;
+  display:inline-flex;align-items:center;gap:6px;
   border:1px solid rgba(251,146,60,.28);background:rgba(251,146,60,.07);
-  padding:7px 14px;border-radius:var(--radius-pill);font-size:11.5px;
+  padding:2px 9px;border-radius:var(--radius-pill);font-size:10.5px;flex:0 0 auto;
 }
-footer.foot .links{margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:11.5px}
+footer.foot .disc{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;color:#52525b}
+footer.foot .links{display:flex;gap:14px;flex:0 0 auto;font-size:10.5px}
 footer.foot .links a{color:var(--muted)}
 footer.foot .links a:hover{color:var(--acc)}
 
@@ -675,8 +685,9 @@ footer.foot .links a:hover{color:var(--acc)}
    17. READOUT STRIP (live status pill row)
    --------------------------------------------------------------------------- */
 .readout{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  margin-top:14px;padding:9px 14px;
+  display:flex;align-items:center;gap:10px;flex-wrap:nowrap;white-space:nowrap;
+  overflow:hidden;
+  margin-top:8px;padding:6px 12px;
   border:1px solid var(--line);border-radius:var(--radius-pill);
   background:var(--panel);
   font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
@@ -692,6 +703,444 @@ footer.foot .links a:hover{color:var(--acc)}
 @media (max-width:760px){
   .readout{font-size:9px;gap:7px;padding:6px 8px}
   .readout .ro-dim{display:none}
+}
+
+/* ---------------------------------------------------------------------------
+   17b. MANUAL TRADE — chart workspace, ticket, bottom strip
+   --------------------------------------------------------------------------- */
+/* the pane is a column: chart grid takes what is left, strip keeps a fixed slice */
+#pane-manual.active{display:flex;flex-direction:column;min-height:0}
+.mt{
+  display:grid;grid-template-columns:minmax(0,1.62fr) minmax(320px,.9fr);
+  gap:12px;min-height:0;flex:1 1 auto;align-items:stretch;
+}
+.mt-chart{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mt-chart-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;
+}
+.mt-chart-head .sym{display:flex;align-items:center;gap:9px;min-width:0}
+.mt-chart-head .sym b{
+  display:block;font-family:var(--display);font-size:13.5px;font-weight:700;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.mt-chart-head .sym small{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:1px}
+.sym-ico{
+  width:26px;height:26px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;
+  font-family:var(--display);font-weight:800;font-size:12px;
+  color:var(--acc-ink);background:var(--acc);
+}
+.mt-chart-tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+
+.mt-canvas-wrap{
+  position:relative;flex:1 1 auto;min-height:150px;
+  background:
+    linear-gradient(180deg,rgba(250,204,21,.035),transparent 45%),
+    var(--bg-2);
+}
+.mt-canvas-wrap canvas{display:block;width:100%;height:100%}
+.mt-rail{
+  position:absolute;left:9px;top:9px;z-index:3;display:flex;flex-direction:column;gap:5px;
+  padding:4px;border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  background:rgba(17,17,17,.86);backdrop-filter:blur(8px);
+}
+.mt-rail button{
+  appearance:none;width:24px;height:24px;border:0;border-radius:6px;cursor:pointer;
+  background:transparent;color:var(--muted);font:600 13px var(--mono);line-height:1;
+}
+.mt-rail button:hover{background:rgba(255,255,255,.07);color:var(--txt)}
+.mt-price-tag{
+  position:absolute;right:0;top:0;z-index:3;transform:translateY(-50%);
+  padding:3px 8px;border-radius:6px 0 0 6px;
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  background:var(--txt);color:#0a0a0a;white-space:nowrap;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,.9);
+}
+.mt-canvas-wrap.mt-scroll{overflow:auto}
+.mt-canvas-foot{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  display:flex;align-items:center;gap:14px;padding:5px 10px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
+  background:linear-gradient(180deg,transparent,rgba(7,7,7,.85));
+  pointer-events:none;
+}
+.mt-canvas-foot b{color:var(--muted);font-weight:500}
+
+/* digit frequency strip pinned under the chart, Deriv-style */
+.mt-digi-strip{
+  display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;
+  padding:7px 10px 7px 12px;position:relative;z-index:2;
+  background:linear-gradient(180deg,rgba(7,7,7,.5),var(--bg-2));
+  border-top:1px solid var(--line);
+}
+.mt-digi{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:4px 0 5px;border-radius:9px;border:1px solid transparent;
+  cursor:pointer;background:transparent;transition:background .15s,border-color .15s;
+}
+.mt-digi:hover{background:rgba(255,255,255,.045)}
+.mt-digi .n{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--muted);line-height:1}
+.mt-digi .p{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.02em}
+.mt-digi .pip{width:14px;height:2px;border-radius:2px;background:var(--line-3);margin-top:1px}
+.mt-digi.hot{background:var(--acc-soft);border-color:var(--acc-line)}
+.mt-digi.hot .n{color:var(--acc)}
+.mt-digi.hot .pip{background:var(--acc);box-shadow:0 0 8px rgba(250,204,21,.8)}
+.mt-digi.cold{opacity:.62}
+.mt-digi.cold .n{color:#71717a}
+.mt-digi.picked{border-color:var(--acc);background:rgba(250,204,21,.14)}
+.mt-digi.picked .n{color:var(--acc)}
+.mt-digi.picked::after{
+  content:"";position:absolute;margin-top:31px;width:0;height:0;
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-bottom:4px solid var(--acc);
+}
+
+.mt-chart-foot{
+  display:flex;align-items:center;gap:16px;flex:0 0 auto;
+  padding:7px 12px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
+}
+.mt-chart-foot .kv b{color:var(--muted);font-weight:500;margin-right:5px}
+.mt-chart-foot .mono{color:var(--txt)}
+
+/* ---------- side column ---------- */
+.mt-side{
+  display:grid;grid-template-rows:minmax(0,1fr) auto;
+  gap:12px;min-height:0;overflow:hidden;
+}
+.mt-side > .panel:first-child{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.mt-side > .panel:first-child .panel-body{overflow-y:auto;min-height:0;padding-bottom:2px}
+.mt-side > .panel:last-child{flex:0 0 auto}
+.mt-ticket{display:flex;flex-direction:column;gap:10px}
+/* compact ticket spacing so the whole tab lands inside one screen */
+.mt-ticket .lbl{font-size:9.5px}
+.mt-ticket .hint{font-size:10.5px;line-height:1.45}
+.mt-deal{padding:9px 11px}
+.mt-payout{padding:9px 11px;gap:4px}
+.mt-payout .big{font-size:19px}
+.mt-digits button{padding:7px 0;font-size:12px}
+.mt-mini .panel-body{padding:10px 12px 12px}
+.mt-hidden-selects{display:none}
+
+.mt-barrier-head{display:flex;flex-direction:column;gap:2px;margin-bottom:7px}
+.mt-barrier-head .lbl{margin:0}
+.mt-barrier-head .hint{margin:0;font-size:10.5px}
+.mt-digits{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.mt-digits button{
+  appearance:none;position:relative;cursor:pointer;
+  border:1px solid var(--line-2);border-radius:var(--radius-xs);
+  background:var(--bg-2);color:var(--muted);
+  padding:9px 0;font-family:var(--mono);font-size:13px;font-weight:700;
+  transition:background .14s,border-color .14s,color .14s,transform .1s;
+}
+.mt-digits button:hover{border-color:var(--line-3);color:var(--txt);background:var(--panel-2)}
+.mt-digits button.active{
+  border-color:var(--acc);background:var(--acc);color:var(--acc-ink);
+  box-shadow:0 8px 18px -12px rgba(250,204,21,.95);
+}
+.mt-digits button.active::after{
+  content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:4px solid var(--acc);
+}
+
+.mt-deal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.mt-deal-head .lbl{margin:0}
+.stepper{
+  display:grid;grid-template-columns:34px minmax(0,1fr) 34px;align-items:stretch;
+  border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--bg-2);overflow:hidden;
+}
+.stepper > button{
+  appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
+  font:600 16px var(--mono);line-height:1;
+}
+.stepper > button:hover{background:rgba(255,255,255,.07);color:var(--txt)}
+.stepper > button:first-child{border-right:1px solid var(--line)}
+.stepper > button:last-child{border-left:1px solid var(--line)}
+.stepper label{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px}
+.stepper input{
+  width:auto;max-width:76px;border:0 !important;background:transparent !important;padding:0 !important;
+  text-align:right;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--txt);
+  box-shadow:none !important;appearance:textfield;
+}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepper label span{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+
+.mt-payout{
+  border:1px solid var(--acc-line);border-radius:var(--radius-sm);
+  background:radial-gradient(120% 140% at 0% 0%, rgba(250,204,21,.12), transparent 68%), var(--panel-2);
+  padding:11px 12px;
+}
+.mt-payout .lbl{margin:0}
+.mt-payout-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:3px}
+.mt-payout .big{font-family:var(--display);font-size:24px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.mt-profit{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--up)}
+.mt-payout .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.mt-payout .split{display:flex;justify-content:space-between;gap:10px;margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.08)}
+.mt-payout .split div{font-size:10px;color:var(--dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.mt-payout .split b{display:block;font-family:var(--mono);font-size:12px;color:var(--txt);margin-top:2px;text-transform:none;letter-spacing:0}
+
+.mt-actions{display:flex;gap:8px}
+.mt-buy-go{
+  width:100%;padding:12px;border-radius:var(--radius-sm);font-size:14px;letter-spacing:.08em;
+  background:var(--acc);border-color:var(--acc);color:var(--acc-ink);
+  box-shadow:0 14px 30px -18px rgba(250,204,21,.9);
+}
+.mt-buy-go:disabled{background:var(--panel-3);color:var(--dim);border-color:var(--line-2);box-shadow:none}
+
+.mt-mini{flex:0 0 auto}
+.mt-mini-bars{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;align-items:end;height:74px}
+.mt-mini-bars .mb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%}
+.mt-mini-bars .mb i{display:block;width:100%;border-radius:3px;background:var(--panel-3);min-height:2px;transition:height .25s}
+.mt-mini-bars .mb.hot i{background:linear-gradient(180deg,var(--acc),var(--acc-dim))}
+.mt-mini-bars .mb.cold i{background:#232326}
+.mt-mini-bars .mb b{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--dim)}
+.mt-mini-bars .mb.hot b{color:var(--acc)}
+
+/* ---------- bottom strip ---------- */
+.mt-bottom{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);
+  gap:12px;margin-top:12px;flex:0 0 auto;max-height:216px;
+}
+.mt-bottom > .panel{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mt-bottom > .panel .panel-body{overflow-y:auto;min-height:0}
+.mt-trades{max-height:none}
+.mt-trades th,.mt-trades td{padding:7px 10px}
+
+/* contract picker grid */
+.ct-pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.ct-pick button{
+  appearance:none;text-align:left;cursor:pointer;
+  border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--bg-2);color:var(--txt);
+  padding:10px 12px;transition:border-color .15s,background .15s;
+}
+.ct-pick button:hover{border-color:var(--acc-line);background:var(--panel-2)}
+.ct-pick button.on{border-color:var(--acc);background:var(--acc-soft)}
+.ct-pick b{display:block;font-family:var(--display);font-size:13px;font-weight:700}
+.ct-pick small{display:block;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:3px;letter-spacing:.05em;text-transform:uppercase}
+
+@media (max-width:1240px){
+  .mt{grid-template-columns:minmax(0,1.45fr) minmax(300px,.95fr)}
+  .mt-bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media (max-width:1020px){
+  body{height:auto;overflow:auto}
+  .tabpane{overflow:visible}
+  .mt{grid-template-columns:minmax(0,1fr);height:auto;flex:0 0 auto}
+  #pane-manual.active{display:block}
+  .mt-canvas-wrap{height:300px;flex:0 0 auto}
+  .mt-bottom{grid-template-columns:minmax(0,1fr);max-height:none}
+  footer.foot .disc{display:none}
+}
+
+/* ---------------------------------------------------------------------------
+   18b. DBOTS BUILDER — rail / canvas / side panel / run bar
+   --------------------------------------------------------------------------- */
+.bl{display:flex;flex-direction:column;gap:10px;height:100%;min-height:0}
+
+.bl-frame{
+  flex:1 1 auto;min-height:0;display:grid;
+  grid-template-columns:112px minmax(0,1fr) 286px;
+  overflow:hidden;
+}
+
+/* ---- left rail ---- */
+.bl-rail{
+  border-right:1px solid var(--line);background:var(--bg-2);
+  display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 8px;
+}
+.bl-qs{
+  appearance:none;cursor:pointer;width:100%;
+  border:0;border-radius:var(--radius-sm);
+  background:linear-gradient(180deg,#2563eb,#1d4ed8);
+  color:#eff6ff;font-family:var(--display);font-size:11px;font-weight:800;letter-spacing:.02em;
+  padding:8px 6px;line-height:1.2;text-align:center;
+  box-shadow:0 10px 22px -14px rgba(37,99,235,.9);
+  transition:filter .15s,transform .15s;
+}
+.bl-qs:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.bl-rail-tools{display:flex;flex-direction:column;gap:4px;width:100%}
+.bl-rail-tools button{
+  appearance:none;cursor:pointer;border:0;border-radius:8px;background:transparent;
+  color:#52525b;padding:7px;display:grid;place-items:center;transition:background .15s,color .15s;
+}
+.bl-rail-tools button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bl-rail-tools button:hover{background:rgba(255,255,255,.06);color:var(--txt)}
+.bl-rail-tools button.active{background:rgba(37,99,235,.18);color:#93c5fd}
+
+/* ---- canvas ---- */
+.bl-canvas{
+  position:relative;overflow:auto;min-height:0;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.085) 1px, transparent 0) 0 0/22px 22px,
+    #0b0b0c;
+}
+.bl-world{
+  position:relative;min-height:100%;padding:18px 20px 56px;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-content:start;
+}
+.bl-empty{
+  position:absolute;inset:0;display:grid;place-items:center;padding:20px;z-index:2;
+}
+.bl-empty.hidden{display:none}
+.bl-empty-card{
+  width:min(430px,100%);border:1px dashed var(--line-3);border-radius:var(--radius);
+  background:rgba(17,17,17,.92);padding:22px;text-align:center;
+  box-shadow:var(--shadow);
+}
+.bl-empty-card h4{font-family:var(--display);font-size:16px;font-weight:800;margin-bottom:7px}
+.bl-empty-card p{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ---- block cards ---- */
+.blk{
+  border-radius:10px;overflow:hidden;min-width:0;
+  border:1px solid #1e3a8a;background:#0f172a;
+  box-shadow:0 12px 26px -20px rgba(0,0,0,.95);
+}
+.blk-h{
+  background:linear-gradient(180deg,#1d4ed8,#1e40af);
+  color:#f8fafc;font-family:var(--display);font-size:11px;font-weight:800;
+  letter-spacing:.01em;padding:6px 10px;
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+}
+.blk-s{font-family:var(--mono);font-size:9px;font-weight:500;color:#bfdbfe;text-transform:uppercase;letter-spacing:.1em}
+.blk-b{background:#0b1220;padding:7px 8px;display:flex;flex-direction:column;gap:5px}
+.blk-row{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:#111c33;border:1px solid #1e3a8a;border-radius:6px;padding:5px 8px;min-width:0;
+}
+.blk-l{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:#7f9cc4;flex:0 0 auto}
+.blk-v{
+  font-family:var(--mono);font-size:11px;font-weight:700;color:#e2e8f0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.blk-v.acc{color:#facc15}
+.blk-run .blk-h{background:#1e293b;border-bottom:1px solid #334155}
+.blk-tree{gap:4px}
+.blk-line{display:flex;align-items:center;gap:6px;min-width:0}
+.blk-line .ind{color:#334155;font-family:var(--mono);font-size:10px;flex:0 0 auto;letter-spacing:-.05em}
+.blk-line .chip{
+  font-family:var(--mono);font-size:10px;font-weight:600;color:#cbd5e1;
+  background:#111c33;border:1px solid #1e3a8a;border-radius:5px;padding:3px 7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+}
+.blk-line .chip.cond{background:#0f2a1f;border-color:#166534;color:#86efac}
+.blk-line .chip.buy{background:#3b2b06;border-color:#a16207;color:#fde047}
+.blk-line .chip.again{background:#2a1030;border-color:#7e22ce;color:#e9d5ff}
+.blk-line .chip.set{color:#bfdbfe;border-color:#1e40af}
+.blk-empty{font-family:var(--mono);font-size:10px;color:#475569;padding:2px 4px}
+
+/* floating AI orb, like the reference */
+.bl-ai{
+  position:absolute;right:22px;bottom:18px;z-index:4;
+  width:52px;height:52px;border-radius:50%;cursor:pointer;
+  border:1px solid rgba(167,139,250,.5);
+  background:radial-gradient(circle at 35% 30%, #a78bfa, #6d28d9 70%);
+  color:#fff;font-family:var(--display);font-weight:800;font-size:14px;
+  box-shadow:0 12px 30px -10px rgba(109,40,217,.85), inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .18s;
+}
+.bl-ai:hover{transform:translateY(-2px) scale(1.03)}
+.bl-ai::after{
+  content:"";position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;
+  background:var(--up);box-shadow:0 0 8px rgba(34,197,94,.9);border:1px solid #0b0b0c;
+}
+
+/* ---- right side panel ---- */
+.bl-side{
+  border-left:1px solid var(--line);background:var(--bg-2);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.bl-side-tabs{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.bl-side-tabs button{
+  flex:1;appearance:none;cursor:pointer;border:1px solid transparent;border-radius:var(--radius-pill);
+  background:transparent;color:var(--muted);font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.08em;text-transform:uppercase;padding:6px 4px;transition:background .15s,color .15s;
+}
+.bl-side-tabs button:hover{background:rgba(255,255,255,.05);color:var(--txt)}
+.bl-side-tabs button.active{background:var(--acc);color:var(--acc-ink);font-weight:700}
+.bl-side-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:10px}
+.bl-side-sec + .bl-side-sec{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.bl-side-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+}
+.bl-import{
+  border:1.5px dashed var(--line-3);border-radius:var(--radius-sm);background:var(--panel);
+  padding:14px 10px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.bl-import:hover,.bl-import.drag{border-color:var(--acc-line);background:var(--panel-2)}
+.bl-import b{display:block;font-family:var(--display);font-size:12px;font-weight:700;color:var(--txt)}
+.bl-import span{display:block;font-size:10px;color:var(--dim);margin-top:3px}
+
+/* ---- run bar ---- */
+.bl-runbar{
+  flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  padding:8px 10px;border-radius:var(--radius);
+}
+.bl-run-left{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.bl-run-btn{
+  appearance:none;cursor:pointer;display:flex;align-items:center;gap:7px;
+  border:1px solid #16805e;border-radius:var(--radius-sm);
+  background:linear-gradient(180deg,#19b78a,#0f7050);
+  color:#03130e;font-family:var(--display);font-weight:800;font-size:13px;
+  padding:8px 16px;box-shadow:0 12px 26px -16px rgba(25,183,138,.9);
+  transition:filter .15s,transform .12s;
+}
+.bl-run-btn svg{width:15px;height:15px;fill:currentColor;stroke:none}
+.bl-run-btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.bl-run-btn:disabled{background:var(--panel-3);border-color:var(--line-2);color:var(--dim);box-shadow:none;cursor:not-allowed}
+.bl-stop-btn{
+  appearance:none;cursor:pointer;display:flex;align-items:center;gap:6px;
+  border:1px solid rgba(239,68,68,.4);border-radius:var(--radius-sm);background:rgba(239,68,68,.1);
+  color:#fca5a5;font-family:var(--display);font-weight:700;font-size:12px;padding:7px 12px;
+}
+.bl-stop-btn svg{width:13px;height:13px;fill:currentColor;stroke:none}
+.bl-stop-btn:hover:not(:disabled){background:rgba(239,68,68,.18)}
+.bl-stop-btn:disabled{opacity:.42;cursor:not-allowed}
+.bl-run-meta{display:flex;flex-direction:column;gap:1px;padding-left:10px;border-left:1px solid var(--line);min-width:0}
+.bl-run-meta .k{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.bl-run-meta .v{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--txt);white-space:nowrap}
+.bl-run-mid{
+  flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  border-left:1px solid var(--line);border-right:1px solid var(--line);padding:0 12px;
+}
+.bl-run-mid b{color:var(--txt)}
+.bl-run-right{flex:0 0 auto}
+.bl-journal{
+  appearance:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line-2);border-radius:var(--radius-pill);background:var(--panel-2);
+  color:var(--txt);font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  padding:6px 12px;
+}
+.bl-journal:hover{border-color:var(--acc-line)}
+.bl-journal b{
+  font-family:var(--mono);font-size:9.5px;color:var(--acc-ink);background:var(--acc);
+  border-radius:var(--radius-pill);padding:1px 6px;
+}
+
+/* journal drawer slides over the builder */
+.bl-drawer{
+  position:absolute;left:0;right:0;bottom:0;z-index:20;
+  transform:translateY(110%);transition:transform .22s ease;
+  padding:0 12px 10px;pointer-events:none;
+}
+.bl-drawer.open{transform:none;pointer-events:auto}
+.bl{position:relative}
+.bl-drawer .panel{box-shadow:0 -18px 44px -24px rgba(0,0,0,.95)}
+
+@media (max-width:1180px){
+  .bl-frame{grid-template-columns:96px minmax(0,1fr) 250px}
+  .bl-world{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:900px){
+  .bl-frame{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(240px,1fr) auto}
+  .bl-rail{flex-direction:row;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .bl-qs{width:auto;white-space:nowrap;padding:7px 12px}
+  .bl-rail-tools{flex-direction:row;width:auto}
+  .bl-side{border-left:0;border-top:1px solid var(--line);max-height:270px}
+  .bl-run-meta{display:none}
 }
 
 /* ---------------------------------------------------------------------------
@@ -770,7 +1219,21 @@ footer.foot .links a:hover{color:var(--acc)}
 <style>
 /* Column layouts for the dashboard panes (kept separate so the main sheet
    stays readable). Two columns on desktop, one column on small screens. */
-.cols{display:grid;gap:14px;align-items:start}
+.cols{display:grid;gap:12px;align-items:start}
+/* panes that must fit the viewport give their panels an internal scroll area */
+.tabpane#pane-analysis .cols,
+.tabpane#pane-signals .cols{height:100%;min-height:0;align-items:stretch}
+.tabpane#pane-analysis .stack-12,
+.tabpane#pane-signals .stack-12{min-height:0;overflow-y:auto;padding-right:2px}
+.tabpane#pane-analysis .panel:first-child,
+.tabpane#pane-signals .panel:first-child{flex:0 0 auto}
+.tabpane#pane-bots .cols{height:100%;min-height:0;align-items:stretch}
+.tabpane#pane-bots .cols > .stack-12{min-height:0;overflow-y:auto;padding-right:2px}
+.tabpane#pane-bots .log{height:auto;min-height:120px;max-height:none;flex:1 1 auto}
+.tabpane#pane-bots .stack-12 > .panel:last-child{display:flex;flex-direction:column;min-height:0}
+.tabpane#pane-bots .stack-12 > .panel:last-child .panel-body{display:flex;min-height:0;flex:1 1 auto}
+.tabpane#pane-bots .stack-12 > .panel:last-child .panel-body > .log{flex:1 1 auto}
+.tabpane#pane-dbots > .bl{height:100%}
 .cols.manual{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
 .cols.bot{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
 .cols.analysis{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
@@ -865,172 +1328,264 @@ footer.foot .links a:hover{color:var(--acc)}
   <div id="globalBanner" class="banner info hidden" style="margin-top:12px"></div>
 
   <!-- ================================================================== -->
-  <!-- TAB 1 — MANUAL TRADE                                               -->
+  <!-- TAB 1 — MANUAL TRADE (chart workspace + ticket + position grid)    -->
   <!-- ================================================================== -->
   <section class="tabpane active" id="pane-manual" role="tabpanel">
-    <div class="cols manual">
+    <div class="mt">
 
-      <!-- ---------- Live tick + chart ---------- -->
-      <div class="panel">
-        <div class="panel-head">
-          <h3>Live tick</h3>
-          <span class="badge soft" id="tickSource">—</span>
-          <div class="spacer"></div>
-          <span class="tiny dim mono" id="tickCount">0 ticks</span>
+      <!-- ---------- Chart workspace ---------- -->
+      <div class="panel mt-chart">
+        <div class="mt-chart-head">
+          <span class="sym">
+            <i class="sym-ico">V</i>
+            <span>
+              <b id="tickSource">Volatility 50 Index</b>
+              <small><span class="mono" id="tickQuoteMini">—</span> <span id="tickDirMini" class="tiny">—</span></small>
+            </span>
+          </span>
+          <span class="mt-chart-tools">
+            <span class="seg">
+              <button data-span="30">30</button>
+              <button data-span="60" class="active">60</button>
+              <button data-span="120">120</button>
+            </span>
+            <span class="badge soft mono" id="tickCount">0 ticks</span>
+          </span>
         </div>
-        <div class="panel-body">
-          <div class="tick-hero">
-            <div style="min-width:0">
-              <div class="tick-quote mono" id="tickQuote">—</div>
-              <div class="tick-meta-row">
-                <span class="kv"><b>Dir</b> <span id="tickDir">—</span></span>
-                <span class="kv"><b>Time</b> <span id="tickTime">—</span></span>
-                <span class="kv"><b>Epoch</b> <span id="tickEpoch">—</span></span>
-              </div>
-            </div>
-            <div class="digit-box" id="digitBox">
-              <div style="text-align:center">
-                <div id="digitVal">–</div>
-                <small>last digit</small>
-              </div>
-            </div>
-          </div>
 
-          <div class="chart-wrap">
-            <canvas id="chart" aria-label="Live tick chart"></canvas>
-            <div class="chart-legend">
-              <span><b>——</b> quote</span>
-              <span id="chartInfo">last 60 ticks</span>
-            </div>
+        <div class="mt-canvas-wrap">
+          <div class="mt-rail">
+            <button data-zoom="in" title="Zoom in">+</button>
+            <button data-zoom="out" title="Zoom out">−</button>
+            <button data-zoom="reset" title="Fit">⌖</button>
           </div>
+          <canvas id="chart" aria-label="Live tick chart"></canvas>
+          <div class="mt-price-tag" id="priceTag">—</div>
+          <div class="mt-digi-strip" id="digitStrip" aria-label="Last digit frequencies"></div>
+          <div class="mt-canvas-foot">
+            <span id="chartInfo">last 60 ticks</span>
+            <span>tick interval <b class="mono" id="tickInterval">—</b></span>
+            <span id="chartClock" class="mono">—</span>
+          </div>
+        </div>
 
-          <div class="row" style="justify-content:space-between;margin-top:12px">
-            <span class="tiny dim">Last digits (newest → oldest)</span>
-            <span class="tiny dim">tick interval <b class="mono" id="tickInterval">—</b></span>
-          </div>
-          <div class="strip" id="digitStrip"></div>
+        <div class="mt-chart-foot">
+          <span class="kv"><b>Last digit</b> <span id="tickDigitMini" class="mono">—</span></span>
+          <span class="kv"><b>Window</b> <span id="chartSpanLabel" class="mono">60 ticks</span></span>
+          <span class="seg" id="stripSeg" title="Ticks used for the digit strip percentages">
+            <button data-win="50">50</button>
+            <button data-win="100" class="active">100</button>
+            <button data-win="250">250</button>
+          </span>
+          <span class="kv"><b>Epoch</b> <span id="tickEpoch" class="mono">—</span></span>
+          <div class="spacer"></div>
+          <span class="badge soft" id="ticketMarket">—</span>
         </div>
       </div>
 
-      <!-- ---------- Contract ticket ---------- -->
-      <div class="panel">
-        <div class="panel-head">
-          <h3>Place trade</h3>
-          <div class="spacer"></div>
-          <span class="badge soft mono" id="ticketMarket">—</span>
+      <!-- ---------- Ticket + compact analysis ---------- -->
+      <div class="mt-side">
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3 id="contractTitle">Digit Over</h3>
+            <div class="spacer"></div>
+            <button class="btn xs ghost" id="btnPickContract">Change</button>
+          </div>
+          <div class="panel-body mt-ticket">
+
+            <div class="mt-hidden-selects">
+              <label class="field">
+                <span class="lbl">Market</span>
+                <select id="market" aria-label="Market for the ticket">
+                  <option value="R_10">Volatility 10 Index</option>
+                  <option value="R_25">Volatility 25 Index</option>
+                  <option value="R_50" selected>Volatility 50 Index</option>
+                  <option value="R_75">Volatility 75 Index</option>
+                  <option value="R_100">Volatility 100 Index</option>
+                  <option value="1HZ10V">Volatility 10 (1s) Index</option>
+                  <option value="1HZ25V">Volatility 25 (1s) Index</option>
+                  <option value="1HZ50V">Volatility 50 (1s) Index</option>
+                  <option value="1HZ75V">Volatility 75 (1s) Index</option>
+                  <option value="1HZ100V">Volatility 100 (1s) Index</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="lbl">Contract type</span>
+                <select id="ct">
+                  <optgroup label="Digit contracts">
+                    <option value="DIGITOVER" selected>Digit Over</option>
+                    <option value="DIGITUNDER">Digit Under</option>
+                    <option value="DIGITEVEN">Digit Even</option>
+                    <option value="DIGITODD">Digit Odd</option>
+                    <option value="DIGITMATCH">Digit Matches</option>
+                    <option value="DIGITDIFF">Digit Differs</option>
+                  </optgroup>
+                  <optgroup label="Directional">
+                    <option value="CALL">Rise</option>
+                    <option value="PUT">Fall</option>
+                  </optgroup>
+                </select>
+              </label>
+            </div>
+
+            <div class="mt-barriers" id="barrierWrap">
+              <div class="mt-barrier-head">
+                <span class="lbl">Last digit prediction</span>
+                <span class="hint" id="barrierHint">Wins if the last digit is strictly greater than the barrier.</span>
+              </div>
+              <div class="mt-digits" id="digitPick" role="radiogroup" aria-label="Barrier digit">
+                <button type="button" data-d="0">0</button>
+                <button type="button" data-d="1">1</button>
+                <button type="button" data-d="2">2</button>
+                <button type="button" data-d="3" class="active">3</button>
+                <button type="button" data-d="4">4</button>
+                <button type="button" data-d="5">5</button>
+                <button type="button" data-d="6">6</button>
+                <button type="button" data-d="7">7</button>
+                <button type="button" data-d="8">8</button>
+                <button type="button" data-d="9">9</button>
+              </div>
+              <select id="barrier" class="mt-hidden-selects" aria-hidden="true" tabindex="-1">
+                <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                <option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                <option value="9">9</option>
+              </select>
+            </div>
+
+            <div class="mt-deal">
+              <div class="mt-deal-head">
+                <span class="lbl">Deal</span>
+                <span class="seg" id="stakeSeg">
+                  <button type="button" data-stake="1" class="active">1</button>
+                  <button type="button" data-stake="5">5</button>
+                  <button type="button" data-stake="10">10</button>
+                  <button type="button" data-stake="25">25</button>
+                </span>
+              </div>
+              <div class="stepper">
+                <button type="button" data-step="-1" aria-label="Decrease stake">−</button>
+                <label>
+                  <input type="number" id="stake" value="1" min="0.35" step="0.35" inputmode="decimal" aria-label="Stake in USD" />
+                  <span>USD</span>
+                </label>
+                <button type="button" data-step="1" aria-label="Increase stake">+</button>
+              </div>
+            </div>
+
+            <div class="mt-deal">
+              <div class="mt-deal-head">
+                <span class="lbl">Duration</span>
+                <span class="tiny dim">in ticks</span>
+              </div>
+              <div class="stepper">
+                <button type="button" data-dstep="-1" aria-label="Decrease duration">−</button>
+                <label>
+                  <input type="number" id="dur" value="5" min="1" max="10" step="1" inputmode="numeric" aria-label="Duration in ticks" />
+                  <span>ticks</span>
+                </label>
+                <button type="button" data-dstep="1" aria-label="Increase duration">+</button>
+              </div>
+            </div>
+
+            <div class="mt-payout" id="payoutBox">
+              <div class="row" style="justify-content:space-between;align-items:baseline">
+                <span class="lbl">Payout</span>
+                <span class="tiny dim mono" id="pvAge"></span>
+              </div>
+              <div class="mt-payout-row">
+                <span class="big" id="pvPayout">—</span>
+                <span class="mt-profit" id="pvProfit">—</span>
+              </div>
+              <div class="sub" id="pvSub">Log in to see a live payout quote from Deriv.</div>
+              <div class="split">
+                <div>Ask price<b id="pvAsk">—</b></div>
+                <div>Spot<b id="pvSpot">—</b></div>
+              </div>
+            </div>
+
+            <div class="mt-actions">
+              <button class="btn buy mt-buy-go" id="btnBuy" disabled>Buy</button>
+            </div>
+            <div class="hint" id="buyHint">Log in to trade. Live prices are available without login.</div>
+          </div>
         </div>
-        <div class="panel-body stack-12">
 
-          <label class="field">
-            <span class="lbl">Market</span>
-            <select id="market" aria-label="Market for the ticket">
-              <option value="R_10">Volatility 10 Index</option>
-              <option value="R_25">Volatility 25 Index</option>
-              <option value="R_50" selected>Volatility 50 Index</option>
-              <option value="R_75">Volatility 75 Index</option>
-              <option value="R_100">Volatility 100 Index</option>
-              <option value="1HZ10V">Volatility 10 (1s) Index</option>
-              <option value="1HZ25V">Volatility 25 (1s) Index</option>
-              <option value="1HZ50V">Volatility 50 (1s) Index</option>
-              <option value="1HZ75V">Volatility 75 (1s) Index</option>
-              <option value="1HZ100V">Volatility 100 (1s) Index</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <span class="lbl">Contract type</span>
-            <select id="ct">
-              <optgroup label="Digit contracts">
-                <option value="DIGITOVER">Digit Over</option>
-                <option value="DIGITUNDER">Digit Under</option>
-                <option value="DIGITEVEN">Digit Even</option>
-                <option value="DIGITODD">Digit Odd</option>
-                <option value="DIGITMATCH">Digit Matches</option>
-                <option value="DIGITDIFF">Digit Differs</option>
-              </optgroup>
-              <optgroup label="Directional">
-                <option value="CALL">Rise</option>
-                <option value="PUT">Fall</option>
-              </optgroup>
-            </select>
-          </label>
-
-          <div class="grid g-2">
-            <label class="field">
-              <span class="lbl">Stake (USD)</span>
-              <input type="number" id="stake" value="1" min="0.35" step="0.35" inputmode="decimal" />
-            </label>
-            <label class="field">
-              <span class="lbl">Duration (ticks)</span>
-              <input type="number" id="dur" value="5" min="1" max="10" step="1" inputmode="numeric" />
-            </label>
+        <div class="panel mt-mini">
+          <div class="panel-head">
+            <h3>Digit edge</h3>
+            <div class="spacer"></div>
+            <span class="seg" id="miniSeg">
+              <button data-mwin="50">50</button>
+              <button data-mwin="100" class="active">100</button>
+              <button data-mwin="250">250</button>
+            </span>
           </div>
-
-          <label class="field" id="barrierWrap">
-            <span class="lbl">Barrier digit</span>
-            <select id="barrier">
-              <option value="0">0</option><option value="1">1</option><option value="2">2</option>
-              <option value="3">3</option><option value="4">4</option><option value="5">5</option>
-              <option value="6">6</option><option value="7">7</option><option value="8">8</option>
-              <option value="9">9</option>
-            </select>
-            <div class="hint" id="barrierHint">Not used for Even / Odd.</div>
-          </label>
-
-          <div class="payout" id="payoutBox">
-            <div class="row" style="justify-content:space-between;align-items:baseline">
-              <span class="tiny dim" style="letter-spacing:.1em;text-transform:uppercase;font-weight:650">Payout preview</span>
-              <span class="tiny dim mono" id="pvAge"></span>
-            </div>
-            <div class="big" id="pvPayout">—</div>
-            <div class="sub" id="pvSub">Waiting for a live quote…</div>
-            <div class="split">
-              <div>Net profit<b id="pvProfit">—</b></div>
-              <div>Ask price<b id="pvAsk">—</b></div>
-              <div>Spot<b id="pvSpot">—</b></div>
+          <div class="panel-body">
+            <div class="mt-mini-bars" id="miniBars"></div>
+            <div class="mt-mini-ratio">
+              <div class="ratio" style="margin-top:10px">
+                <div class="ev" id="miniEven" style="width:50%">Even</div>
+                <div class="od" id="miniOdd" style="width:50%">Odd</div>
+              </div>
+              <div class="row" style="justify-content:space-between;margin-top:8px">
+                <span class="tiny dim">Hot / cold digits</span>
+                <span class="tiny mono" id="miniHot">—</span>
+              </div>
             </div>
           </div>
-
-          <button class="btn buy" id="btnBuy" disabled>Buy</button>
-          <div class="hint" id="buyHint">Log in to trade. Live prices are available without login.</div>
         </div>
       </div>
     </div>
 
-    <!-- ---------- Open contract ---------- -->
-    <div class="panel" style="margin-top:12px">
-      <div class="panel-head">
-        <h3>Open contract</h3>
-        <div class="spacer"></div>
-        <span class="tiny dim" id="openHint">No open position</span>
+    <!-- ---------- Bottom strip: position + history ---------- -->
+    <div class="mt-bottom">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Open contract</h3>
+          <div class="spacer"></div>
+          <span class="tiny dim" id="openHint">No open position</span>
+        </div>
+        <div class="panel-body tight" id="openContract">
+          <div class="empty">When you buy a contract it appears here and updates live until it settles.</div>
+        </div>
       </div>
-      <div class="panel-body" id="openContract">
-        <div class="empty">When you buy a contract it appears here and updates live until it settles.</div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Recent trades</h3>
+          <span class="badge soft hidden" id="ptNote">profit_table</span>
+          <div class="spacer"></div>
+          <button class="btn xs hidden" id="btnMoreTrades">Load older</button>
+          <button class="btn xs" id="btnRefreshTrades">Refresh</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="tbl-scroll mt-trades">
+            <table>
+              <thead>
+                <tr>
+                  <th>Contract</th><th>Type</th><th class="num">Stake</th>
+                  <th class="num">Payout</th><th class="num">P/L</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tradesBody">
+                <tr><td colspan="6" class="empty">Log in to load your trade history.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- ---------- Recent trades ---------- -->
-    <div class="panel" style="margin-top:12px">
-      <div class="panel-head">
-        <h3>Recent trades</h3>
-        <span class="badge soft hidden" id="ptNote">profit_table</span>
-        <div class="spacer"></div>
-        <button class="btn xs hidden" id="btnMoreTrades">Load older</button>
-        <button class="btn xs" id="btnRefreshTrades">Refresh</button>
-      </div>
-      <div class="panel-body tight">
-        <div class="tbl-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Contract</th><th>Type</th><th>Buy</th><th class="num">Stake</th>
-                <th class="num">Payout</th><th class="num">P/L</th><th>Status</th><th>Time</th>
-              </tr>
-            </thead>
-            <tbody id="tradesBody">
-              <tr><td colspan="8" class="empty">Log in to load your trade history.</td></tr>
-            </tbody>
-          </table>
+    <!-- Contract picker (compact overlay instead of a full select on the ticket) -->
+    <div class="modal-back hidden" id="ctPickBack" role="dialog" aria-modal="true" aria-labelledby="ctPickTitle">
+      <div class="modal">
+        <h4 id="ctPickTitle">Choose a contract</h4>
+        <p>Digit contracts settle on the last digit of the exit tick. Directional contracts settle on the price itself.</p>
+        <div class="ct-pick" id="ctPickList"></div>
+        <div class="actions">
+          <button class="btn ghost sm" id="ctPickCancel">Cancel</button>
         </div>
       </div>
     </div>
@@ -1168,121 +1723,217 @@ footer.foot .links a:hover{color:var(--acc)}
   </section>
 
   <!-- ================================================================== -->
-  <!-- TAB 3 — DBOTS (Deriv Bot XML)                                      -->
+  <!-- TAB 3 — DBOTS (Deriv Bot builder workspace)                        -->
   <!-- ================================================================== -->
   <section class="tabpane" id="pane-dbots" role="tabpanel">
+    <div class="bl">
 
-    <div class="cols bot">
-      <!-- ------- Import + library ------- -->
-      <div class="stack-12">
-        <div class="panel">
-          <div class="panel-head">
-            <h3>Import Deriv Bot</h3>
-            <div class="spacer"></div>
-            <span class="tiny dim mono" id="dbotsLibCount">0 saved</span>
-          </div>
-          <div class="panel-body stack-12">
-            <div class="dbots-drop" id="dbotsDrop" role="button" tabindex="0"
-                 aria-label="Choose a Deriv Bot XML file, or drop one here">
-              <div class="ico">XML</div>
-              <b>Drop a bot .xml here, or click to choose</b>
-              <span>File → Save in Deriv Bot, or DBot → Download. The file stays in this browser.</span>
-            </div>
-            <input type="file" id="dbotsFile" accept=".xml,text/xml,application/xml" class="hidden" />
-            <div class="hint" id="dbotsImportHint">
-              Nothing is uploaded anywhere. The XML is parsed in this tab, kept in
-              <span class="mono">localStorage</span> and can be edited block by block below.
-            </div>
+      <!-- ---------- builder: rail / canvas / side panel ---------- -->
+      <div class="panel bl-frame">
+
+        <!-- left icon rail -->
+        <div class="bl-rail">
+          <button class="bl-qs" id="dbotsQuick">Quick strategy</button>
+          <div class="bl-rail-tools">
+            <button data-bl="library" class="active" title="Bot library" aria-label="Bot library">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+            </button>
+            <button data-bl="blocks" title="Block outline" aria-label="Block outline">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/></svg>
+            </button>
+            <button data-bl="history" title="Session log" aria-label="Session log">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+            </button>
+            <button data-bl="import" title="Import .xml" aria-label="Import XML">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0 4-4m-4 4-4-4"/><path d="M5 18h14"/></svg>
+            </button>
+            <button data-bl="export" title="Download .xml" aria-label="Export XML">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V6m0 0 4 4m-4-4-4 4"/><path d="M5 19h14"/></svg>
+            </button>
+            <button data-bl="zoom" title="Reset zoom" aria-label="Reset zoom">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
+            </button>
           </div>
         </div>
 
-        <div class="panel">
-          <div class="panel-head">
-            <h3>Bot library</h3>
-            <div class="spacer"></div>
-            <button class="btn ghost xs" id="dbotsLoadSample">Load sample</button>
+        <!-- canvas -->
+        <div class="bl-canvas" id="dbotsCanvas">
+          <div class="bl-empty" id="dbotsEmpty">
+            <div class="bl-empty-card">
+              <h4>Start from a strategy</h4>
+              <p>Drop a Deriv Bot <span class="mono">.xml</span> file here, import one from your computer, or load the bundled
+                 Over/Under sample. Blocks appear here exactly as the file defines them.</p>
+              <div class="row" style="justify-content:center;margin-top:14px">
+                <button class="btn primary sm" id="dbotsEmptyImport">Import .xml</button>
+                <button class="btn sm" id="dbotsEmptySample">Load sample</button>
+              </div>
+            </div>
           </div>
-          <div class="panel-body">
-            <div class="dbots-list" id="dbotsList"></div>
+
+          <div class="bl-world" id="dbotsWorld">
+            <!-- Strategy 1 : trade definition -->
+            <div class="blk blk-def">
+              <div class="blk-h">1. Trade parameters</div>
+              <div class="blk-b">
+                <div class="blk-row"><span class="blk-l">Market</span><span class="blk-v" id="blkMarket">—</span></div>
+                <div class="blk-row"><span class="blk-l">Trade type</span><span class="blk-v" id="blkTradeType">—</span></div>
+                <div class="blk-row"><span class="blk-l">Contract type</span><span class="blk-v" id="blkContract">—</span></div>
+                <div class="blk-row"><span class="blk-l">Candle interval</span><span class="blk-v" id="blkCandle">—</span></div>
+                <div class="blk-row"><span class="blk-l">Restart buy/sell</span><span class="blk-v" id="blkRestartBuy">—</span></div>
+                <div class="blk-row"><span class="blk-l">Restart on error</span><span class="blk-v" id="blkRestartErr">—</span></div>
+              </div>
+            </div>
+
+            <div class="blk blk-def">
+              <div class="blk-h">2. Initialization</div>
+              <div class="blk-b" id="blkInit"><div class="blk-row"><span class="blk-v dim">no variables in this file</span></div></div>
+            </div>
+
+            <div class="blk blk-def">
+              <div class="blk-h">3. Submarket · <span class="blk-s" id="blkSubLabel">Volatility</span></div>
+              <div class="blk-b">
+                <div class="blk-row"><span class="blk-l">Duration</span><span class="blk-v" id="blkDuration">—</span></div>
+                <div class="blk-row"><span class="blk-l">Stake</span><span class="blk-v" id="blkStake">—</span></div>
+                <div class="blk-row"><span class="blk-l">Prediction</span><span class="blk-v" id="blkPrediction">—</span></div>
+              </div>
+            </div>
+
+            <div class="blk blk-run">
+              <div class="blk-h">Before purchase</div>
+              <div class="blk-b blk-tree" id="blkBefore"></div>
+            </div>
+
+            <div class="blk blk-run">
+              <div class="blk-h">During purchase</div>
+              <div class="blk-b blk-tree" id="blkDuring"></div>
+            </div>
+
+            <div class="blk blk-run">
+              <div class="blk-h">After purchase</div>
+              <div class="blk-b blk-tree" id="blkAfter"></div>
+            </div>
+
+            <button class="bl-ai" id="dbotsAi" title="Jump to the AI-free explanation" aria-label="Explain this bot">
+              <span>AI</span>
+            </button>
           </div>
         </div>
 
-        <div class="panel">
-          <div class="panel-head">
-            <h3>Parsed blocks</h3>
-            <div class="spacer"></div>
-            <span class="tiny dim mono" id="dbotsBlockInfo">—</span>
+        <!-- right side panel -->
+        <aside class="bl-side">
+          <div class="bl-side-tabs">
+            <button data-bs="library" class="active">Library</button>
+            <button data-bs="setup">Setup</button>
+            <button data-bs="checks">Checks</button>
           </div>
-          <div class="panel-body">
-            <div class="dbots-blocks" id="dbotsBlocks"></div>
+
+          <div class="bl-side-body">
+
+            <section data-pane="library">
+              <div class="bl-side-sec">
+                <div class="bl-side-head">
+                  <span>Saved bots</span>
+                  <span class="tiny dim mono" id="dbotsLibCount">0</span>
+                </div>
+                <div class="dbots-list" id="dbotsList"></div>
+              </div>
+              <div class="bl-side-sec">
+                <div class="bl-side-head"><span>Import</span></div>
+                <div class="bl-import" id="dbotsDrop" role="button" tabindex="0" aria-label="Import a Deriv Bot XML file">
+                  <b>Drop .xml or click</b>
+                  <span>Parsed in this browser · never uploaded</span>
+                </div>
+                <input type="file" id="dbotsFile" accept=".xml,text/xml,application/xml" class="hidden" />
+                <button class="btn ghost xs block" id="dbotsLoadSample" style="margin-top:8px">Load sample bot</button>
+              </div>
+            </section>
+
+            <section data-pane="setup" class="hidden">
+              <div class="bl-side-sec">
+                <div class="bl-side-head">
+                  <span id="dbotsName">No bot selected</span>
+                  <span class="status-pill" id="dbotsStatus"><i class="dot"></i><span>Idle</span></span>
+                </div>
+                <div class="dbots-file" id="dbotsFileInfo">—</div>
+                <div class="dbots-tags" id="dbotsTags" style="margin-top:8px"></div>
+              </div>
+              <div class="bl-side-sec">
+                <div class="bl-side-head"><span>Run settings</span></div>
+                <div class="grid g-2" style="gap:9px">
+                  <label class="field"><span class="lbl">Stake</span>
+                    <input type="number" id="dbotsStake" value="1" min="0.35" step="0.35" inputmode="decimal" /></label>
+                  <label class="field"><span class="lbl">Take profit</span>
+                    <input type="number" id="dbotsTP" value="5" min="0" step="0.5" inputmode="decimal" /></label>
+                  <label class="field"><span class="lbl">Stop loss</span>
+                    <input type="number" id="dbotsSL" value="10" min="0" step="0.5" inputmode="decimal" /></label>
+                  <label class="field"><span class="lbl">Cooldown (s)</span>
+                    <input type="number" id="dbotsCooldown" value="0" min="0" step="1" inputmode="numeric" /></label>
+                </div>
+                <div class="dbots-tags" style="margin-top:10px">
+                  <span class="dbots-tag">Account <b id="dbotsAcct">Not logged in</b></span>
+                  <span class="dbots-tag" id="dbotsMarketTag">Session <b>$0.00</b></span>
+                </div>
+                <div class="row" style="margin-top:10px">
+                  <button class="btn ghost sm" id="dbotsExport">Download XML</button>
+                  <button class="btn ghost sm" id="dbotsDelete">Remove</button>
+                </div>
+              </div>
+            </section>
+
+            <section data-pane="checks" class="hidden">
+              <div class="bl-side-sec">
+                <div class="bl-side-head"><span>What the runner understood</span></div>
+                <div class="dbots-issues" id="dbotsIssues"></div>
+              </div>
+              <div class="bl-side-sec">
+                <div class="bl-side-head"><span>Block outline</span><span class="tiny dim mono" id="dbotsBlockInfo">—</span></div>
+                <div class="dbots-blocks" id="dbotsBlocks"></div>
+              </div>
+            </section>
           </div>
+        </aside>
+      </div>
+
+      <!-- ---------- run bar ---------- -->
+      <div class="panel bl-runbar">
+        <div class="bl-run-left">
+          <button class="bl-run-btn" id="dbotsStart" aria-label="Run bot">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>
+            <span>Run</span>
+          </button>
+          <button class="bl-stop-btn" id="dbotsStop" disabled aria-label="Stop bot">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
+            <span>Stop</span>
+          </button>
+          <div class="bl-run-meta">
+            <span class="k">Execution speed</span>
+            <span class="v" id="dbotsSpeed">NORMAL</span>
+          </div>
+          <div class="bl-run-meta">
+            <span class="k">Session</span>
+            <span class="v" id="dbotsRunPL">0.00</span>
+          </div>
+        </div>
+        <div class="bl-run-mid" id="dbotsTranscript" aria-live="polite"></div>
+        <div class="bl-run-right">
+          <button class="bl-journal" id="dbotsJournalBtn" aria-expanded="false">
+            <span>Transaction journal</span>
+            <b id="dbotsLogCount">0</b>
+          </button>
         </div>
       </div>
 
-      <!-- ------- Selected bot ------- -->
-      <div class="stack-12">
+      <!-- transaction journal drawer -->
+      <div class="bl-drawer" id="dbotsJournal">
         <div class="panel">
           <div class="panel-head">
-            <h3 id="dbotsName">No bot selected</h3>
+            <h3>Transaction journal</h3>
             <div class="spacer"></div>
-            <span class="status-pill" id="dbotsStatus"><i class="dot"></i><span>Idle</span></span>
-          </div>
-          <div class="panel-body stack-12">
-            <div class="dbots-file" id="dbotsFileInfo">—</div>
-            <div class="dbots-tags" id="dbotsTags"></div>
-            <div class="dbots-issues" id="dbotsIssues"></div>
-            <div class="row" style="margin-top:4px">
-              <button class="btn ghost sm" id="dbotsExport">Download XML</button>
-              <button class="btn ghost sm" id="dbotsDelete">Remove bot</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head"><h3>Run settings</h3></div>
-          <div class="panel-body">
-            <div class="grid g-2">
-              <label class="field">
-                <span class="lbl">Stake (USD)</span>
-                <input type="number" id="dbotsStake" value="1" min="0.35" step="0.35" inputmode="decimal" />
-              </label>
-              <label class="field">
-                <span class="lbl">Take profit (USD)</span>
-                <input type="number" id="dbotsTP" value="5" min="0" step="0.5" inputmode="decimal" />
-              </label>
-              <label class="field">
-                <span class="lbl">Stop loss (USD)</span>
-                <input type="number" id="dbotsSL" value="10" min="0" step="0.5" inputmode="decimal" />
-              </label>
-              <label class="field">
-                <span class="lbl">Cooldown (seconds)</span>
-                <input type="number" id="dbotsCooldown" value="0" min="0" step="1" inputmode="numeric" />
-              </label>
-            </div>
-            <div class="dbots-tags" style="margin-top:12px">
-              <span class="dbots-tag">Account <b id="dbotsAcct">Not logged in</b></span>
-              <span class="dbots-tag" id="dbotsMarketTag">—</span>
-            </div>
-            <div class="dbots-run" style="margin-top:12px">
-              <button class="btn primary" id="dbotsStart">▶ Start DBot</button>
-              <button class="btn danger" id="dbotsStop" disabled>■ Stop</button>
-            </div>
-            <div class="hint" id="dbotsRunHint">
-              The bot is evaluated on every live tick in this tab. Structural rules
-              (Trade definitions, Before/After purchase) run as written; blocks the
-              runner cannot execute are reported as warnings instead of being faked.
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <h3>Event log</h3>
-            <div class="spacer"></div>
-            <span class="tiny dim mono" id="dbotsLogCount">0 entries</span>
+            <button class="btn ghost xs" id="dbotsClearLog">Clear</button>
+            <button class="btn ghost xs" id="dbotsCloseJournal">Close</button>
           </div>
           <div class="panel-body tight">
-            <div class="log" id="dbotsLog" style="height:240px" aria-live="polite"></div>
+            <div class="log" id="dbotsLog" style="height:190px"></div>
           </div>
         </div>
       </div>
@@ -1696,6 +2347,7 @@ const state = {
   trades: [],                  // profit_table rows (normalised)
   localTrades: [],             // real API contracts closed during this session
   analysisWindow: 100,
+  miniWindow: 100,
   signals: [],                 // last computed signal cards
   scan: [],
   lastSignalEntry: {},         // id -> bool, for sound alerts
@@ -2934,7 +3586,10 @@ function switchTab(name) {
     DBots.render();
     if (DBots.running && DBots.cfg) Markets.ensure(DBots.cfg.market).catch(() => {});
   }
-  if (name === "manual") renderTickPanel(state.market);
+  if (name === "manual") {
+    renderTickPanel(state.market);
+    requestAnimationFrame(() => chart.resize());
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 $$(".tab").forEach(t => t.addEventListener("click", () => switchTab(t.dataset.tab)));
@@ -2951,9 +3606,9 @@ function setMarket(sym, opts) {
     const el = $(sel);
     if (el && el.value !== sym) el.value = sym;
   });
-  if ($("#ticketMarket")) $("#ticketMarket").textContent = MARKETS[sym].name;
-  if ($("#tickSource")) $("#tickSource").textContent = MARKETS[sym].name;
-  if ($("#sigMarketName")) $("#sigMarketName").textContent = MARKETS[sym].name;
+  if ($id("ticketMarket")) $id("ticketMarket").textContent = MARKETS[sym].name;
+  if ($id("tickSource")) $id("tickSource").textContent = MARKETS[sym].name;
+  if ($id("sigMarketName")) $id("sigMarketName").textContent = MARKETS[sym].name;
 
   Markets.ensure(sym).catch(err => {
     if (err && err.code !== "CLOSED") {
@@ -2962,8 +3617,10 @@ function setMarket(sym, opts) {
   });
 
   const b = Markets.buf(sym);
-  $("#tickQuote").textContent = b.ticks.length ? fmtPrice(b.ticks[b.ticks.length - 1].quote, sym) : "—";
-  $("#tickCount").textContent = b.ticks.length + " ticks";
+  const qm = $id("tickQuoteMini");
+  if (qm) qm.textContent = b.ticks.length ? fmtPrice(b.ticks[b.ticks.length - 1].quote, sym) : "—";
+  const tc = $id("tickCount");
+  if (tc) tc.textContent = b.ticks.length + " ticks";
   renderTickPanel(sym);
   renderProposal(true);
   if (changed) {
@@ -2993,7 +3650,10 @@ $$("#botMarket").forEach(el => el.addEventListener("change", () => { el.dataset.
    11. TAB 1 — LIVE TICK, CHART, STRIP
    --------------------------------------------------------------------------- */
 const chart = {
-  canvas: null, ctx: null, dpr: 1, points: [],
+  canvas: null, ctx: null, dpr: 1, points: [], epochs: [],
+  span: 60,                 // ticks shown; the +/- rail and the 30/60/120 seg change this
+  hover: null,              // { x, y } while the pointer is over the canvas
+
   resize() {
     if (!this.canvas) return;
     const rect = this.canvas.getBoundingClientRect();
@@ -3003,103 +3663,304 @@ const chart = {
     this.ctx = this.canvas.getContext("2d");
     this.draw();
   },
+
+  setSpan(n) {
+    this.span = clamp(Math.round(n), 20, 240);
+    this.render();
+    const label = $id("chartSpanLabel");
+    if (label) label.textContent = this.span + " ticks";
+    $$("#chartSpanSeg button, .mt-chart-head [data-span]").forEach(b => {
+      b.classList.toggle("active", Number(b.dataset.span) === this.span);
+    });
+    this.render();
+  },
+
+  /* Pull the newest window straight from the market buffer. */
+  render() {
+    const sym = state.market;
+    const b = Markets.buf(sym);
+    const win = b.ticks.slice(-this.span);
+    this.points = win.map(t => t.value);
+    this.epochs = win.map(t => t.epoch);
+      const info = $id("chartInfo");
+    if (info) info.textContent = "last " + win.length + " of " + this.span + " ticks";
+    /* The price tag is a DOM overlay: publish it even when the canvas has no
+       layout yet (hidden pane, or a headless test run). */
+    const tag = $id("priceTag");
+    if (tag) tag.textContent = win.length ? fmtPrice(win[win.length - 1].quote, sym) : "—";
+    this.draw();
+  },
+
   draw() {
     const c = this.ctx, cv = this.canvas;
     if (!c || !cv) return;
     const W = cv.width / this.dpr, H = cv.height / this.dpr;
+    if (W < 2 || H < 2) return;
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     c.clearRect(0, 0, W, H);
 
-    // grid
-    c.strokeStyle = "rgba(255,255,255,.045)";
-    c.lineWidth = 1;
-    for (let i = 1; i < 5; i++) {
-      const y = (H / 5) * i;
-      c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
-    }
+    /* Deriv-like plot area: price gutter on the right, room for the digit strip
+       is handled by the DOM strip below the canvas. */
+    const padL = 44, padR = 6, padT = 10, padB = 6;
+    const plotW = Math.max(1, W - padL - padR);
+    const plotH = Math.max(1, H - padT - padB);
+
     const pts = this.points;
     if (pts.length < 2) {
       c.fillStyle = "rgba(107,107,116,.95)";
       c.font = "12px 'JetBrains Mono', ui-monospace, monospace";
-      c.fillText("waiting for ticks…", 12, H / 2);
+      c.fillText("waiting for ticks…", padL + 6, H / 2);
+      /* still keep the live price visible before the line has two points */
+      const tag0 = $id("priceTag");
+      if (tag0) tag0.textContent = pts.length ? fmtPrice(pts[0], state.market) : "—";
       return;
     }
+
     let min = Infinity, max = -Infinity;
     pts.forEach(p => { if (p < min) min = p; if (p > max) max = p; });
     const span = (max - min) || Math.abs(max || 1) * 0.0001;
-    const padY = span * 0.18;
-    const yOf = v => H - ((v - (min - padY)) / ((max + padY) - (min - padY))) * H;
-    const xOf = i => (i / (pts.length - 1)) * W;
+    const padY = span * 0.16;
+    const lo = min - padY, hi = max + padY;
+    const yOf = v => padT + plotH - ((v - lo) / (hi - lo)) * plotH;
+    const xOf = i => padL + (i / (pts.length - 1)) * plotW;
 
-    // area
-    const grad = c.createLinearGradient(0, 0, 0, H);
+    /* horizontal grid + right-hand price labels */
+    c.strokeStyle = "rgba(255,255,255,.05)";
+    c.lineWidth = 1;
+    c.font = "10px 'JetBrains Mono', ui-monospace, monospace";
+    c.textAlign = "left";
+    const rows = 4;
+    for (let i = 0; i <= rows; i++) {
+      const val = lo + ((hi - lo) / rows) * i;
+      const y = Math.round(padT + plotH - (i / rows) * plotH) + 0.5;
+      c.beginPath(); c.moveTo(padL, y); c.lineTo(W - padR, y); c.stroke();
+      c.fillStyle = "rgba(113,113,122,.9)";
+      c.fillText(fmtPrice(val, state.market), padL - 38, clamp(y + 3, 10, H - 4));
+    }
+
+    /* vertical grid: current second markers */
+    c.strokeStyle = "rgba(255,255,255,.035)";
+    for (let i = 0; i <= 6; i++) {
+      const x = Math.round(padL + (plotW / 6) * i) + 0.5;
+      c.beginPath(); c.moveTo(x, padT); c.lineTo(x, padT + plotH); c.stroke();
+    }
+
     const rising = pts[pts.length - 1] >= pts[0];
-    grad.addColorStop(0, rising ? "rgba(34,197,94,.30)" : "rgba(239,68,68,.26)");
+    const line = rising ? "#22c55e" : "#ef4444";
+
+    /* dotted lead-in to the latest price, like the reference chart */
+    const lx = xOf(pts.length - 1), ly = yOf(pts[pts.length - 1]);
+    c.save();
+    c.setLineDash([2, 4]);
+    c.strokeStyle = "rgba(255,255,255,.28)";
+    c.beginPath(); c.moveTo(lx, ly); c.lineTo(W - padR, ly); c.stroke();
+    c.restore();
+
+    /* area */
+    const grad = c.createLinearGradient(0, padT, 0, padT + plotH);
+    grad.addColorStop(0, rising ? "rgba(34,197,94,.22)" : "rgba(239,68,68,.20)");
     grad.addColorStop(1, "rgba(0,0,0,0)");
     c.beginPath();
-    c.moveTo(0, H);
+    c.moveTo(xOf(0), padT + plotH);
     pts.forEach((v, i) => c.lineTo(xOf(i), yOf(v)));
-    c.lineTo(W, H);
+    c.lineTo(xOf(pts.length - 1), padT + plotH);
     c.closePath();
     c.fillStyle = grad; c.fill();
 
-    // line
+    /* line */
     c.beginPath();
     pts.forEach((v, i) => { const x = xOf(i), y = yOf(v); i ? c.lineTo(x, y) : c.moveTo(x, y); });
-    c.strokeStyle = rising ? "#22c55e" : "#ef4444";
+    c.strokeStyle = line;
     c.lineWidth = 1.8; c.lineJoin = "round"; c.lineCap = "round";
+    c.shadowColor = rising ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.32)";
+    c.shadowBlur = 8;
     c.stroke();
+    c.shadowBlur = 0;
 
-    // last point
-    const lx = xOf(pts.length - 1), ly = yOf(pts[pts.length - 1]);
-    c.beginPath(); c.arc(lx, ly, 3.2, 0, Math.PI * 2);
-    c.fillStyle = rising ? "#22c55e" : "#ef4444"; c.fill();
-    c.beginPath(); c.arc(lx, ly, 6.5, 0, Math.PI * 2);
-    c.strokeStyle = rising ? "rgba(34,197,94,.38)" : "rgba(239,68,68,.38)"; c.stroke();
+    /* live dot */
+    c.beginPath(); c.arc(lx, ly, 3.4, 0, Math.PI * 2);
+    c.fillStyle = line; c.fill();
+    c.beginPath(); c.arc(lx, ly, 7, 0, Math.PI * 2);
+    c.strokeStyle = rising ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.35)"; c.lineWidth = 1.4; c.stroke();
 
-    // axis labels
-    c.fillStyle = "rgba(161,161,170,.85)";
-    c.font = "10px 'JetBrains Mono', ui-monospace, monospace";
-    c.fillText(fmtPrice(max, state.market), 6, 13);
-    c.fillText(fmtPrice(min, state.market), 6, H - 5);
+    /* the price tag follows the last point (positioned only when laid out) */
+    const tag = $id("priceTag");
+    if (tag) {
+      tag.textContent = fmtPrice(pts[pts.length - 1], state.market);
+      if (H > 20) tag.style.top = clamp(ly, 12, H - 12) + "px";
+    }
+
+    /* hover crosshair */
+    if (this.hover && this.hover.x > padL) {
+      const idx = clamp(Math.round(((this.hover.x - padL) / plotW) * (pts.length - 1)), 0, pts.length - 1);
+      const hx = xOf(idx), hy = yOf(pts[idx]);
+      c.save();
+      c.setLineDash([3, 3]);
+      c.strokeStyle = "rgba(255,255,255,.22)";
+      c.beginPath(); c.moveTo(hx, padT); c.lineTo(hx, padT + plotH); c.stroke();
+      c.beginPath(); c.moveTo(padL, hy); c.lineTo(W - padR, hy); c.stroke();
+      c.restore();
+      c.beginPath(); c.arc(hx, hy, 3, 0, Math.PI * 2);
+      c.fillStyle = "#fff"; c.fill();
+      const label = fmtPrice(pts[idx], state.market);
+      c.font = "10px 'JetBrains Mono', ui-monospace, monospace";
+      const tw = c.measureText(label).width + 10;
+      c.fillStyle = "rgba(17,17,17,.95)";
+      c.fillRect(clamp(hx + 6, padL, W - tw - padR), clamp(hy - 20, padT, H - 22), tw, 15);
+      c.strokeStyle = "rgba(255,255,255,.14)";
+      c.strokeRect(clamp(hx + 6, padL, W - tw - padR) + 0.5, clamp(hy - 20, padT, H - 22) + 0.5, tw, 15);
+      c.fillStyle = "#e4e4e7";
+      c.fillText(label, clamp(hx + 11, padL + 5, W - tw - padR + 5), clamp(hy - 9, padT + 11, H - 11));
+    }
   }
 };
+
+/* Pointer + zoom wiring for the chart workspace. */
+function initChartWorkspace() {
+  const cv = $id("chart");
+  if (!cv) return;
+  cv.addEventListener("mousemove", e => {
+    const r = cv.getBoundingClientRect();
+    chart.hover = { x: e.clientX - r.left, y: e.clientY - r.top };
+    chart.draw();
+  });
+  cv.addEventListener("mouseleave", () => { chart.hover = null; chart.draw(); });
+  $$(".mt-rail [data-zoom]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const z = btn.dataset.zoom;
+      chart.setSpan(z === "in" ? Math.round(chart.span * 0.7) : z === "out" ? Math.round(chart.span * 1.4) : 60);
+    });
+  });
+  $$(".mt-chart-head [data-span]").forEach(btn => {
+    btn.addEventListener("click", () => chart.setSpan(Number(btn.dataset.span)));
+  });
+}
 
 function renderTickPanel(sym) {
   sym = sym || state.market;
   const b = Markets.buf(sym);
   const t = b.ticks[b.ticks.length - 1];
   const prev = b.ticks[b.ticks.length - 2];
-  const q = $("#tickQuote");
-  if (!t) {
-    q.textContent = "—"; q.className = "tick-quote mono";
-    $("#digitVal").textContent = "–";
-  } else {
-    q.textContent = fmtPrice(t.quote, sym);
+
+  if (t) {
     const up = prev ? t.value >= prev.value : true;
-    q.className = "tick-quote mono " + (prev ? (up ? "up" : "down") : "");
-    const dv = $("#digitVal");
-    dv.textContent = t.digit == null ? "–" : t.digit;
-    $("#tickDir").textContent = prev ? (up ? "▲ up" : "▼ down") : "—";
-    $("#tickTime").textContent = timeStr(t.epoch);
-    $("#tickEpoch").textContent = t.epoch || "—";
+    const q = $id("tickQuoteMini");
+    if (q) {
+      q.textContent = fmtPrice(t.quote, sym);
+      q.className = "mono " + (prev ? (up ? "ok" : "bad") : "");
+    }
+    const dir = $id("tickDirMini");
+    if (dir) {
+      dir.textContent = (prev ? (up ? "▲" : "▼") : "") + " " +
+        (prev ? (up ? "+" : "−") + num(Math.abs(t.value - prev.value)).toFixed(MARKETS[sym].pip) : "") +
+        " (" + (prev && prev.value ? (((t.value - prev.value) / prev.value) * 100).toFixed(2) : "0.00") + "%)";
+      dir.className = "tiny " + (prev ? (up ? "ok" : "bad") : "dim");
+    }
+    const dm = $id("tickDigitMini");
+    if (dm) dm.textContent = t.digit == null ? "—" : t.digit;
+    const ep = $id("tickEpoch");
+    if (ep) ep.textContent = t.epoch || "—";
+    const clock = $id("chartClock");
+    if (clock) clock.textContent = timeStr(t.epoch);
   }
-  $("#tickCount").textContent = b.ticks.length + " ticks";
-  $("#ticketMarket").textContent = MARKETS[sym].name;
-  $("#tickSource").textContent = MARKETS[sym].name;
 
-  // tick interval from the last two epochs
-  if (t && prev && t.epoch && prev.epoch) $("#tickInterval").textContent = Math.max(0, t.epoch - prev.epoch).toFixed(0) + "s";
-  else $("#tickInterval").textContent = MARKETS[sym].secs + "s (typical)";
+  const count = $id("tickCount");
+  if (count) count.textContent = b.ticks.length + " ticks";
+  const tm = $id("ticketMarket");
+  if (tm) tm.textContent = MARKETS[sym].name;
+  const ts = $id("tickSource");
+  if (ts) ts.textContent = MARKETS[sym].name;
 
-  // chart points (last 60 quotes)
-  chart.points = b.ticks.slice(-60).map(x => x.value);
-  chart.draw();
-  $("#chartInfo").textContent = "last " + Math.min(60, b.ticks.length) + " ticks";
+  const iv = $id("tickInterval");
+  if (iv) iv.textContent = (t && prev && t.epoch && prev.epoch)
+    ? Math.max(0, t.epoch - prev.epoch).toFixed(0) + "s"
+    : MARKETS[sym].secs + "s (typical)";
 
-  // strip
-  renderDigitStrip($("#digitStrip"), Markets.digits(sym, 24), true);
+  chart.render();
+  renderDigitHeat();
+  renderMiniAnalysis();
   renderReadout();
+}
+
+/* The strip under the chart: one cell per digit with its share of the window.
+   It doubles as the barrier picker, which is why it lives on the chart. */
+function renderDigitHeat() {
+  const host = $id("digitStrip");
+  if (!host) return;
+  const sym = state.market;
+  const win = state.analysisWindow;
+  const st = digitStats(Markets.digits(sym, win));
+  const picked = $id("barrier") ? $id("barrier").value : null;
+  const needPick = ["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"].indexOf($id("ct").value) >= 0;
+
+  host.innerHTML = "";
+  for (let d = 0; d <= 9; d++) {
+    const share = st.n ? st.shares[d] : null;
+    const cls = !st.n ? "" : share >= 11.5 ? "hot" : share <= 8 ? "cold" : "";
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "mt-digi " + cls + (needPick && String(d) === picked ? " picked" : "");
+    el.dataset.d = String(d);
+    el.innerHTML = '<span class="n">' + d + "</span>" +
+      '<span class="p">' + (st.n ? share.toFixed(1) + "%" : "—") + "</span>" +
+      '<i class="pip"></i>';
+    el.title = "Digit " + d + " · " + st.counts[d] + " of " + st.n + " ticks in the last " + win +
+      (needPick ? " · click to use as barrier" : "");
+    el.addEventListener("click", () => {
+      const ct = $id("ct").value;
+      if (["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"].indexOf(ct) < 0) {
+        toast("Barrier not used", CONTRACT_LABEL[ct] + " has no barrier digit.", "info");
+        return;
+      }
+      setBarrierDigit(d);
+    });
+    host.appendChild(el);
+  }
+}
+
+function setBarrierDigit(d) {
+  const hidden = $id("barrier");
+  if (!hidden) return;
+  hidden.value = String(d);
+  $$("#digitPick button").forEach(b => b.classList.toggle("active", b.dataset.d === String(d)));
+  ticketDirty = true;
+  updateBarrierVisibility();
+  scheduleProposal(true);
+  renderDigitHeat();
+}
+
+/* Compact analysis in the ticket column: shares + even/odd + hot/cold. */
+function renderMiniAnalysis() {
+  const host = $id("miniBars");
+  if (!host) return;
+  const st = digitStats(Markets.digits(state.market, state.miniWindow || 100));
+  const max = Math.max.apply(null, st.shares.concat([12]));
+  host.innerHTML = "";
+  for (let d = 0; d <= 9; d++) {
+    const share = st.n ? st.shares[d] : 0;
+    const cls = !st.n ? "" : share >= 11.5 ? "hot" : share <= 8 ? "cold" : "";
+    const el = document.createElement("div");
+    el.className = "mb " + cls;
+    el.innerHTML = '<i style="height:' + (st.n ? Math.max(3, (share / max) * 100) : 0).toFixed(1) + '%"></i><b>' + d + "</b>";
+    el.title = "Digit " + d + ": " + share.toFixed(1) + "%";
+    host.appendChild(el);
+  }
+  const ev = $id("miniEven"), od = $id("miniOdd");
+  if (ev && od) {
+    ev.style.width = (st.n ? st.evenPct : 50).toFixed(2) + "%";
+    od.style.width = (st.n ? st.oddPct : 50).toFixed(2) + "%";
+    ev.textContent = st.n && st.evenPct >= 14 ? "Even " + st.evenPct.toFixed(1) + "%" : "Even";
+    od.textContent = st.n && st.oddPct >= 14 ? "Odd " + st.oddPct.toFixed(1) + "%" : "Odd";
+  }
+  const hot = $id("miniHot");
+  if (hot) {
+    if (!st.n) { hot.textContent = "—"; }
+    else {
+      const ranked = st.shares.map((sh, d) => ({ d, sh })).sort((a, b) => b.sh - a.sh);
+      hot.innerHTML = '<span class="acc">' + ranked.slice(0, 2).map(x => x.d).join(" ") + "</span>" +
+        ' <span class="dim">/</span> <span class="bad">' + ranked.slice(-2).map(x => x.d).join(" ") + "</span>";
+    }
+  }
 }
 
 function renderDigitStrip(host, digits, withNewest) {
@@ -3115,12 +3976,14 @@ function renderDigitStrip(host, digits, withNewest) {
   host.replaceChildren(frag);
 }
 
-/* Flash the digit box when a new tick arrives. */
+/* Flash the live price tag when a new tick arrives. */
 function popDigitBox() {
-  const box = $("#digitBox");
-  if (!box) return;
-  box.classList.add("pop");
-  setTimeout(() => box.classList.remove("pop"), 140);
+  const tag = $id("priceTag");
+  if (!tag) return;
+  tag.classList.remove("pop");
+  void tag.offsetWidth;
+  tag.classList.add("pop");
+  setTimeout(() => tag.classList.remove("pop"), 320);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3253,6 +4116,97 @@ let buyInFlight = false;
   el.addEventListener("input", () => { ticketDirty = true; updateBarrierVisibility(); updateBuyState(); });
   el.addEventListener("change", () => { ticketDirty = true; updateBarrierVisibility(); scheduleProposal(true); });
 });
+
+/* ---- the visible ticket: steppers, stake chips, digit grid, picker ---- */
+function syncContractTitle() {
+  const ct = $id("ct") ? $id("ct").value : "";
+  const title = $id("contractTitle");
+  if (title) title.textContent = CONTRACT_LABEL[ct] || ct || "Contract";
+}
+
+function setStake(v) {
+  const el = $id("stake");
+  if (!el) return;
+  el.value = Math.max(0.35, Math.round(num(v, 1) * 100) / 100).toFixed(2);
+  $$("#stakeSeg button").forEach(b => b.classList.toggle("active", Math.abs(Number(b.dataset.stake) - num(el.value)) < 0.001));
+  ticketDirty = true;
+  updateBuyState();
+  scheduleProposal(true);
+}
+
+function setDuration(v) {
+  const el = $id("dur");
+  if (!el) return;
+  el.value = String(clamp(Math.round(num(v, 5)), 1, 10));
+  ticketDirty = true;
+  scheduleProposal(true);
+}
+
+function renderContractPicker() {
+  const host = $id("ctPickList");
+  if (!host) return;
+  const cur = $id("ct").value;
+  const defs = [
+    ["DIGITOVER", "Digit Over", "last digit above barrier"],
+    ["DIGITUNDER", "Digit Under", "last digit below barrier"],
+    ["DIGITEVEN", "Digit Even", "last digit is even"],
+    ["DIGITODD", "Digit Odd", "last digit is odd"],
+    ["DIGITMATCH", "Digit Matches", "last digit equals barrier"],
+    ["DIGITDIFF", "Digit Differs", "last digit differs"],
+    ["CALL", "Rise", "exit spot above entry"],
+    ["PUT", "Fall", "exit spot below entry"]
+  ];
+  host.innerHTML = defs.map(d =>
+    '<button type="button" data-ct="' + d[0] + '" class="' + (cur === d[0] ? "on" : "") + '">' +
+      "<b>" + esc(d[1]) + "</b><small>" + esc(d[2]) + "</small></button>"
+  ).join("");
+  host.querySelectorAll("[data-ct]").forEach(b => {
+    b.addEventListener("click", () => {
+      $id("ct").value = b.dataset.ct;
+      $id("ct").dispatchEvent(new Event("change"));
+      closeContractPicker();
+    });
+  });
+}
+function openContractPicker() {
+  renderContractPicker();
+  $id("ctPickBack").classList.remove("hidden");
+}
+function closeContractPicker() { $id("ctPickBack").classList.add("hidden"); }
+
+function initTicket() {
+  $$("#stakeSeg button").forEach(b => b.addEventListener("click", () => setStake(Number(b.dataset.stake))));
+  $$(".stepper [data-step]").forEach(b => b.addEventListener("click", () => {
+    const cur = num($id("stake").value, 1);
+    const step = num(b.dataset.step) > 0 ? (cur >= 10 ? 5 : 0.35) : (cur > 10 ? 5 : 0.35);
+    setStake(cur + step * (num(b.dataset.step) > 0 ? 1 : -1));
+  }));
+  $$(".stepper [data-dstep]").forEach(b => b.addEventListener("click", () => {
+    setDuration(num($id("dur").value, 5) + num(b.dataset.dstep));
+  }));
+  $$("#digitPick button").forEach(b => b.addEventListener("click", () => setBarrierDigit(b.dataset.d)));
+
+  const btnPick = $id("btnPickContract");
+  if (btnPick) btnPick.addEventListener("click", openContractPicker);
+  const cancel = $id("ctPickCancel");
+  if (cancel) cancel.addEventListener("click", closeContractPicker);
+  const back = $id("ctPickBack");
+  if (back) back.addEventListener("click", e => { if (e.target.id === "ctPickBack") closeContractPicker(); });
+
+  $$("#miniSeg button").forEach(b => b.addEventListener("click", () => {
+    state.miniWindow = Number(b.dataset.mwin);
+    $$("#miniSeg button").forEach(x => x.classList.toggle("active", x === b));
+    renderMiniAnalysis();
+  }));
+
+  $id("ct").addEventListener("change", () => {
+    syncContractTitle();
+    renderDigitHeat();
+  });
+
+  syncContractTitle();
+  setStake($id("stake").value);
+}
 
 function updateBarrierVisibility() {
   const ct = $("#ct").value;
@@ -3532,7 +4486,7 @@ function renderTrades() {
   const body = $("#tradesBody");
   if (!body) return;
   if (!state.auth) {
-    body.innerHTML = '<tr><td colspan="8" class="empty">Log in to load your trade history.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="empty">Log in to load your trade history.</td></tr>';
     return;
   }
   const moreBtn = $("#btnMoreTrades");
@@ -3545,7 +4499,7 @@ function renderTrades() {
   state.trades.forEach(t => { if (!seen.has(String(t.contract_id))) { seen.add(String(t.contract_id)); rows.push(t); } });
 
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="8" class="empty">No trades in the last 30 days.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="empty">No trades in the last 30 days.</td></tr>';
     return;
   }
   body.innerHTML = rows.slice(0, 40).map(t => {
@@ -3555,15 +4509,15 @@ function renderTrades() {
     const badge = st.includes("won") || pl > 0 ? '<span class="badge demo">won</span>'
       : st.includes("lost") || pl < 0 ? '<span class="badge real">lost</span>'
       : '<span class="badge soft">' + esc(t.status || "—") + "</span>";
+    const when = t.entry_tick_time ? timeStr(t.entry_tick_time) : "";
     return "<tr>" +
-      '<td class="mono tiny">' + esc(t.contract_id) + "</td>" +
+      '<td class="mono tiny">' + esc(t.contract_id) +
+        (when ? '<div class="tiny dim" style="font-size:9px">' + esc(when) + "</div>" : "") + "</td>" +
       "<td>" + esc(type) + "</td>" +
-      '<td class="mono">' + esc(money(t.buy_price)) + "</td>" +
       '<td class="num mono">' + esc(money(t.buy_price)) + "</td>" +
       '<td class="num mono">' + esc(money(t.payout)) + "</td>" +
       '<td class="num mono ' + (pl >= 0 ? "ok" : "bad") + '">' + (pl >= 0 ? "+" : "") + esc(num(pl).toFixed(2)) + "</td>" +
       "<td>" + badge + "</td>" +
-      '<td class="mono tiny dim">' + esc(t.entry_tick_time ? dateTimeStr(t.entry_tick_time) : "—") + "</td>" +
     "</tr>";
   }).join("");
 }
@@ -3581,7 +4535,16 @@ $$("#winSeg button").forEach(b => b.addEventListener("click", () => {
   state.analysisWindow = Number(b.dataset.win);
   $$("#winSeg button").forEach(x => x.classList.toggle("active", x === b));
   renderAnalysis();
+  if (state.tab === "manual") renderDigitHeat();
   computeSignals();
+}));
+
+/* The chart strip window follows the same control as the Analysis tab. */
+$$("#stripSeg button").forEach(b => b.addEventListener("click", () => {
+  state.analysisWindow = Number(b.dataset.win);
+  $$("#stripSeg button").forEach(x => x.classList.toggle("active", x === b));
+  renderDigitHeat();
+  renderMiniAnalysis();
 }));
 
 function renderAnalysis() {
@@ -4668,8 +5631,11 @@ async function boot() {
 
   if ($("#botMarket")) $("#botMarket").value = state.market;
 
-  chart.canvas = $("#chart");
+  chart.canvas = $id("chart");
+  initChartWorkspace();
+  initTicket();
   chart.resize();
+  window.addEventListener("resize", () => chart.resize());
 
   // 2) Connect. An authenticated Options socket uses a fresh OTP per connection.
   if (!transportStarted) socket.connect();
@@ -5258,9 +6224,15 @@ const DBots = {
         " · " + duration + (durationUnit === "t" ? " tick" + (duration === 1 ? "" : "s") : " " + durationUnit) });
     }
 
+    const candleB = pick("trade_definition_candleinterval");
+    const restartBuyB = pick("trade_definition_restartbuysell");
     const cfg = {
       symbol, market, contract, purchaseContract, barrier: finalBarrier == null ? 3 : finalBarrier,
       duration, durationUnit, vars, issues, blockCount: all.length,
+      tradeType: typeB ? String(typeB.fields.TRADETYPE_LIST || "") : "",
+      candle: candleB ? String(candleB.fields.CANDLEINTERVAL_LIST || "") + "s" : "60s",
+      restartBuy: restartBuyB ? String(restartBuyB.fields.TIME_MACHINE_ENABLED || "").toUpperCase() === "TRUE" : false,
+      restartOnError: repeatB ? String(repeatB.fields.RESTARTONERROR || "").toUpperCase() === "TRUE" : false,
       blocking: Array.from(blocking),
       trees: { root: roots, tradeDef, before, after, during },
       types: Array.from(new Set(all.map(b => b.type))).sort()
@@ -5768,7 +6740,140 @@ const DBots = {
     this.renderLibrary();
     this.renderSelected();
     this.renderBlocks();
+    this.renderCanvas();
     this.renderStatus();
+  },
+
+  /* ---------------- builder canvas ---------------- */
+
+  /** Paint the block cards from the parsed strategy. */
+  renderCanvas() {
+    const cfg = this.cfg;
+    const empty = $id("dbotsEmpty");
+    if (empty) empty.classList.toggle("hidden", !!cfg);
+
+    const setTxt = (id, v, acc) => {
+      const el = $id(id);
+      if (!el) return;
+      el.textContent = v == null || v === "" ? "—" : String(v);
+      el.classList.toggle("acc", !!acc);
+    };
+
+    if (!cfg) {
+      ["blkMarket","blkTradeType","blkContract","blkCandle","blkRestartBuy","blkRestartErr",
+       "blkDuration","blkStake","blkPrediction"].forEach(id => setTxt(id, "—"));
+      ["blkInit","blkBefore","blkDuring","blkAfter"].forEach(id => {
+        const el = $id(id);
+        if (el) el.innerHTML = '<span class="blk-empty">No strategy loaded</span>';
+      });
+      return;
+    }
+
+    /* 1. trade parameters, straight out of the XML */
+    const defBlocks = cfg.trees.tradeDef ? [] : [];
+    const marketEl = $id("blkMarket");
+    setTxt("blkMarket", MARKETS[cfg.market] ? MARKETS[cfg.market].name : (cfg.symbol || "—"), !!cfg.market);
+    const sig = (cfg.trees.root || []).length ? null : null;
+    setTxt("blkTradeType", cfg.tradeType || inferTradeType(cfg), false);
+    setTxt("blkContract", (CONTRACT_LABEL[cfg.purchaseContract || cfg.contract] || cfg.contract) +
+      (DIGIT_CONTRACTS.indexOf(cfg.purchaseContract || cfg.contract) >= 0 ? " · " + cfg.barrier : ""), true);
+    setTxt("blkCandle", cfg.candle || "60s", false);
+    setTxt("blkRestartBuy", cfg.restartBuy ? "true" : "false", false);
+    setTxt("blkRestartErr", cfg.restartOnError ? "true" : "false", false);
+
+    /* 2. initialization: every variables_set in the file */
+    const init = $id("blkInit");
+    if (init) {
+      const keys = Object.keys(cfg.vars || {});
+      init.innerHTML = keys.length
+        ? keys.map(k => '<div class="blk-row"><span class="blk-l">' + esc(k) + '</span><span class="blk-v">' + esc(cfg.vars[k]) + "</span></div>").join("")
+        : '<span class="blk-empty">No variables initialised</span>';
+    }
+
+    /* 3. submarket / trade options */
+    setTxt("blkDuration", cfg.duration + (cfg.durationUnit === "t" ? " tick" + (cfg.duration === 1 ? "" : "s") : " " + cfg.durationUnit), false);
+    const stakeVar = Object.keys(cfg.vars || {}).find(k => /^(stake|stakeamount|amount)$/i.test(k));
+    setTxt("blkStake", stakeVar ? stakeVar + " = " + cfg.vars[stakeVar] : "from the run panel", false);
+    setTxt("blkPrediction", DIGIT_CONTRACTS.indexOf(cfg.contract) >= 0 ? String(cfg.barrier) : "not used", DIGIT_CONTRACTS.indexOf(cfg.contract) >= 0);
+    const sub = $id("blkSubLabel");
+    if (sub) sub.textContent = cfg.symbol && cfg.symbol.indexOf("1HZ") === 0 ? "1s volatility" : "volatility";
+
+    /* 4-6. lifecycle stacks */
+    const paint = (hostId, rootBlock, statement) => {
+      const host = $id(hostId);
+      if (!host) return;
+      const stack = rootBlock && rootBlock.statements ? rootBlock.statements[statement] : null;
+      if (!stack) { host.innerHTML = '<span class="blk-empty">Not used by this strategy</span>'; return; }
+      const lines = [];
+      const emit = (b, depth) => {
+        let n = 0;
+        while (b && n++ < 120) {
+          lines.push(this.outlineLine(b, depth));
+          Object.keys(b.statements || {}).forEach(k => emit(b.statements[k], depth + 1));
+          b = b.next;
+        }
+      };
+      emit(stack, 0);
+      host.innerHTML = lines.join("");
+    };
+    paint("blkBefore", cfg.trees.before, "BEFORE_PURCHASE_STACK");
+    paint("blkDuring", cfg.trees.during, "DURING_PURCHASE_STACK");
+    paint("blkAfter", cfg.trees.after, "AFTERPURCHASE_STACK");
+  },
+
+  /** One readable line for a block, with the fields that matter. */
+  outlineLine(b, depth) {
+    const f = b.fields || {};
+    const vars = k => (f[k] == null ? "" : String(f[k]));
+    let text = DBOT_BLOCK_HINT[b.type] || b.type;
+    let cls = "";
+
+    if (b.type === "purchase") { text = "buy " + (CONTRACT_LABEL[DBOT_CONTRACTS[vars("PURCHASE_LIST")]] || vars("PURCHASE_LIST") || ""); cls = "buy"; }
+    else if (b.type === "trade_again") { text = "trade again"; cls = "again"; }
+    else if (b.type === "math_change") { text = "change " + vars("VAR") + " by " + this.slotNum(b, "DELTA", 1); cls = "set"; }
+    else if (b.type === "variables_set") { text = "set " + vars("VAR") + " = " + this.slotNum(b, "VALUE", "?"); cls = "set"; }
+    else if (b.type === "variables_get") { text = vars("VAR"); }
+    else if (b.type === "logic_compare") { text = this.slotNum(b, "A", "?") + " " + this.opText(f.OP) + " " + this.slotNum(b, "B", "?"); cls = "cond"; }
+    else if (b.type === "logic_operation") { text = this.slotNum(b, "A", "?") + " " + (f.OP === "AND" ? "and" : "or") + " " + this.slotNum(b, "B", "?"); cls = "cond"; }
+    else if (b.type === "controls_if") { text = "if " + this.slotNum(b, "IF0", "?"); cls = "cond"; }
+    else if (b.type === "last_digit") { text = "last digit"; }
+    else if (b.type === "total_profit") { text = "total profit"; }
+    else if (b.type === "math_single") { text = (f.OP === "NEG" ? "−" : f.OP || "") + this.slotNum(b, "NUM", "?"); }
+    else if (b.type === "math_number") { text = String(f.NUM); }
+    else if (b.type === "math_arithmetic") { text = this.slotNum(b, "A", "?") + " " + ({ADD:"+",MINUS:"−",MULTIPLY:"×",DIVIDE:"÷",POWER:"^"}[f.OP] || "?") + " " + this.slotNum(b, "B", "?"); }
+
+    const ind = depth ? "└" : "";
+    return '<div class="blk-line">' +
+      '<span class="ind">' + ind + "</span>" +
+      '<span class="chip ' + cls + '">' + esc(text) + "</span>" +
+    "</div>";
+  },
+
+  slotNum(b, slot, fallback) {
+    const n = this.slot(b, slot);
+    if (!n) return fallback;
+    if (n.type === "math_number") return String(n.fields.NUM);
+    if (n.type === "variables_get") return String(n.fields.VAR || "?");
+    if (n.type === "last_digit") return "last digit";
+    if (n.type === "total_profit") return "total profit";
+    if (n.type === "math_single") return (n.fields.OP === "NEG" ? "−" : "") + this.slotNum(n, "NUM", "?");
+    if (n.type === "math_arithmetic") {
+      return this.slotNum(n, "A", "?") + " " + ({ADD:"+",MINUS:"−",MULTIPLY:"×",DIVIDE:"÷"}[n.fields.OP] || "?") + " " + this.slotNum(n, "B", "?");
+    }
+    return DBOT_BLOCK_HINT[n.type] || n.type;
+  },
+
+  /* Fallback label when the file omits TRADETYPE_LIST. */
+  inferTradeType(cfg) {
+    if (!cfg) return "—";
+    const c = cfg.purchaseContract || cfg.contract;
+    if (DIGIT_CONTRACTS.indexOf(c) >= 0) return "digits / over-under";
+    if (c === "CALL" || c === "PUT") return "callput";
+    return "—";
+  },
+
+  opText(op) {
+    return ({ EQ: "=", NEQ: "≠", LT: "<", LTE: "≤", GT: ">", GTE: "≥" })[op] || op || "?";
   },
 
   renderLibrary() {
@@ -5919,12 +7024,6 @@ const DBots = {
     if (stopBtn) stopBtn.disabled = !this.running;
     const acct = $id("dbotsAcct");
     if (acct) acct.textContent = state.auth ? (state.auth.loginid + (state.accountType === "real" ? " · real" : " · demo")) : "Not logged in";
-    const hint = $id("dbotsRunHint");
-    if (hint) {
-      hint.innerHTML = !state.auth
-        ? "Log in to Deriv before starting a DBot. Importing, inspecting and exporting XML works without an account."
-        : "The bot is evaluated on every live tick in this tab. Structural rules (Trade definitions, Before/After purchase) run as written; blocks the runner cannot execute are reported as warnings instead of being faked.";
-    }
     const tag = $id("dbotsMarketTag");
     if (tag) {
       tag.innerHTML = this.running
@@ -5934,13 +7033,34 @@ const DBots = {
     const pillTab = $id("dbotsTabPill");
     if (pillTab) pillTab.classList.toggle("hidden", !this.running);
     const count = $id("dbotsLogCount");
-    if (count) count.textContent = this.logs.length + " entries";
+    if (count) count.textContent = String(this.logs.length);
+
+    /* run bar: speed chip, session P/L and the last transcript line */
+    const speed = $id("dbotsSpeed");
+    if (speed) speed.textContent = this.running ? "FAST" : "NORMAL";
+    const runPL = $id("dbotsRunPL");
+    if (runPL) {
+      runPL.textContent = (this.pl >= 0 ? "" : "") + money(this.pl);
+      runPL.className = "v " + (this.pl > 0 ? "ok" : this.pl < 0 ? "bad" : "");
+    }
+    const tr = $id("dbotsTranscript");
+    if (tr) {
+      const last = this.logs.length ? this.logs[this.logs.length - 1] : null;
+      tr.innerHTML = last
+        ? '<b>' + esc(last.t) + "</b> · " + esc(last.msg)
+        : (this.cfg ? "Ready · " + esc(this.cfg.blockCount) + " blocks parsed · press Run" : "No strategy loaded");
+    }
   },
 
   log(kind, msg) {
     const t = new Date().toLocaleTimeString([], { hour12: false });
     this.logs.push({ t, kind: kind || "sys", msg: String(msg) });
     if (this.logs.length > 400) this.logs.shift();
+    /* keep the run bar counter and transcript current */
+    const c0 = $id("dbotsLogCount");
+    if (c0) c0.textContent = String(this.logs.length);
+    const tr0 = $id("dbotsTranscript");
+    if (tr0) tr0.innerHTML = '<b>' + esc(t) + "</b> · " + esc(msg);
     const host = $id("dbotsLog");
     if (!host) return;
     const ln = document.createElement("div");
@@ -5949,8 +7069,6 @@ const DBots = {
     host.appendChild(ln);
     host.scrollTop = host.scrollHeight;
     while (host.children.length > 400) host.firstElementChild.remove();
-    const c = $id("dbotsLogCount");
-    if (c) c.textContent = this.logs.length + " entries";
   },
 
   /* ---------------- wiring ---------------- */
@@ -6001,8 +7119,76 @@ const DBots = {
       const ok = await confirmDialog("Remove this bot?", "<b>" + esc(rec.name) + "</b> will be removed from this browser's library.", "Remove", true);
       if (ok) this.remove(rec.id);
     });
+    /* builder: rail, side tabs, AI orb, journal drawer */
+    $$("[data-bl]").forEach(btn => btn.addEventListener("click", () => {
+      const act = btn.dataset.bl;
+      if (act === "import") { if (input) input.click(); return; }
+      if (act === "export") { this.download(); return; }
+      if (act === "zoom") {
+        this.zoom = this.zoom === 1 ? 0.85 : 1;
+        const world = $id("dbotsWorld");
+        if (world) world.style.zoom = String(this.zoom);
+        return;
+      }
+      $$("[data-bl]").forEach(x => x.classList.toggle("active", x === btn));
+      if (act === "blocks" || act === "history") {
+        sideTab(act === "blocks" ? "checks" : "setup");
+        if (act === "history") this.toggleJournal(true);
+      } else if (act === "library") {
+        sideTab("library");
+      }
+    }));
+
+    const sideTab = name => {
+      $$(".bl-side-tabs button").forEach(b => b.classList.toggle("active", b.dataset.bs === name));
+      $$(".bl-side-body > section").forEach(s => s.classList.toggle("hidden", s.dataset.pane !== name));
+    };
+    $$(".bl-side-tabs button").forEach(b => b.addEventListener("click", () => sideTab(b.dataset.bs)));
+
+    const qs = $id("dbotsQuick");
+    if (qs) qs.addEventListener("click", () => {
+      if (this.library.length) { this.select(this.library[0].id); toast("Strategy loaded", "The bundled strategy is on the canvas. Press Run to trade it.", "info"); }
+      else this.add(DBOTS_SAMPLE_XML, "over3_1tick_bot.xml");
+    });
+    const ai = $id("dbotsAi");
+    if (ai) ai.addEventListener("click", () => {
+      sideTab("checks");
+      const first = $id("dbotsIssues");
+      if (first) first.scrollIntoView({ block: "nearest" });
+    });
+    const jb = $id("dbotsJournalBtn");
+    if (jb) jb.addEventListener("click", () => this.toggleJournal());
+    const jc = $id("dbotsCloseJournal");
+    if (jc) jc.addEventListener("click", () => this.toggleJournal(false));
+    const cl = $id("dbotsClearLog");
+    if (cl) cl.addEventListener("click", () => {
+      this.logs = [];
+      if ($id("dbotsLog")) $id("dbotsLog").innerHTML = "";
+      this.renderStatus();
+    });
+
+    const emptyImport = $id("dbotsEmptyImport");
+    if (emptyImport && input) emptyImport.addEventListener("click", () => input.click());
+    const emptySample = $id("dbotsEmptySample");
+    if (emptySample) emptySample.addEventListener("click", () => {
+      if (DBOTS_SAMPLE_XML) this.add(DBOTS_SAMPLE_XML, "over3_1tick_bot.xml");
+    });
+
     if (this.library.length) this.select(this.library[0].id);
     else this.render();
+  },
+
+  toggleJournal(force) {
+    const draw = $id("dbotsJournal");
+    const btn = $id("dbotsJournalBtn");
+    if (!draw) return;
+    const open = force === undefined ? !draw.classList.contains("open") : !!force;
+    draw.classList.toggle("open", open);
+    if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      const log = $id("dbotsLog");
+      if (log) log.scrollTop = log.scrollHeight;
+    }
   }
 };
 

@@ -2,16 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<!-- Landing gate intentionally disabled: landing.html is not written yet, so
+     redirecting cold visitors here would 404 the whole site. Re-enable the
+     block below once landing.html ships. Its "Log in" must point at /?app=1 so
+     the registered Deriv OAuth redirect URI stays exactly "/".
+
 <script>
-/* Landing gate: first-time visitors on "/" see landing.html. The app stays at "/" so the
-   Deriv OAuth redirect URI is unchanged. Skipped for ?app=1, OAuth callbacks
-   (?code / ?state / ?error), and anyone with a live login session. */
 (function(){try{
   if(/[?&](app|code|state|error)=/.test(location.search))return;
   if(sessionStorage.getItem("tickforge.oauth.token"))return;
   location.replace("/landing.html");
 }catch(_){}})();
 </script>
+-->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <meta name="theme-color" content="#070707" />
@@ -1620,6 +1623,13 @@ html[data-theme="light"] .dbots-item.active{background:rgba(184,134,11,.08)}
   border-right:1px solid #1d2939;background:#0b111a;
   display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 7px;
 }
+/* Secondary rail action (Build bot). Outlined so it reads below the primary
+   Quick strategy button instead of competing with it. */
+.bl-qs.bl-build{
+  background:transparent;border-color:#2a3a50;color:#9fb0c4;
+  box-shadow:none;font-weight:700;
+}
+.bl-qs.bl-build:hover{background:#17212f;color:#fff;border-color:#3b5270}
 .bl-qs{
   appearance:none;cursor:pointer;width:100%;
   border:1px solid #1d4ed8;border-radius:8px;

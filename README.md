@@ -105,7 +105,18 @@ Properties:
   `expires_in` elapses (or any REST call returns `401`), the page clears the
   session and asks the user to log in again — which reruns the PKCE flow.
 
-## 3. Logging in with an API token (optional)
+## 3. API-token login (removed)
+
+**This section no longer describes working UI.** Login is OAuth-only: the
+"API token" button, paste field and account finder were removed, so there is no
+way to sign in with a PAT from the page. The PAT helpers
+(`PAT_TOKEN_KEY`, `isPat()`, `getStoredPatToken()`) and the `authKind === "pat"`
+branch in `api/deriv-rest.js` still exist but are unreachable from the UI.
+
+The original instructions are kept below only as reference for anyone who wants
+to restore the feature.
+
+### Original API-token flow (not currently reachable)
 
 1. Create a PAT with the `trade` scope in the developer dashboard.
 2. Click **API token** (top right), paste it, press **Find accounts**.
@@ -116,6 +127,20 @@ Properties:
 Under the hood this is `GET /trading/v1/options/accounts` with
 `Authorization: Bearer …` + `Deriv-App-ID: …`, then `POST …/{account_id}/otp`,
 then the returned `wss://…/ws/demo|real?otp=…` URL.
+
+## 3a. Building a bot without XML
+
+The DBots rail has a **＋ Build bot** button that opens a four-step builder
+(Trade parameters · Purchase conditions · Trade options · Sell & restart).
+It does not invent a new file format: it loads the bundled template, rewrites
+the fields you chose into that XML, and imports the result through the same
+`add()` path as a pasted file. So anything you build is a real, inspectable,
+exportable DBot file, and it inherits the same block-subset limits.
+
+The **Run panel** beside the canvas has three tabs — Summary, Transactions,
+Journal — instead of stacked panels. Summary leads with six stat tiles (total
+stake, total payout, runs, contracts lost, contracts won, total P/L) and a
+**Reset stats** button that is disabled while a bot is running.
 
 ## 3b. DBots — running Deriv Bot `.xml` files
 

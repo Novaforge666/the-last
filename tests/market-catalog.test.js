@@ -114,9 +114,10 @@ async function waitFor(fn, timeoutMs) {
   ev(`setMarket('frxEURUSD')`);
   check('retry stays visible after switching markets on catalogue failure',ev(`!document.getElementById('marketCatalogRetry').classList.contains('hidden')`));
   ev(`socket.request=origReq`);
-  ev(`state.market='frxEURUSD'; state.proposal={id:'old'};state.proposalAlt={id:'old2'}; state.proposalAt=1; window.beforeSeq=state.proposalSeq; socket.request=()=>Promise.resolve({active_symbols:[{underlying_symbol:'frxEURUSD',underlying_symbol_name:'EUR/USD',market:'forex',submarket:'major_pairs',exchange_is_open:0}]})`);
+  ev(`state.market='frxEURUSD'; renderDigitHeat(); state.proposal={id:'old'};state.proposalAlt={id:'old2'}; state.proposalAt=1; window.beforeSeq=state.proposalSeq; socket.request=()=>Promise.resolve({active_symbols:[{underlying_symbol:'frxEURUSD',underlying_symbol_name:'EUR/USD',market:'forex',submarket:'major_pairs',exchange_is_open:0}]})`);
   await ev('loadMarketCatalog()');
   check('market closing invalidates cached and in-flight quotes',ev(`!marketIsTradable('frxEURUSD') && !state.proposal && !state.proposalAlt && state.proposalSeq>beforeSeq && document.getElementById('btnBuy').disabled`));
+  check('catalogue closing a market clears both live digit markers immediately',ev(`document.querySelectorAll('#digitStrip .current, #digitPick .current').length===0`));
   const before=frames.filter(f=>f.buy).length;
   await ev(`instantBuy('up')`);
   check('closed market cannot send a buy',frames.filter(f=>f.buy).length===before);

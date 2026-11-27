@@ -1169,9 +1169,12 @@ input[type="range"]#durRange::-moz-range-thumb{
 }
 
 /* digit grid: 5 x 2, each cell carries the digit and its Deriv percentage */
+.mt-pred-head{align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.mt-pred-head .mt-block-t{align-self:auto;text-align:left}
+.mt-pred-head .digit-key{font-size:9px;color:var(--muted)}
 .mt-block-pred .mt-digits{width:100%;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .mt-block-pred .mt-digits button{
-  padding:4px 0 3px;line-height:1.1;border-radius:5px;background:var(--panel);
+  padding:4px 0 11px;line-height:1.1;border-radius:5px;background:var(--panel);
   border:1px solid var(--line-2);color:var(--txt);font-family:var(--sans);font-weight:600;
   display:flex;flex-direction:column;align-items:center;gap:2px;
   transition:background .14s,border-color .14s,color .14s;
@@ -1193,7 +1196,17 @@ html[data-theme="light"] .mt-block-pred .mt-digits button.cold:not(.active) s{co
 .mt-block-pred .mt-digits button.active{
   background:var(--txt);color:var(--on-inv);border-color:var(--txt);box-shadow:none;
 }
+/* The live tick marker is independent of the selected prediction. */
 .mt-block-pred .mt-digits button.active::after{display:none}
+.mt-block-pred .mt-digits button.current::after,
+.mt-block-pred .mt-digits button.active.current::after{
+  content:"";display:block;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  border:0;border-left:5px solid transparent;border-right:5px solid transparent;
+  border-bottom:6px solid #4ade80;filter:drop-shadow(0 0 3px rgba(74,222,128,.55));
+}
+.mt-block-pred .mt-digits button.active.current::after{border-bottom-color:#15803d}
+html[data-theme="light"] .mt-block-pred .mt-digits button.current::after{border-bottom-color:#15803d}
+html[data-theme="light"] .mt-block-pred .mt-digits button.active.current::after{border-bottom-color:#4ade80}
 
 /* stake / payout tabs */
 .mt-tabs{
@@ -1379,7 +1392,7 @@ html[data-theme="light"] .mt-block-pred .mt-digits button.cold:not(.active) s{co
   .tabbar-inner::-webkit-scrollbar{display:none}
   .tab .n{display:none}
   .tab{white-space:nowrap;padding:9px 12px;font-size:12px}
-  .mt-block-pred .mt-digits button{padding:7px 0 6px}
+  .mt-block-pred .mt-digits button{padding:7px 0 11px}
   .mt-block-pred .mt-digits button b{font-size:15px}
   .mt-block-pred .mt-digits button s{font-size:9.5px}
   .mt-dir{padding:12px 14px}
@@ -2385,7 +2398,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
 
             <!-- last digit prediction, like the reference -->
             <div class="mt-block mt-block-pred" id="barrierWrap">
-              <span class="mt-block-t">Last Digit Prediction</span>
+              <div class="mt-pred-head"><span class="mt-block-t">Last Digit Prediction</span><span class="digit-key" aria-hidden="true"><span class="live">Live digit</span></span></div>
               <div class="mt-digits" id="digitPick" role="radiogroup" aria-label="Barrier digit">
                 <button type="button" data-d="0"><b>0</b><s>—</s></button>
                 <button type="button" data-d="1"><b>1</b><s>—</s></button>
@@ -4941,6 +4954,7 @@ async function loadMarketCatalog() {
       if (rec) { DBots.cfg = DBots.parse(rec.xml); DBots.render(); }
     }
     if (state.tab === "signals") renderSignals();
+    renderDigitHeat();
   } catch (err) {
     if (generation === socket.generation) { catalogFailed = true; marketCatalogueStatus("Market list unavailable; retry to refresh.", true); }
   } finally {
@@ -5308,7 +5322,7 @@ function digitExtremes(st) {
   const high = Math.max(...st.counts), low = Math.min(...st.counts);
   return high === low ? { high: null, low: null } : { high, low };
 }
-function renderDigitPercents() {
+function renderDigitPercents(current) {
   const grid = $id("digitPick");
   if (!grid) return;
   const win = state.analysisWindow;
@@ -5323,10 +5337,13 @@ function renderDigitPercents() {
     cell.textContent = value == null ? "—" : value.toFixed(1) + "%";
     b.classList.toggle("hot", extremes.high != null && st.counts[d] === extremes.high);
     b.classList.toggle("cold", extremes.low != null && st.counts[d] === extremes.low);
+    b.classList.toggle("current", current === d);
     b.title = value == null
       ? "Digit " + d + " · waiting for ticks"
       : "Digit " + d + " · " + value.toFixed(1) + "% of the last " + st.n +
         " Deriv ticks (" + st.counts[d] + " hits)";
+    if (current === d) b.title += " · latest live digit";
+    b.setAttribute("aria-label", b.title);
   });
   /* The caption names the source and the window the share is measured over.
      Printing "N of M" invited the reading that M was a cap on how many ticks
@@ -5393,7 +5410,7 @@ function renderDigitHeat() {
       (isCurrent ? " · latest live digit" : "") + (needPick ? " · click to use as barrier" : "");
     el.setAttribute("aria-label", el.title);
   }
-  renderDigitPercents();
+  renderDigitPercents(current);
 }
 
 function setBarrierDigit(d) {

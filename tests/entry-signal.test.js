@@ -85,6 +85,7 @@ function seedDigits(sym, digits) {
   login();
   ev(`window.requests = []; window.delayed = null;
     Markets.ensure = () => Promise.resolve();
+    Object.keys(MARKETS).forEach(sym => { Markets.buf(sym).live=true; Markets.buf(sym).primed=true; });
     socket.request = (req) => {
       window.requests.push(req);
       if (req.proposal) return new Promise((resolve, reject) => { window.delayed = { resolve, reject }; });
@@ -140,6 +141,11 @@ function seedDigits(sym, digits) {
   check('real confirmation names actual first signal', ev('document.getElementById("modalBody").textContent.includes("Matches 8") && document.getElementById("modalBody").textContent.includes("barrier 8")'));
   ev('closeModal(false)'); await sleep(20);
   check('cancelled confirmation never starts', ev('!DBots.running && !DBots.starting && requests.length===0'));
+  ev(`runSignalBot(signal,null); Markets.buf('R_100').primed=false; closeModal(true)`); await sleep(20);
+  check('feed changes during real confirmation cancel the signal order', ev('!DBots.running && requests.length===0'));
+  ev(`Markets.buf('R_100').primed=true`);
+  ev(`runSignalBot(signal,null); socket.generation++; closeModal(true)`); await sleep(20);
+  check('connection replacement during confirmation cancels DBot entry', ev('!DBots.running && requests.length===0'));
   ev('runSignalBot(signal,null)'); ev('closeModal(true)'); await sleep(20);
   check('confirmed real entry starts exactly one proposal', ev('DBots.running && requests.length===1 && DBots.busy'));
   ev('DBots.stop("before proposal"); delayed.resolve({proposal:{id:"q2",ask_price:2.5}})'); await sleep(20);
@@ -243,6 +249,13 @@ function seedDigits(sym, digits) {
   await waitFor(()=>ev('DBots.pending != null'));
   check('clicking computed Matches 7 actually buys and updates prediction', ev(`DBots.running && DBots.cfg.barrier===7 && requests.some(r=>r.proposal && r.contract_type==='DIGITMATCH' && r.barrier==='7' && (r.underlying_symbol||r.symbol)==='R_50')`));
   ev(`DBots.stop('test'); watchHandler({proposal_open_contract:{contract_id:DBots.pending,is_sold:1,profit:0,status:'won',buy_price:2,payout:2}})`);
+  // A timed-out buy might have reached Deriv; never silently buy again.
+  ev(`window.requests=[]; socket.request=req=>{requests.push(req); if(req.proposal) return Promise.resolve({proposal:{id:'uncertain',ask_price:2}}); if(req.buy) return Promise.reject({code:'TIMEOUT',message:'buy timeout'}); return Promise.resolve({});};
+      runSignalBot(stopSig,null)`);
+  await waitFor(()=>ev('DBots.uncertainOrder && !DBots.running'));
+  check('lost buy response stops bot and marks order uncertain', ev('DBots.uncertainOrder && state.orderUncertain && !DBots.running'));
+  ev('runSignalBot(stopSig,null); DBots.start()');
+  check('uncertain order blocks any restart', ev('!DBots.running && requests.filter(r=>r.buy).length===1'));
   const errors=jsdomErrors.filter(m=>!/getContext|canvas|scrollTo/i.test(m));
   if(errors.length) console.log('jsdom errors:', errors.slice(0,5));
   console.log(`\n${passed} passed, ${failed} failed`); window.close(); process.exit(failed?1:0);

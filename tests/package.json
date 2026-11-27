@@ -2,7 +2,7 @@
   "name": "the-last-integration-tests",
   "private": true,
   "scripts": {
-    "test": "node entry-signal.test.js"
+    "test": "node entry-signal.test.js && node market-ui.test.js && node manual-trading.test.js && node api-safety.test.js"
   },
   "devDependencies": {
     "jsdom": "31.0.1"

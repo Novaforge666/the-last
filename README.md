@@ -22,11 +22,11 @@ Options API:
 
 | Tab | Contents |
 | --- | --- |
-| **Manual Trade** | Live tick with a highlighted last digit, canvas line chart, last-digit strip, contract ticket (Over / Under / Even / Odd / Matches / Differs / Rise / Fall), live payout preview from `proposal`, Buy via `buy`, open-contract panel (`proposal_open_contract`) and recent trades (`profit_table`). |
+| **Manual Trade** | Live tick and canvas chart, plus a last-digit strip: a green cursor marks the latest live digit, gold shows the most frequent digit(s), and blue shows the least frequent digit(s) in the selected window. Tied extremes share a color; a perfectly even distribution has no high/low color. The barrier selection remains independent. Contract ticket (Over / Under / Even / Odd / Matches / Differs / Rise / Fall), live `proposal` preview, Buy via `buy`, open-contract panel (`proposal_open_contract`) and recent trades (`profit_table`). |
 | **Auto Bots** | Four strategies — digit streak, digit frequency threshold, even/odd imbalance, martingale recovery. Settings for market, contract, stake, take profit, stop loss, max consecutive losses, cooldown and execution mode. **Continuous** (default): once an entry point is found the bot stays armed and trades the same contract back and forth on every tick interval with no cooldown, until take profit / stop loss / max losses stops it. **Signal only** keeps the old behaviour — re-arm and wait for the next entry point after every trade. Live log, session P/L and win rate. Demo by default; a real account needs an explicit confirmation. |
 | **Free bots** | Pythia, Janus, Hecate, Orpheus, Narcissus, Icarus, Chronos and Tabula Rasa. Janus (Over/Under), Hecate (Even/Odd), Orpheus (Differs) and Narcissus (Matches) are signal-driven executors: configure market, stake, TP, SL and optional martingale in DBots, then start them only via a matching **Entry now** signal. The other bots retain their own run modes. |
 | **DBots** | Editing and parameters only: the block canvas, the **My bots** library (drag and drop, file picker, or the bundled sample), and the Run settings (stake, take profit, stop loss, cooldown). Each bot is parsed into its trade definition (market, contract, barrier, duration), variables, before / during / after purchase stacks and full block tree, then stored in `localStorage`. The runner executes the supported block subset on every live tick, buys through `proposal` + `buy`, watches the contract, applies take profit / stop loss and logs everything. The **Execution speed** switch is real: **FAST** is continuous execution — every tick interval is an entry with no cooldown gap; **NORMAL** applies the configured cooldown. Unsupported blocks are listed and **block the run** rather than being emulated. Export downloads the XML again. |
-| **Analysis** | Last 1000 ticks loaded with `ticks_history` and kept live, digit distribution bars with a 25/50/100/500/1000 window switch, even/odd ratio, Over/Under probability table for every barrier, Matches/Differs probability table for every digit (plus the rate at which the newest digit repeats the previous one), colour-coded last-digit strip, hot/cold digits and streaks. |
+| **Analysis** | Last 1000 ticks loaded with `ticks_history` and kept live, digit distribution bars with a 25/50/100/250/500/1000 window switch, even/odd ratio, Over/Under probability table for every barrier, Matches/Differs probability table for every digit (plus the rate at which the newest digit repeats the previous one), colour-coded last-digit strip, hot/cold digits and streaks. |
 | **Entry Points** | Over/Under, Matches/Differs and Even/Odd families display signal cards based on recent streaks and, for digit contracts, hot/cold zones. Configure the matching bot and market first; press **Entry now** on that same market to set the bot's contract and prediction from the signal and buy immediately. The bot then repeats the same 1-tick contract without further analysis until stopped or TP, SL, max losses or a martingale limit is reached. Settings and saved bot identity are preserved, including when older saved bots are upgraded. Real accounts require confirmation. Entry signals are descriptive, not predictions, and martingale can magnify losses. “Trade this” opens a manual ticket; “Quick” quotes a single 1-tick trade. |
 
 Core plumbing: a WebSocket helper with `req_id` request/response matching,
@@ -273,12 +273,24 @@ endorsement of the strategy.
      subscribing to ticks.
   Both are fixed, the local is now `mm`, and a runner-level failure in the tick
   handler is reported and stops the bot instead of vanishing.
-- **Digit percentages did not match Deriv.** Deriv measures each digit over the
-  last **1000** ticks (its published shares are always exact multiples of 0.1%
-  and sum to ~100). The ticket defaulted to a **100**-tick window, so it could
-  only ever produce 1%-granularity values. The default window is now 1000, and
-  shares use largest-remainder rounding so the ten digits always sum to exactly
-  100.0 instead of drifting to 99.8 or 100.3.
+- **Digit percentages and feed precision.** The analysis and ticket default to
+  the last 1000 ticks, with synchronized window controls. Last digits use the
+  decimal precision returned by the tick/history API; each percentage is the
+  actual digit count divided by the available window, independently rounded for
+  display. Rounded labels need not sum to exactly 100%. A direct comparison
+  requires the same symbol, sample, timing, precision and rounding; visual
+  agreement with Deriv Trader or Deriv Bot has not been verified here.
+- **Disconnects and uncertain orders.** Bots stop when the connection is lost;
+  the tick buffer is reloaded before signals can be used again. An already-sent
+  buy cannot be cancelled, so its contract stays tracked after stopping. If the
+  buy response is lost, new manual, Quick and bot orders are locked for that
+  page session and running bots are stopped: check Deriv's positions and history
+  before reloading or placing another trade. TP and SL are checked on settlement,
+  not guaranteed execution prices or loss caps.
+- **Manual ticket safety.** Cached prices are used only for the same account,
+  connection, contract and ticket parameters. An old quote response cannot
+  replace the current ticket; Quick confirmations are cancelled if the account
+  or market changes, and purchases are never queued across a reconnect.
 
 ## Known limits
 
@@ -321,6 +333,6 @@ falling; form controls are rounded with a yellow focus ring. A readout pill row
 under the tabs shows connection, market, last quote, last digit, account and
 balance.
 
-### Entry Points integration test
+### Simulated integration tests
 
-Run `cd tests && npm ci && npm test` with Node.js 22.22.2 or newer in the 22.x line (or a jsdom-supported newer release). The integration test uses a simulated WebSocket; it does not connect to Deriv or place real trades.
+Run `cd tests && npm ci && npm test` with Node.js 22.22.2 or newer in the 22.x line (or a jsdom-supported newer release). The tests cover signal-driven bots, market data, tab controls and manual-order safety with a simulated WebSocket; they do not connect to Deriv or place real trades.

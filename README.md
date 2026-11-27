@@ -1,4 +1,4 @@
-# TickForge — Deriv Volatility Terminal
+# Tick Extinction — Deriv Volatility Terminal
 
 A zero-build trading terminal for Deriv volatility indices. The whole UI lives
 in **`index.html`** (HTML + CSS + vanilla JS inline): no frameworks, no
@@ -312,7 +312,7 @@ Two references are combined:
   ticker/readout band, green/red market semantics (`#22c55e` / `#ef4444`), and
   pill-shaped status chips.
 
-Concretely: the header brand is Syne `TICK*FORGE*` with a yellow rounded tile;
+Concretely: the header brand is Syne `TICK *EXTINCTION*` with its gold occult-tech emblem;
 tabs are a segmented pill rail with the active tab filled yellow; every panel
 is a 16 px rounded card with a subtle inner highlight; panel titles are Syne
 with a glowing yellow tick; market numbers, balances and tables use JetBrains

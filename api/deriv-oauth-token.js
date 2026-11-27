@@ -1,5 +1,5 @@
 /*
- * Same-origin OAuth token exchange for the static TickForge page.
+ * Same-origin OAuth token exchange for the static Tick Extinction page.
  *
  * Deriv's OAuth 2.0 flow is Authorization Code + PKCE. The browser redirects
  * to https://auth.deriv.com/oauth2/auth and comes back with a single-use code.

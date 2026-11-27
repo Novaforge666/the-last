@@ -657,6 +657,11 @@ th.num{text-align:right}
 }
 .sig .badge-entry.go{background:var(--up);color:#04170a;border:1px solid var(--up)}
 .sig .badge-entry.hold{background:var(--panel-2);color:var(--muted);border:1px solid var(--line-2)}
+/* "Entry now" is a button: pressing it runs the matching bot and trades at once. */
+button.badge-entry{appearance:none;cursor:pointer;font-family:var(--mono)}
+button.badge-entry.go:hover{filter:brightness(1.08);transform:translateY(-1px)}
+button.badge-entry.go:active{transform:translateY(0)}
+button.badge-entry:disabled{opacity:.6;cursor:wait}
 .sig .why{font-size:11.5px;color:var(--dim);line-height:1.5;min-height:33px}
 .sig .foot{display:flex;gap:8px;margin-top:auto}
 .sig .foot .btn{flex:1}
@@ -6423,7 +6428,9 @@ function renderSignalCards() {
       '<div class="top">' +
         '<div><div class="name">' + esc(def.label) + '</div>' +
         '<div class="tiny dim mono">' + esc(def.type) + " · barrier " + def.barrier + "</div></div>" +
-        '<span class="badge-entry ' + (ready ? "go" : "hold") + '">' + (ready ? "Entry now" : "Wait") + "</span>" +
+        (ready
+          ? '<button class="badge-entry go" type="button" data-act="runbot" data-i="' + i + '" title="Run the matching bot and trade this signal now">Entry now</button>'
+          : '<span class="badge-entry hold">Wait</span>') +
       "</div>" +
       '<div class="row" style="justify-content:space-between;align-items:flex-end">' +
         '<div class="rate">' + s.rate.toFixed(1) + "<small>%</small></div>" +
@@ -6447,6 +6454,7 @@ function renderSignalCards() {
       if (!s) return;
       if (btn.dataset.act === "open") tradeFromSignal(s);
       else if (btn.dataset.act === "quick") quickTrade(s, btn);
+      else if (btn.dataset.act === "runbot") runSignalBot(s, btn);
       else {
         $("#botContract").value = s.def.type;
         renderStrategyParams();
@@ -6516,6 +6524,77 @@ function tradeFromSignal(s) {
   scheduleProposal(true);
   switchTab("manual");
   toast("Ticket ready", def.label + " on " + MARKETS[state.market].name + ". Check the payout, then press Buy.", "ok");
+}
+
+/* Entry Now uses the bot the user has already configured. Never silently
+   replace it with a fresh template or trade a different market. */
+function botKindForContract(type) {
+  switch (type) {
+    case "DIGITOVER": case "DIGITUNDER": return "overunder";
+    case "DIGITMATCH": return "matchbot";
+    case "DIGITDIFF": return "matches";
+    case "DIGITEVEN": case "DIGITODD": return "evenodd";
+    case "CALL": case "PUT": return "risefall";
+    default: return null;
+  }
+}
+
+let signalBotStarting = false;
+async function runSignalBot(s, btn) {
+  if (signalBotStarting || DBots.starting) return;
+  if (!state.auth || !state.token) { toast("Login required", "Log in to Deriv before running a bot.", "warn"); return; }
+  if (DBots.running || DBots.busy || DBots.pending != null) {
+    toast("Bot already running", "Stop the current DBot before starting another.", "warn"); return;
+  }
+  const market = state.market;
+  const def = s.def;
+  const kind = botKindForContract(def.type);
+  const rec = DBots.selected();
+  let cfg;
+  try { cfg = rec && DBots.parse(rec.xml); } catch (_) { cfg = null; }
+  if (!kind || !cfg || botKindForContract(cfg.purchaseContract || cfg.contract) !== kind) {
+    const bot = FREE_BOTS.find(b => b.kind === kind);
+    switchTab("freebots");
+    toast("Configure the matching bot first", "Open " + (bot ? bot.name : "the matching bot") + " in Free bots, set it up in DBots, then return to this signal.", "warn");
+    return;
+  }
+  if (cfg.market !== market) {
+    switchTab("dbots");
+    DBots.openSide("setup");
+    toast("Market mismatch", "Set the bot market to " + MARKETS[market].name + " before using this entry.", "warn");
+    return;
+  }
+  signalBotStarting = true;
+  const original = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Starting…"; }
+  try {
+    switchTab("dbots");
+    DBots.openSide("setup");
+    await DBots.start({ signal: { def: def, market: market }, selectedId: rec.id });
+  } catch (err) {
+    toast("Could not run the bot", apiMessage(err), "err");
+  } finally {
+    signalBotStarting = false;
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+
+/* This starts under the same busy lock as tick-driven trades. Explicit trade
+   parameters avoid mutating the configured bot while an order is in flight. */
+async function executeSignalTrade(signal, runId) {
+  try {
+    await DBots.placeTrade(DBots.stakeValue(), "signal entry · " + signal.def.label + " · " + MARKETS[signal.market].name,
+      { contract: signal.def.type, barrier: signal.def.barrier, market: signal.market, runId: runId });
+  } catch (err) {
+    DBots.log("err", "Signal trade failed: " + apiMessage(err));
+    if (DBots.runId === runId && DBots.running) DBots.stop("Signal trade failed.");
+    toast("Signal trade failed", apiMessage(err) + " Check your Deriv positions before retrying.", "err");
+  } finally {
+    if (DBots.runId === runId) {
+      DBots.signalTradeInFlight = false;
+      if (DBots.pending == null) DBots.busy = false;
+    }
+  }
 }
 
 /* Sound alert when a card turns from "Wait" to "Entry now". */
@@ -8455,6 +8534,9 @@ const DBots = {
 
   /** Write one field back into the bot's XML, then re-parse and repaint. */
   applyEdit(field, value) {
+    if (this.running || this.starting || this.busy || this.pending != null) {
+      toast("Bot busy", "Stop the bot and wait for its order to settle before editing.", "warn"); return;
+    }
     const rec = this.selected();
     if (!rec) return;
     const map = {
@@ -8696,6 +8778,9 @@ const DBots = {
   /* ---------------- library ---------------- */
 
   add(text, name) {
+    if (this.running || this.starting || this.busy || this.pending != null) {
+      toast("Bot busy", "Stop the bot and wait for its order to settle before loading another.", "warn"); return null;
+    }
     if (!text || !text.trim()) { toast("Empty file", "That XML file has no content.", "warn"); return null; }
     if (text.length > DBOTS_MAX_FILE) { toast("File too large", "Deriv Bot files are far smaller than 2 MB.", "warn"); return null; }
     let cfg;
@@ -8731,6 +8816,9 @@ const DBots = {
   },
 
   select(id) {
+    if (this.running || this.starting || this.busy || this.pending != null) {
+      toast("Bot busy", "Stop the bot and wait for its order to settle before switching bots.", "warn"); return;
+    }
     const rec = this.library.find(b => b.id === id);
     if (!rec) { this.selectedId = null; this.cfg = null; this.render(); return; }
     this.selectedId = id;
@@ -8778,6 +8866,9 @@ const DBots = {
   },
 
   remove(id) {
+    if (id === this.selectedId && (this.running || this.starting || this.busy || this.pending != null)) {
+      toast("Bot busy", "Stop the bot and wait for its order to settle before removing it.", "warn"); return;
+    }
     const rec = this.library.find(b => b.id === id);
     if (!rec) return;
     if (this.running && this.selectedId === id) this.stop("Bot removed.");
@@ -8994,10 +9085,11 @@ const DBots = {
 
   /* ---------------- run loop ---------------- */
 
-  start() {
+  async start(options) {
+    options = options || {};
     const rec = this.selected();
     if (!rec) { toast("No bot", "Import a Deriv Bot XML file first.", "warn"); return; }
-    if (this.running || this.starting) return;
+    if (this.running || this.starting || this.busy || this.pending != null) { toast("Bot busy", "Wait for the current order to finish.", "warn"); return; }
     if (!state.auth || !state.token) { toast("Login required", "Log in to Deriv before running a DBot.", "warn"); return; }
     let cfg;
     try { cfg = this.parse(rec.xml); } catch (err) { toast("XML rejected", (err && err.message) || "Could not parse this bot.", "err"); return; }
@@ -9006,6 +9098,13 @@ const DBots = {
       return;
     }
     if (!cfg.market) { toast("Market unsupported", cfg.symbol ? ("“" + cfg.symbol + "” is not streamed by this terminal.") : "The bot has no market.", "warn"); return; }
+    if (options.signal && (rec.id !== options.selectedId || cfg.market !== options.signal.market ||
+        botKindForContract(cfg.purchaseContract || cfg.contract) !== botKindForContract(options.signal.def.type))) {
+      toast("Bot settings changed", "Check the bot and market, then choose the entry again.", "warn"); return;
+    }
+    const startToken = state.token;
+    const startAccount = state.auth.loginid;
+    const startXml = rec.xml;
 
     /* Run settings come from one place: the side panel's Setup tab. The canvas
        money-management block writes into the same store, so both stay in step.
@@ -9048,6 +9147,14 @@ const DBots = {
 
     const begin = () => {
       this.running = true;
+      this.runId = (this.runId || 0) + 1;
+      /* Reserve the first trade before any tick listener can buy. */
+      if (options.signal) {
+        this.busy = true;
+        this.signalTradeInFlight = true;
+        executeSignalTrade(options.signal, this.runId);
+        toast("Signal bot started", "Placing " + options.signal.def.label + " now; the bot then continues its configured strategy.", "info");
+      }
       $id("dbotsTabPill").classList.remove("hidden");
       this.renderStatus();
       this.log("sys", "Started " + rec.name + " · " + MARKETS[cfg.market].name + " · " +
@@ -9065,21 +9172,30 @@ const DBots = {
 
     if (state.accountType === "real") {
       this.starting = true;
-      confirmDialog(
-        "Run this DBot on a REAL account?",
-        "Imported bot <b>" + esc(rec.name) + "</b> will spend <b>real money</b> on account <b>" + esc(state.auth.loginid) + "</b>.<br><br>" +
-        "Market: <b>" + esc(MARKETS[cfg.market].name) + "</b><br>Contract: <b>" + esc(CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) + "</b>" +
-        (DIGIT_CONTRACTS.indexOf(this.purchaseContract) >= 0 ? " · barrier <b>" + esc(cfg.barrier) + "</b>" : "") + "<br>" +
-        "Stake: <b>" + esc(money(stake)) + "</b><br>Stop loss: <b>" + esc(sl ? money(sl) : "none") + "</b> · Take profit: <b>" + esc(tp ? money(tp) : "none") + "</b><br><br>" +
-        "A DBot file is not a guarantee of profit. Only run this with money you can afford to lose.",
-        "I understand — run on REAL", true
-      ).then(ok => {
-        this.starting = false;
-        if (!ok) { this.log("warn", "Start cancelled on the real account."); this.renderStatus(); return; }
-        begin();
-      });
       this.renderStatus();
-      return;
+      let ok;
+      try {
+        const first = options.signal;
+        ok = await confirmDialog(
+          "Run this DBot on a REAL account?",
+          "Bot <b>" + esc(rec.name) + "</b> will spend <b>real money</b> on account <b>" + esc(startAccount) + "</b>.<br><br>" +
+          "Market: <b>" + esc(MARKETS[cfg.market].name) + "</b><br>" +
+          (first ? "Immediate signal trade: <b>" + esc(first.def.label) + "</b> · barrier <b>" + esc(first.def.barrier) + "</b><br>" : "") +
+          "Bot contract after entry: <b>" + esc(CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) + "</b>" +
+          (DIGIT_CONTRACTS.indexOf(this.purchaseContract) >= 0 ? " · barrier <b>" + esc(cfg.barrier) + "</b>" : "") + "<br>" +
+          "Stake: <b>" + esc(money(stake)) + "</b><br>Stop loss: <b>" + esc(sl ? money(sl) : "none") + "</b> · Take profit: <b>" + esc(tp ? money(tp) : "none") + "</b><br><br>" +
+          "A DBot file is not a guarantee of profit. Only run this with money you can afford to lose.",
+          "I understand — run on REAL", true
+        );
+      } finally {
+        this.starting = false;
+        this.renderStatus();
+      }
+      if (!ok) { this.log("warn", "Start cancelled on the real account."); return; }
+      if (!state.auth || state.token !== startToken || state.auth.loginid !== startAccount ||
+          this.selectedId !== rec.id || rec.xml !== startXml || this.cfg !== cfg || this.running || this.pending != null) {
+        toast("Bot settings changed", "Check the account and bot, then start again.", "warn"); return;
+      }
     }
     begin();
   },
@@ -9088,9 +9204,13 @@ const DBots = {
     if (!this.running && !this.pending) { this.renderStatus(); return; }
     const wasRunning = this.running;
     this.running = false;
-    this.busy = false;
-    this.pending = null;
-    socket.forget("dbotpoc");
+    /* A submitted signal order cannot be cancelled. Keep it locked and
+       watched until the buy resolves and any resulting contract settles. */
+    if (!this.signalTradeInFlight && !this.pendingSignal) {
+      this.busy = false;
+      this.pending = null;
+      socket.forget("dbotpoc");
+    }
     $id("dbotsTabPill").classList.add("hidden");
     this.renderStatus();
     if (wasRunning) {
@@ -9142,10 +9262,10 @@ const DBots = {
     return keys.length ? keys.map(k => k + "=" + this.vars[k]).join(" ") : "—";
   },
 
-  async placeTrade(stake, why) {
+  async placeTrade(stake, why, entry) {
     const cfg = this.cfg;
-    const contract = this.purchaseContract;
-    const barrier = cfg.barrier;
+    const contract = entry ? entry.contract : this.purchaseContract;
+    const barrier = entry ? entry.barrier : cfg.barrier;
     const dur = Math.max(1, Math.round(cfg.duration || 1));
     const unit = cfg.durationUnit === "s" ? "s" : "t";
     const propReq = {
@@ -9153,7 +9273,7 @@ const DBots = {
       contract_type: contract, currency: state.currency || "USD",
       duration: dur, duration_unit: unit
     };
-    Object.assign(propReq, symbolPayload(cfg.market));
+    Object.assign(propReq, symbolPayload(entry ? entry.market : cfg.market));
     if (DIGIT_CONTRACTS.indexOf(contract) >= 0) propReq.barrier = String(barrier);
 
     this.log("buy", "Entry · " + why);
@@ -9163,9 +9283,13 @@ const DBots = {
     if (state.balance != null && num(p.ask_price) > num(state.balance)) {
       throw { code: "LOW_BALANCE", message: "Balance too low for this stake." };
     }
+    if (entry && (!this.running || this.runId !== entry.runId)) {
+      throw { message: "Bot stopped before the signal purchase." };
+    }
     const bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "dbot buy");
     const c = bresp.buy;
     this.pending = c.contract_id;
+    this.pendingSignal = !!entry;
     this.addTransaction(c, contract, barrier);
     this.log("buy", "Bought " + c.contract_id + " · " + money(c.buy_price) + " → payout " + money(c.payout) +
       " · " + dur + (unit === "t" ? " tick" + (dur === 1 ? "" : "s") : "s") +
@@ -9185,6 +9309,7 @@ const DBots = {
       if (!c.is_sold) return;
       socket.forget("dbotpoc");
       this.pending = null;
+      this.pendingSignal = false;
       state.openContract = null;
       renderOpenContract();
       finishContract(c);
@@ -9192,6 +9317,11 @@ const DBots = {
     };
     socket.stream("dbotpoc", { proposal_open_contract: 1, contract_id: contractId }, handle, handle).catch(err => {
       this.log("warn", "Contract watcher: " + apiMessage(err));
+      if (this.pendingSignal) {
+        this.stop("Signal contract status unavailable.");
+        toast("Contract status unavailable", "Check your Deriv positions before starting another trade.", "warn");
+        return;
+      }
       this.pending = null;
       this.busy = false;
     });

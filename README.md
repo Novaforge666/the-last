@@ -189,6 +189,31 @@ value (or the trade-option field, or a purchase-block field), including the
 - `bots/over3_1tick_bot.xml` is the copy that ships with the page (it is also
   embedded in `index.html` for the zero-request first load).
 
+## 3c. Landing page and the OAuth gate
+
+`landing.html` is the public front door. `index.html` starts with a small
+`<script>` gate:
+
+| Visitor arrives at | What happens |
+| --- | --- |
+| `/` with no session | redirected to `/landing.html` |
+| `/?app=1` | the terminal, gate skipped |
+| `/?code=…` or `/?state=…` or `/?error=…` | the terminal — redirecting these would drop the OAuth code before it is exchanged |
+| `/` with a session in the tab | the terminal |
+
+**The rule to preserve:** landing CTAs point at **`/?app=1`**, never at `/`.
+`location.pathname` is still exactly `/` there, so `currentRedirectUri()`
+returns the registered `https://the-last-weld.vercel.app/` and the code exchange
+keeps working. Auth that pointed at `/` would bounce a logged-out visitor
+straight back to the landing page in a loop, and any other path would break the
+redirect URI match. `?app=1` is deliberately kept in the address bar when the
+callback params are stripped, so a refresh right after login does not eject the
+user to the landing page mid-session.
+
+`landing.html` is static: system-font stack plus inline SVG only, with one tiny
+script that reveals a "Continue to the terminal" shortcut when a session already
+exists. No CDN, no framework, nothing to build.
+
 ## 4. Deploy
 
 The repository is deployed on Vercel with no build step:
@@ -231,6 +256,28 @@ Deriv Bot `.xml` files imported on the DBots tab are third-party strategies.
 The importer shows exactly which blocks it understood and refuses to start a
 bot that uses blocks it cannot execute; that is a safety limit, not an
 endorsement of the strategy.
+
+## Fixed defects worth remembering
+
+- **DBots never traded.** Two independent bugs, both silent:
+  1. `DBots.runtime()` called `lastDigit(t.quote, sym)` but `sym` was never
+     declared or passed — every evaluation threw `ReferenceError`. Because
+     `Markets.push()` wraps listeners in `try/catch` to protect the feed, the
+     failure produced no message at all: the bot logged "Streaming…", showed as
+     running, and never traded.
+  2. `DBots.start()` shadowed the global `money()` formatter with
+     `const money = this.moneyFor(...)` and then called `money(stake)` a few
+     lines later. The `TypeError` was thrown from `begin()` **after**
+     `this.running = true`, so the bot reported itself as running while never
+     subscribing to ticks.
+  Both are fixed, the local is now `mm`, and a runner-level failure in the tick
+  handler is reported and stops the bot instead of vanishing.
+- **Digit percentages did not match Deriv.** Deriv measures each digit over the
+  last **1000** ticks (its published shares are always exact multiples of 0.1%
+  and sum to ~100). The ticket defaulted to a **100**-tick window, so it could
+  only ever produce 1%-granularity values. The default window is now 1000, and
+  shares use largest-remainder rounding so the ten digits always sum to exactly
+  100.0 instead of drifting to 99.8 or 100.3.
 
 ## Known limits
 

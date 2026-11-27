@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#070707" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23facc15'/%3E%3Cpath d='M8 21l5.5-7 3.5 2.6L24 9' stroke='%230a0a0a' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<title>TickForge — Deriv Volatility Terminal</title>
+<meta name="description" content="A third-party Deriv trading terminal for volatility indices: manual digit trades, auto bots, Deriv Bot (.xml) execution, tick analysis and live entry signals." />
+<!--
+  ============================================================================
+  TICKFORGE — LANDING PAGE
+  ============================================================================
+  Shown to visitors who do not have a live session yet. index.html's first
+  <script> redirects here.
+
+  THE ONE RULE THAT MATTERS
+    "Log in" goes to  /?app=1 .  Not "/" and not "/login".
+    Why: the app must live at exactly "/" because that is the redirect URI
+    registered with Deriv for this OAuth client. Sending the user to "/" from
+    here would bounce them straight back to this page (no session yet), and a
+    different auth path would break the code exchange with invalid_grant.
+    "/?app=1" tells index.html's gate to stay put, and OAuth then runs there.
+
+  The page is static and dependency-free: system fonts plus an inline SVG.
+  No JS is required for any content to render; the only script is the
+  signed-in notice that reveals the "Open terminal" shortcut.
+  ============================================================================
+-->
+<style>
+/* ---- tokens, copied from the terminal so both surfaces are one product ---- */
+:root{
+  --bg:#070707; --bg-2:#0a0a0a; --panel:#111111; --panel-2:#171717; --panel-3:#1e1e1e;
+  --line:#1f1f1f; --line-2:#2a2a2a; --line-3:#3a3a3a;
+  --txt:#ffffff; --muted:#a1a1aa; --dim:#6b6b74;
+  --acc:#facc15; --acc-2:#fde047; --acc-dim:#a16207; --acc-ink:#0a0a0a;
+  --acc-soft:rgba(250,204,21,.12); --acc-line:rgba(250,204,21,.34);
+  --up:#22c55e; --down:#ef4444; --blue:#38bdf8; --purple:#a78bfa;
+  --radius:16px; --radius-sm:10px; --radius-pill:999px;
+  --shadow:0 18px 44px -28px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.045);
+  --display:"Syne","Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--sans);
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* a single soft yellow bloom behind the hero — the only decoration */
+body::before{
+  content:""; position:fixed; inset:-20% -10% auto -10%; height:70vh; z-index:0;
+  background:radial-gradient(60% 60% at 50% 0%, rgba(250,204,21,.10), transparent 70%);
+  pointer-events:none;
+}
+a{color:inherit}
+.wrap{position:relative;z-index:1;width:100%;max-width:1120px;margin:0 auto;padding:0 22px}
+
+/* ---------------- header ---------------- */
+.top{
+  display:flex;align-items:center;gap:14px;
+  padding:18px 0 10px;
+}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand i{
+  width:30px;height:30px;border-radius:9px;background:var(--acc);
+  display:grid;place-items:center;flex:0 0 auto;
+  box-shadow:0 10px 22px -14px rgba(250,204,21,.9);
+}
+.brand i svg{width:17px;height:17px}
+.brand b{
+  font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.brand b em{font-style:normal;color:var(--acc)}
+.top .sp{flex:1 1 auto}
+.top .ghost{
+  display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+  border:1px solid var(--line-2);border-radius:var(--radius-pill);
+  padding:8px 15px;font-size:12.5px;font-weight:600;color:var(--muted);
+  transition:border-color .15s,color .15s,background .15s;white-space:nowrap;
+}
+.top .ghost:hover{border-color:var(--line-3);color:var(--txt);background:var(--panel-2)}
+
+/* ---------------- hero ---------------- */
+.hero{padding:52px 0 20px;max-width:760px}
+.kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--acc-line);background:var(--acc-soft);color:var(--acc-2);
+  border-radius:var(--radius-pill);padding:5px 12px;
+  font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.16em;text-transform:uppercase;
+}
+.kicker s{width:5px;height:5px;border-radius:50%;background:var(--acc);text-decoration:none;
+  animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+h1{
+  font-family:var(--display);font-weight:800;
+  font-size:clamp(2.3rem,6.4vw,4.05rem);line-height:1.03;
+  letter-spacing:-.025em;margin:20px 0 0;
+}
+h1 em{font-style:normal;color:var(--acc)}
+.lede{color:var(--muted);font-size:clamp(1rem,1.7vw,1.15rem);margin:18px 0 0;max-width:60ch}
+.lede b{color:var(--txt);font-weight:600}
+
+/* ---------------- calls to action ---------------- */
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{
+  appearance:none;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  border-radius:var(--radius-pill);padding:14px 26px;
+  font-family:var(--sans);font-size:14.5px;font-weight:700;letter-spacing:.01em;
+  border:1px solid transparent;
+  transition:transform .15s,filter .15s,background .15s,border-color .15s,color .15s;
+}
+.btn svg{width:16px;height:16px;flex:0 0 auto}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn.primary{
+  background:linear-gradient(180deg,var(--acc-2),var(--acc));
+  color:var(--acc-ink);box-shadow:0 16px 34px -18px rgba(250,204,21,.85);
+}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{border-color:var(--line-2);color:var(--muted);background:transparent}
+.btn.ghost:hover{border-color:var(--line-3);color:var(--txt);background:var(--panel-2)}
+.hint{color:var(--dim);font-size:12.5px;margin:14px 0 0;max-width:56ch}
+.hint svg{width:12px;height:12px;vertical-align:-1px;margin-right:5px}
+
+/* the "you are already signed in" shortcut, shown only when a session exists */
+.signedin{
+  display:none;align-items:center;gap:10px;margin-top:16px;
+  border:1px solid rgba(34,197,94,.32);background:rgba(34,197,94,.08);
+  border-radius:var(--radius-sm);padding:10px 14px;
+  font-size:13px;color:#a7f3c5;
+}
+.signedin.show{display:flex}
+.signedin a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+
+/* ---------------- feature grid ---------------- */
+.section{padding:44px 0 0}
+.section > h2{
+  font-family:var(--display);font-weight:700;font-size:clamp(1.25rem,2.4vw,1.6rem);
+  letter-spacing:-.01em;margin:0 0 6px;
+}
+.section > p.sub{color:var(--dim);font-size:13.5px;margin:0 0 22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);
+  transition:border-color .18s,transform .18s;
+}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card .ic{
+  width:32px;height:32px;border-radius:9px;margin-bottom:13px;
+  display:grid;place-items:center;flex:0 0 auto;
+  background:var(--acc-soft);border:1px solid var(--acc-line);
+}
+.card .ic svg{width:16px;height:16px;stroke:var(--acc);fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.card h3{
+  font-family:var(--display);font-weight:700;font-size:14.5px;margin:0 0 6px;
+  letter-spacing:-.005em;
+}
+.card p{margin:0;color:var(--muted);font-size:13px;line-height:1.62}
+.card code{
+  font-family:var(--mono);font-size:11.5px;color:var(--acc-2);
+  background:var(--acc-soft);border-radius:5px;padding:1px 5px;
+}
+
+/* ---------------- how it works ---------------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;counter-reset:s}
+.step{
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--bg-2);
+  padding:18px 20px 20px;position:relative;counter-increment:s;
+}
+.step::before{
+  content:counter(s,decimal-leading-zero);
+  font-family:var(--mono);font-size:11px;font-weight:700;color:var(--acc);
+  letter-spacing:.1em;display:block;margin-bottom:8px;
+}
+.step h4{font-family:var(--display);font-size:13.5px;font-weight:700;margin:0 0 5px}
+.step p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.6}
+
+/* ---------------- trust / stack strip ---------------- */
+.strip{
+  margin-top:46px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--bg-2);padding:20px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;
+}
+.metric{min-width:0}
+.metric .k{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dim);display:block;margin-bottom:5px;
+}
+.metric .v{
+  font-family:var(--mono);font-size:15px;font-weight:700;color:var(--txt);
+  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.metric .v.ok{color:var(--up)}
+
+/* ---------------- final cta ---------------- */
+.final{
+  margin:46px 0 0;border-radius:var(--radius);padding:34px 28px;
+  border:1px solid var(--acc-line);
+  background:linear-gradient(160deg,rgba(250,204,21,.10),rgba(250,204,21,.02) 55%,transparent);
+  display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap;
+}
+.final h2{
+  font-family:var(--display);font-weight:800;font-size:clamp(1.2rem,2.6vw,1.65rem);
+  letter-spacing:-.015em;margin:0 0 4px;
+}
+.final p{margin:0;color:var(--muted);font-size:13.5px;max-width:52ch}
+
+/* ---------------- footer ---------------- */
+footer{
+  margin-top:44px;border-top:1px solid var(--line);
+  padding:24px 0 40px;color:var(--dim);font-size:12px;line-height:1.65;
+}
+footer b{color:var(--muted);font-weight:600}
+footer p{margin:0 0 9px}
+footer a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+footer a:hover{color:var(--txt)}
+
+/* ---------------- responsive ---------------- */
+@media (max-width:640px){
+  .wrap{padding:0 16px}
+  .hero{padding:34px 0 12px}
+  .cta{gap:10px}
+  .btn{flex:1 1 100%;padding:15px 20px}
+  .final{padding:24px 20px}
+  .final .btn{flex:0 0 auto}
+  .section{padding:34px 0 0}
+  .top{padding:14px 0 6px}
+  .top .ghost{padding:7px 12px;font-size:11.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ================= header ================= -->
+  <header class="top">
+    <a class="brand" href="/" aria-label="TickForge home">
+      <i aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M8 21l5.5-7 3.5 2.6L24 9" stroke="#0a0a0a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </i>
+      <b>Tick<em>Forge</em></b>
+    </a>
+    <div class="sp"></div>
+    <a class="ghost" href="/?app=1">Open terminal</a>
+  </header>
+
+  <!-- ================= hero ================= -->
+  <section class="hero">
+    <span class="kicker"><s></s> Live Deriv volatility data</span>
+    <h1>Trading terminals,<br /><em>without the drag.</em></h1>
+    <p class="lede">
+      A fast, single-page terminal for <b>Deriv synthetic indices</b>. Manual digit
+      and rise/fall trades in one tap, four automated strategies, real
+      <b>Deriv Bot (.xml)</b> execution, and tick statistics computed in your
+      browser from live data — no plugins, no downloads, nothing simulated.
+    </p>
+
+    <div class="cta">
+      <a class="btn primary" id="loginBtn" href="/?app=1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="M10 17l5-5-5-5" /><path d="M15 12H3" />
+        </svg>
+        Log in with Deriv
+      </a>
+      <a class="btn ghost" href="/?app=1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12h18" /><path d="M12 3v18" />
+        </svg>
+        Browse the terminal as a guest
+      </a>
+    </div>
+
+    <p class="hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      </svg>
+      Login uses Deriv OAuth 2.0 with PKCE. Your password is only ever entered on
+      Deriv's own site — this app never sees it, and holds no client secret.
+    </p>
+
+    <!-- Only revealed when a session already exists, so returning users skip a step -->
+    <div class="signedin" id="signedin">
+      <span>You are already signed in on this tab.</span>
+      <a id="continueBtn" href="/">Continue to the terminal →</a>
+    </div>
+  </section>
+
+  <!-- ================= features ================= -->
+  <section class="section">
+    <h2>Everything in one screen</h2>
+    <p class="sub">Five workspaces, one page, zero build step.</p>
+    <div class="grid">
+
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-6 5 4"/></svg></div>
+        <h3>Manual Trade</h3>
+        <p>Live tick, chart and last-digit strip with a contract ticket. Over,
+           Under, Even, Odd, Matches, Differs, Rise and Fall — quoted together,
+           bought in <b>one tap</b> per tick.</p>
+      </div>
+
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/></svg></div>
+        <h3>DBots builder</h3>
+        <p>Import a Deriv Bot <code>.xml</code>, or build one in a four-step
+           dialog. It writes a real, exportable file — and refuses to run any
+           block it cannot execute rather than guessing.</p>
+      </div>
+
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v4"/><path d="M12 17v4"/><circle cx="12" cy="12" r="4"/><path d="M3 12h2"/><path d="M19 12h2"/></svg></div>
+        <h3>Auto Bots</h3>
+        <p>Four strategies — digit streak, frequency threshold, even/odd
+           imbalance, martingale recovery — with take profit, stop loss and
+           per-bot money management.</p>
+      </div>
+
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M9 19V5"/><path d="M14 19v-7"/><path d="M19 19v-4"/></svg></div>
+        <h3>Tick analysis</h3>
+        <p>Digit distribution over 25 to 1,000 ticks, even/odd split, streaks
+           and an over/under probability table. Every percentage is measured
+           from real ticks in your browser.</p>
+      </div>
+
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6"/></svg></div>
+        <h3>Entry points</h3>
+        <p>Six over/under signal cards scored by your own streak and cold-zone
+           rules, plus a scan that ranks all ten volatility markets. Describes
+           the past window — never a prediction.</p>
+      </div>
+
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div>
+        <h3>Zero install</h3>
+        <p>One HTML file, no bundler, no framework, no npm. Fonts are the only
+           external asset; the chart is drawn on a canvas and the favicon is
+           inline.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= how it works ================= -->
+  <section class="section">
+    <h2>How you get in</h2>
+    <p class="sub">Three steps, and the password step is Deriv's, not ours.</p>
+    <div class="steps">
+      <div class="step">
+        <h4>Sign in on Deriv</h4>
+        <p>Press “Log in with Deriv”. You are sent to Deriv's own OAuth screens
+           and authorise the <code>trade</code> scope.</p>
+      </div>
+      <div class="step">
+        <h4>Return and pick an account</h4>
+        <p>Deriv sends you back with a single-use code, exchanged by a
+           server-side function. Demo is chosen by default; a real account
+           always asks for explicit confirmation.</p>
+      </div>
+      <div class="step">
+        <h4>Trade or automate</h4>
+        <p>The terminal opens with live prices. Trade by hand, run a strategy, or
+           load a DBot file — all on the same live tick stream.</p>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="metric"><span class="k">Market data</span><span class="v ok">Deriv · live</span></div>
+      <div class="metric"><span class="k">Login</span><span class="v">OAuth 2.0 + PKCE</span></div>
+      <div class="metric"><span class="k">Token storage</span><span class="v">This tab only</span></div>
+      <div class="metric"><span class="k">Client secret</span><span class="v">None</span></div>
+      <div class="metric"><span class="k">Data computed</span><span class="v">In-browser</span></div>
+    </div>
+  </section>
+
+  <!-- ================= final cta ================= -->
+  <section class="final">
+    <div>
+      <h2>Ready when you are.</h2>
+      <p>Demo accounts work end to end, so you can try every feature before
+         risking anything.</p>
+    </div>
+    <a class="btn primary" href="/?app=1">Log in with Deriv</a>
+  </section>
+
+  <!-- ================= footer ================= -->
+  <footer>
+    <p>
+      <b>Risk warning.</b> Deriv synthetic indices are high-risk products and
+      most retail accounts lose money. Digit frequencies and signals on this site
+      describe past ticks only; each tick is statistically independent, so none
+      of it predicts the next one.
+    </p>
+    <p>
+      TickForge is an <b>independent third-party client</b>. It is not affiliated
+      with, endorsed by or operated by Deriv.
+      <a href="https://deriv.com/responsible-trading/" target="_blank" rel="noopener noreferrer">Responsible trading</a>.
+    </p>
+    <p>© <span id="yr">2026</span> TickForge · Built as a single HTML file.</p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  /* Year, without pulling in a library. */
+  var y = document.getElementById("yr");
+  if (y) y.textContent = String(new Date().getFullYear());
+
+  /* If this tab already holds a session, offer a direct way in. Deliberately
+     not a redirect: a visitor may have landed here on purpose. */
+  try {
+    if (sessionStorage.getItem("tickforge.oauth.token")) {
+      var box = document.getElementById("signedin");
+      if (box) box.classList.add("show");
+    }
+  } catch (_) {}
+})();
+</script>
+
+</body>
+</html>

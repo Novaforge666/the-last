@@ -8,12 +8,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-<link rel="icon" type="image/png" href="/assets/tickforge-logo.png" />
-<title>TickForge — Deriv Volatility Terminal</title>
+<link rel="icon" type="image/png" href="/assets/tick-extinction-icon.png" />
+<title>Tick Extinction — Deriv Volatility Terminal</title>
 <meta name="description" content="A third-party Deriv trading terminal for volatility indices: manual digit trades, auto bots, Deriv Bot (.xml) execution, tick analysis and live entry signals." />
 <!--
   ============================================================================
-  TICKFORGE — LANDING PAGE
+  TICK EXTINCTION — LANDING PAGE
   ============================================================================
   Shown to visitors who do not have a live session yet. index.html's first
   <script> redirects here.
@@ -26,7 +26,7 @@
     different auth path would break the code exchange with invalid_grant.
     "/?app=1" tells index.html's gate to stay put, and OAuth then runs there.
 
-  The page is static: fonts and the TickForge logo are loaded as assets.
+  The page is static: fonts and the Tick Extinction logo are loaded as assets.
   No JS is required for any content to render; the only script is the
   signed-in notice that reveals the "Open terminal" shortcut.
   ============================================================================
@@ -246,6 +246,13 @@ footer a:hover{color:var(--txt)}
   .top{padding:14px 0 6px}
   .top .ghost{padding:7px 12px;font-size:11.5px}
 }
+@media (max-width:420px){
+  .brand{gap:6px}
+  .brand b{font-size:11px;letter-spacing:.04em;white-space:nowrap}
+  .brand img{width:36px;height:36px}
+  .top{gap:6px}
+  .top .ghost{padding:7px 9px;font-size:10.5px}
+}
 @media (prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important}
 }
@@ -257,9 +264,9 @@ footer a:hover{color:var(--txt)}
 
   <!-- ================= header ================= -->
   <header class="top">
-    <a class="brand" href="/" aria-label="TickForge home">
-      <img src="/assets/tickforge-logo.png" alt="" width="48" height="48" />
-      <b>Tick<em>Forge</em></b>
+    <a class="brand" href="/" aria-label="Tick Extinction home">
+      <img src="/assets/tick-extinction-mark.webp" alt="" width="48" height="48" />
+      <b>Tick<em> Extinction</em></b>
     </a>
     <div class="sp"></div>
     <a class="ghost" href="/?app=1">Open terminal</a>
@@ -306,7 +313,7 @@ footer a:hover{color:var(--txt)}
       <a id="continueBtn" href="/">Continue to the terminal →</a>
     </div>
     </div>
-    <div class="hero-mark" aria-hidden="true"><img src="/assets/tickforge-logo.png" alt="" width="1024" height="1024" /></div>
+    <div class="hero-mark" aria-hidden="true"><img src="/assets/tick-extinction-mark.webp" alt="" width="1024" height="1024" /></div>
   </section>
 
   <!-- ================= features ================= -->
@@ -416,11 +423,11 @@ footer a:hover{color:var(--txt)}
       of it predicts the next one.
     </p>
     <p>
-      TickForge is an <b>independent third-party client</b>. It is not affiliated
+      Tick Extinction is an <b>independent third-party client</b>. It is not affiliated
       with, endorsed by or operated by Deriv.
       <a href="https://deriv.com/responsible-trading/" target="_blank" rel="noopener noreferrer">Responsible trading</a>.
     </p>
-    <p>© <span id="yr">2026</span> TickForge · Built as a single HTML file.</p>
+    <p>© <span id="yr">2026</span> Tick Extinction · Built as a single HTML file.</p>
   </footer>
 
 </div>

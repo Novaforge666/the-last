@@ -8194,7 +8194,7 @@ const DBots = {
      in the bot's own configuration, and so do we. */
   moneyFor(id) {
     const all = this.moneyStore || (this.moneyStore = {});
-    return Object.assign({ tp: 5, sl: 10, martingale: false, mult: 2, maxSteps: 3, maxLoss: 3 }, all[id] || {});
+    return Object.assign({ stake: null, tp: 5, sl: 10, martingale: false, mult: 2, maxSteps: 3, maxLoss: 3 }, all[id] || {});
   },
 
   saveMoney(patch) {
@@ -8283,7 +8283,11 @@ const DBots = {
     };
 
     /* Money management lives in this terminal's per-bot settings, not in the
-       XML, so it is handled before any document work. */
+       XML, so it is handled before any document work. Take profit and Stop loss
+       are ALSO mirrored into the file's TakeProfit / StopLoss variables, because
+       that is where the runner and the exported .xml read them from — writing
+       only the store left the pill and the Run settings showing different
+       numbers, which is what made TP/SL look like they would not change. */
     const MONEY_FIELDS = { takeprofit: "tp", stoploss: "sl", martingale: "martingale", multiplier: "mult", maxsteps: "maxSteps", maxloss: "maxLoss" };
     if (MONEY_FIELDS[field]) {
       const key = MONEY_FIELDS[field];
@@ -8297,6 +8301,32 @@ const DBots = {
       /* mirror into the side panel so both views agree */
       const mirror = { tp: "dbotsTP", sl: "dbotsSL" }[key];
       if (mirror && $id(mirror)) $id(mirror).value = String(v);
+      /* and mirror into the XML variables (needs the parsed document below) */
+      if (key === "tp" || key === "sl") {
+        const varName = key === "tp" ? "TakeProfit" : "StopLoss";
+        const parser = new DOMParser();
+        let doc2 = null;
+        try { doc2 = parser.parseFromString(rec.xml, "application/xml"); } catch (_) {}
+        if (doc2 && !doc2.getElementsByTagName("parsererror")[0]) {
+          const sets = Array.from(doc2.getElementsByTagName("block"))
+            .filter(el => el.getAttribute("type") === "variables_set");
+          const hit = sets.find(el => {
+            const f = Array.from(el.childNodes).find(n => n.nodeType === 1 && n.tagName.toLowerCase() === "field" && n.getAttribute("name") === "VAR");
+            return f && String(f.textContent).trim().toLowerCase() === varName.toLowerCase();
+          });
+          if (hit) {
+            const valueEl = Array.from(hit.childNodes).find(n => n.nodeType === 1 && n.tagName.toLowerCase() === "value" && n.getAttribute("name") === "VALUE");
+            const numEl = valueEl && Array.from(valueEl.getElementsByTagName("block")).find(b => b.getAttribute("type") === "math_number");
+            const nf = numEl && Array.from(numEl.childNodes).find(n => n.nodeType === 1 && n.tagName.toLowerCase() === "field" && n.getAttribute("name") === "NUM");
+            if (nf) {
+              nf.textContent = String(v);
+              rec.xml = new XMLSerializer().serializeToString(doc2);
+              this.save();
+              try { this.cfg = this.parse(rec.xml); } catch (_) {}
+            }
+          }
+        }
+      }
       this.render();
       this.log("sys", "Set " + field + " to " + v);
       return;
@@ -8485,6 +8515,12 @@ const DBots = {
     this.applyCanvasState();
   },
 
+  /* Seed the Run settings from the bot file's own variables.
+     This is a DEFAULT, not a reset: a value the user has already saved for this
+     bot must win. Previously this ran on every select() and every canvas edit
+     and always overwrote the inputs, which is why Take profit / Stop loss
+     appeared to "not change" — the typed number was replaced before it could be
+     used. `explicit` lets a caller force a specific field (canvas edits). */
   applyDefaults() {
     const v = this.cfg ? this.cfg.vars : {};
     const pickVar = names => {
@@ -8495,12 +8531,18 @@ const DBots = {
       }
       return null;
     };
-    const stake = pickVar(["Stake", "StakeAmount", "Amount"]);
-    const tp = pickVar(["TakeProfit", "TP"]);
-    const sl = pickVar(["StopLoss", "SL"]);
-    if (stake != null && stake >= 0.35) $id("dbotsStake").value = String(stake);
-    if (tp != null) $id("dbotsTP").value = String(tp);
-    if (sl != null) $id("dbotsSL").value = String(sl);
+    const saved = (this.selectedId && this.moneyStore && this.moneyStore[this.selectedId]) || {};
+    const setIfFree = (id, savedKey, value, min) => {
+      const el = $id(id);
+      if (!el || value == null) return;
+      if (min != null && value < min) return;
+      /* a saved user value always wins over the file's variable */
+      if (saved[savedKey] != null) { el.value = String(saved[savedKey]); return; }
+      el.value = String(value);
+    };
+    setIfFree("dbotsStake", "stake", pickVar(["Stake", "StakeAmount", "Amount"]), 0.35);
+    setIfFree("dbotsTP", "tp", pickVar(["TakeProfit", "TP"]), 0);
+    setIfFree("dbotsSL", "sl", pickVar(["StopLoss", "SL"]), 0);
   },
 
   remove(id) {
@@ -9637,6 +9679,37 @@ const DBots = {
       if (typeof DBOTS_SAMPLE_XML === "string" && DBOTS_SAMPLE_XML) this.add(DBOTS_SAMPLE_XML, "over3_1tick_bot.xml");
       else toast("Sample missing", "The built-in sample could not be found.", "err");
     });
+    /* The Run settings were read only at start() time and never written back,
+       so a value typed into Take profit / Stop loss (or stake) was forgotten as
+       soon as the panel re-rendered or the bot was re-selected. Persist each
+       field into this bot's money store as it is edited, which is the same
+       store the canvas money-management block writes to. */
+    const moneyFields = [
+      { id: "dbotsStake", key: "stake", min: 0.35 },
+      { id: "dbotsTP", key: "tp", min: 0 },
+      { id: "dbotsSL", key: "sl", min: 0 },
+      { id: "dbotsCooldown", key: "cooldown", min: 0 }
+    ];
+    moneyFields.forEach(f => {
+      const el = $id(f.id);
+      if (!el) return;
+      const commit = () => {
+        if (!this.selectedId) return;
+        const raw = num(el.value, null);
+        if (raw == null) return;
+        const v = Math.max(f.min, raw);
+        this.saveMoney({ [f.key]: v });
+        /* normalise what is in the box so the user sees what was stored */
+        if (String(el.value) !== String(v)) el.value = String(v);
+        /* keep the canvas money block in step */
+        if (this.renderSummary) this.renderSummary();
+        if (this.renderBlocks) this.renderBlocks();
+      };
+      el.addEventListener("change", commit);
+      el.addEventListener("blur", commit);
+      el.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); commit(); el.blur(); } });
+    });
+
     const start = $id("dbotsStart");
     if (start) start.addEventListener("click", () => this.start());
     const stop = $id("dbotsStop");

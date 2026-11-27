@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23facc15'/%3E%3Cpath d='M8 21l5.5-7 3.5 2.6L24 9' stroke='%230a0a0a' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/assets/tickforge-logo.png" />
 <title>TickForge — Deriv Volatility Terminal</title>
 <meta name="description" content="A third-party Deriv trading terminal for volatility indices: manual digit trades, auto bots, Deriv Bot (.xml) execution, tick analysis and live entry signals." />
 <!--
@@ -26,7 +26,7 @@
     different auth path would break the code exchange with invalid_grant.
     "/?app=1" tells index.html's gate to stay put, and OAuth then runs there.
 
-  The page is static and dependency-free: system fonts plus an inline SVG.
+  The page is static: fonts and the TickForge logo are loaded as assets.
   No JS is required for any content to render; the only script is the
   signed-in notice that reveals the "Open terminal" shortcut.
   ============================================================================
@@ -68,12 +68,10 @@ a{color:inherit}
   padding:18px 0 10px;
 }
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
-.brand i{
-  width:30px;height:30px;border-radius:9px;background:var(--acc);
-  display:grid;place-items:center;flex:0 0 auto;
-  box-shadow:0 10px 22px -14px rgba(250,204,21,.9);
+.brand img{
+  width:48px;height:48px;display:block;object-fit:contain;flex:0 0 auto;
+  border-radius:10px;
 }
-.brand i svg{width:17px;height:17px}
 .brand b{
   font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.14em;
   text-transform:uppercase;
@@ -89,7 +87,13 @@ a{color:inherit}
 .top .ghost:hover{border-color:var(--line-3);color:var(--txt);background:var(--panel-2)}
 
 /* ---------------- hero ---------------- */
-.hero{padding:52px 0 20px;max-width:760px}
+.hero{
+  padding:52px 0 20px;display:grid;grid-template-columns:minmax(0,760px) minmax(190px,1fr);
+  align-items:center;gap:40px;
+}
+.hero-copy{min-width:0}
+.hero-mark{display:flex;justify-content:center;align-items:center}
+.hero-mark img{display:block;width:min(100%,290px);height:auto;border-radius:12px}
 .kicker{
   display:inline-flex;align-items:center;gap:8px;
   border:1px solid var(--acc-line);background:var(--acc-soft);color:var(--acc-2);
@@ -230,7 +234,10 @@ footer a:hover{color:var(--txt)}
 /* ---------------- responsive ---------------- */
 @media (max-width:640px){
   .wrap{padding:0 16px}
-  .hero{padding:34px 0 12px}
+  .hero{padding:34px 0 12px;grid-template-columns:1fr;gap:18px}
+  .hero-mark{grid-row:1;justify-content:flex-start}
+  .hero-mark img{width:136px}
+  .brand img{width:42px;height:42px}
   .cta{gap:10px}
   .btn{flex:1 1 100%;padding:15px 20px}
   .final{padding:24px 20px}
@@ -251,9 +258,7 @@ footer a:hover{color:var(--txt)}
   <!-- ================= header ================= -->
   <header class="top">
     <a class="brand" href="/" aria-label="TickForge home">
-      <i aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none"><path d="M8 21l5.5-7 3.5 2.6L24 9" stroke="#0a0a0a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </i>
+      <img src="/assets/tickforge-logo.png" alt="" width="48" height="48" />
       <b>Tick<em>Forge</em></b>
     </a>
     <div class="sp"></div>
@@ -262,6 +267,7 @@ footer a:hover{color:var(--txt)}
 
   <!-- ================= hero ================= -->
   <section class="hero">
+    <div class="hero-copy">
     <span class="kicker"><s></s> Live Deriv volatility data</span>
     <h1>Trading terminals,<br /><em>without the drag.</em></h1>
     <p class="lede">
@@ -299,6 +305,8 @@ footer a:hover{color:var(--txt)}
       <span>You are already signed in on this tab.</span>
       <a id="continueBtn" href="/">Continue to the terminal →</a>
     </div>
+    </div>
+    <div class="hero-mark" aria-hidden="true"><img src="/assets/tickforge-logo.png" alt="" width="1024" height="1024" /></div>
   </section>
 
   <!-- ================= features ================= -->
@@ -350,9 +358,8 @@ footer a:hover{color:var(--txt)}
       <div class="card">
         <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div>
         <h3>Zero install</h3>
-        <p>One HTML file, no bundler, no framework, no npm. Fonts are the only
-           external asset; the chart is drawn on a canvas and the favicon is
-           inline.</p>
+        <p>No bundler, framework or npm required. The chart is drawn on a canvas,
+           the logo is served with the site, and fonts load separately.</p>
       </div>
 
     </div>

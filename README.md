@@ -37,7 +37,7 @@ after a reconnect, **OAuth 2.0 login (Authorization Code + PKCE)**, an optional
 **API-token login** (PAT → REST account discovery → single-use OTP WebSocket),
 an account picker for logins with several Options accounts, REST calls that fall
 back to a same-origin relay when CORS blocks the direct read, and a header with
-account id, Demo/Real badge, live `balance` subscription and logout.
+Demo/Real badge, live `balance` subscription and logout. After login, the left-edge three-dot panel contains the theme switch and logout; the guest theme and login controls remain in the header.
 
 ## 1. Register the application
 

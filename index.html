@@ -3226,6 +3226,11 @@ body.bb-open #toasts{bottom:auto;top:10px}
         <b>Rise / Fall</b>
         <small>Rise on Volatility 100 (1s), 5 ticks</small>
       </button>
+      <button class="qs-card" data-qs="direct" type="button">
+        <span class="qs-i">▶</span>
+        <b>Direct execution</b>
+        <small>No analysis — buys every tick. Execution parameters are editable</small>
+      </button>
       <button class="qs-card" data-qs="blank" type="button">
         <span class="qs-i">＋</span>
         <b>Blank workspace</b>
@@ -7885,10 +7890,35 @@ const DBots = {
       evenodd:   ["R_75",    "DIGITEVEN",  "evenodd",    null, 1],
       matches:   ["R_100",   "DIGITDIFF",  "matchesdiffers", 7, 1],
       risefall:  ["1HZ100V", "CALL",       "callput",     null, 5],
+      /* No analysis: trades on every tick. Execution parameters live in the
+         variables below so the canvas can edit them. */
+      direct:    ["1HZ100V", "DIGITOVER",  "overunder",     5, 1],
       blank:     ["R_50",    "DIGITOVER",  "overunder",     3, 1]
     };
     const m = map[kind] || map.sample;
     let xml = head(m[0], m[1], m[2]);
+    /* Give the direct bot the rest of its execution parameters as variables in
+       the initialization stack. They are declared here (not as literals in the
+       trade options) so every one of them is editable from the canvas and
+       survives export. Durations feed the trade-options shadow below. */
+    if (kind === "direct") {
+      const extraVars =
+        '<variable id="v_dur">Duration</variable>' +
+        '<variable id="v_pred">Prediction</variable>';
+      xml = xml.replace('</variables>', extraVars + '</variables>');
+      const extraInit =
+        '<next><block type="variables_set" id="b_init_dur"><field name="VAR" id="v_dur">Duration</field>' +
+          '<value name="VALUE"><block type="math_number"><field name="NUM">1</field></block></value>' +
+          '<next><block type="variables_set" id="b_init_pred"><field name="VAR" id="v_pred">Prediction</field>' +
+            '<value name="VALUE"><block type="math_number"><field name="NUM">5</field></block></value>' +
+          '</block></next>' +
+        '</block></next>';
+      /* append after the StopLoss variables_set, closing its three levels */
+      xml = xml.replace(
+        /(<block type="variables_set" id="b_init_sl">[\s\S]*?<field name="NUM">10<\/field><\/block><\/value>)(<\/block><\/next><\/block><\/next><\/block>)/,
+        "$1" + extraInit + "$2"
+      );
+    }
     /* the duration lives in the <shadow> of the DURATION slot */
     if (m[4] !== 1) {
       xml = xml.replace(/(<value name="DURATION"><shadow type="math_number" id="sh_dur"><field name="NUM">)1(<\/field>)/, "$1" + m[4] + "$2");
@@ -7898,13 +7928,34 @@ const DBots = {
   ,
 
   templateBarrier(kind) {
-    const map = { sample: 3, overunder: 5, matches: 7 };
+    const map = { sample: 3, overunder: 5, matches: 7, direct: 5 };
     if (!(kind in map)) return "";
     return '<value name="PREDICTION"><shadow type="math_number" id="sh_pred"><field name="NUM">' + map[kind] + "</field></shadow></value>";
   },
 
   templateLifecycle(kind) {
     if (kind === "blank") return "";
+    /* Zero-analysis bot: before_purchase contains one purchase block and
+       nothing else, so every tick is an entry. No conditions, no indicators,
+       no streak counting — the only controls are execution parameters. */
+    if (kind === "direct") {
+      /* No analysis anywhere: before_purchase is a single purchase, and
+         after_purchase ends in trade_again so the runner keeps going. Without
+         that trailing trade_again the runner stops after the first settlement
+         ("after_purchase finished without trade again"), which is not what a
+         continuous-execution bot should do. Take profit and stop loss are
+         enforced by the runner itself from the variables, not by blocks here. */
+      return '<block type="before_purchase" id="b_before" deletable="false" x="0" y="700">' +
+          '<statement name="BEFORE_PURCHASE_STACK">' +
+            '<block type="purchase" id="b_purchase"></block>' +
+          '</statement>' +
+        '</block>' +
+        '<block type="after_purchase" id="b_after" deletable="false" x="0" y="1350">' +
+          '<statement name="AFTERPURCHASE_STACK">' +
+            '<block type="trade_again" id="b_trade_again"></block>' +
+          '</statement>' +
+        '</block>';
+    }
     /* full docs pull their lifecycle stacks from the bundled sample so the
        behaviour (streak reset, take-profit, trade again) matches a real bot */
     const S = (typeof DBOTS_SAMPLE_XML === "string" ? DBOTS_SAMPLE_XML : "");

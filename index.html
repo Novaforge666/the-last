@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<script>
+/* Landing gate: first-time visitors on "/" see landing.html. The app stays at "/" so the
+   Deriv OAuth redirect URI is unchanged. Skipped for ?app=1, OAuth callbacks
+   (?code / ?state / ?error), and anyone with a live login session. */
+(function(){try{
+  if(/[?&](app|code|state|error)=/.test(location.search))return;
+  if(sessionStorage.getItem("tickforge.oauth.token"))return;
+  location.replace("/landing.html");
+}catch(_){}})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <meta name="theme-color" content="#070707" />
@@ -1424,6 +1434,26 @@ input[type="range"]#durRange::-moz-range-thumb{
 .bl-panel.open .bl-panel-body{display:block}
 
 /* summary rows: label left, value right, mono for anything numeric */
+/* Run panel: Deriv-style tabs + stat tiles */
+.bl-rp-tabs{display:flex;position:sticky;top:-10px;z-index:2;background:#0b111a;border-bottom:1px solid #1d2939;margin:-10px -10px 0 -4px;padding:0 6px}
+.bl-rp-tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:#6f7c8d;font:600 12px "Inter",sans-serif;padding:12px 4px 10px;cursor:pointer;white-space:nowrap}
+.bl-rp-tabs button:hover{color:#e5ecf5}
+.bl-rp-tabs button.on{color:#fff;border-bottom-color:var(--acc)}
+.bl-rp-tabs i{font-style:normal;font:500 10px "JetBrains Mono",monospace;background:#17212f;color:#9fb0c4;border-radius:8px;padding:1px 6px;margin-left:3px}
+.bl-rp-tabs button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+#dbotsSidePanels .bl-panel{margin-top:8px}
+#dbotsSidePanels .bl-panel:not(.open){display:none}
+#dbotsSidePanels .bl-panel-head{display:none}
+#dbotsSidePanels .bl-panel.open .bl-panel-tools{margin-top:0}
+.bl-tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 8px 2px}
+.bl-tile{background:#0b111a;border:1px solid #1d2939;border-radius:8px;padding:8px 10px;min-width:0}
+.bl-tile .k{display:block;color:#6f7c8d;font:500 10px "Inter",sans-serif;margin-bottom:3px}
+.bl-tile .v{display:block;font:700 14px "JetBrains Mono",monospace;color:#e5ecf5;overflow:hidden;text-overflow:ellipsis}
+.bl-tile .v.ok{color:#4ade80}.bl-tile .v.bad{color:#f87171}
+.bl-tile.wide{grid-column:1/-1}
+.bl-reset{display:block;width:calc(100% - 16px);margin:6px 8px 4px;padding:9px;border-radius:8px;border:1px solid #2a3a50;background:transparent;color:#9fb0c4;font:600 12px "Inter",sans-serif;cursor:pointer}
+.bl-reset:hover:not(:disabled){background:#17212f;color:#fff}
+.bl-reset:disabled{opacity:.4;cursor:not-allowed}
 .bl-sum{display:flex;flex-direction:column;gap:1px;padding:7px}
 .bl-sum-row{
   display:flex;align-items:baseline;justify-content:space-between;gap:8px;
@@ -1910,6 +1940,63 @@ button.blk-v:disabled{cursor:default}
 @media (max-width:1180px){
   .bl-world{grid-template-columns:minmax(0,1fr);gap:12px}
   .bl-ai{top:auto;bottom:56px}
+}
+.bb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:14px}
+.bb[hidden]{display:none}
+body.bb-open #toasts{bottom:auto;top:10px}
+.bb-card{width:min(720px,100%);max-height:100%;display:flex;flex-direction:column;background:#0b111a;color:#e5ecf5;border:1px solid #1d2939;border-radius:16px;overflow:hidden}
+.bb-top{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #1d2939}
+.bb-top h3{margin:0;font-size:17px}
+.bb-x{background:none;border:0;color:#9fb0c4;font-size:18px;cursor:pointer;padding:4px 8px}
+.bb-body{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:0;overflow:auto}
+.bb-nav{display:flex;flex-direction:column;gap:2px;padding:10px;border-right:1px solid #1d2939}
+.bb-nav button{text-align:left;background:none;border:0;color:#9fb0c4;font:600 13px "Inter",sans-serif;padding:11px 12px;border-radius:8px;cursor:pointer}
+.bb-nav button.on{background:#17212f;color:#fff;box-shadow:inset 3px 0 0 var(--acc)}
+.bb-form{padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.bb-form label{display:flex;flex-direction:column;gap:6px;font:500 12px "Inter",sans-serif;color:#9fb0c4}
+.bb-form select,.bb-form input[type=number],.bb-form input[type=text]{background:#0e1520;color:#fff;border:1px solid #2a3a50;border-radius:8px;padding:11px;font:500 14px "Inter",sans-serif;min-height:44px;width:100%}
+.bb-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bb-pg{display:flex;flex-direction:column;gap:14px}.bb-pg[hidden]{display:none}
+.bb-h{margin:0;font:700 14px "Inter",sans-serif;color:#fff}
+.bb-n{margin:0;font:400 12px "Inter",sans-serif;color:#6f7c8d}
+.bb-form .bb-chk{flex-direction:row;align-items:center;gap:8px;font-size:13px}
+.bb-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #1d2939}
+@media (max-width:760px){
+  .bb{padding:0;align-items:flex-end}
+  .bb-card{border-radius:16px 16px 0 0;max-height:92dvh}
+  .bb-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .bb-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid #1d2939;scrollbar-width:none}
+  .bb-nav button{white-space:nowrap;flex:0 0 auto}
+  .bb-foot{flex-direction:column;align-items:stretch}.bb-foot .btn{width:100%;justify-content:center}
+}
+/* The page column must never grow past the screen because of a wide child */
+.wrap,.tabpane{min-width:0;max-width:100%}
+.wrap{width:100%;max-width:min(1560px,100%)}
+/* Phones and small tablets: toolbar on top, canvas, then the Run panel; run bar stays reachable */
+@media (max-width:760px){
+  .bl{height:auto;min-width:0;max-width:100%}
+  .bl>*{min-width:0;max-width:100%}
+  .bl-canvas{width:100%;max-width:100%;overflow:auto;overscroll-behavior:auto}
+  .bl-sidepanels{flex-direction:column;width:100%}
+  .bl-sidepanels .bl-panel{min-width:0;flex:0 0 auto}
+  .bl-panel-body{max-height:none!important;overflow:visible}
+  .bl-runbar{overflow-x:auto;scrollbar-width:none}
+  .bl-runbar>*{flex-shrink:0}
+  .bl-frame{width:100%;display:flex;flex-direction:column;overflow:visible;border-radius:var(--radius)}
+  .bl-rail{flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;padding:8px;
+    border-right:0;border-bottom:1px solid #1d2939;overflow-x:auto;scrollbar-width:none}
+  .bl-qs{flex:0 0 auto;width:auto;padding:0 12px;min-height:38px}
+  .bl-rail-tools{flex-direction:row;width:auto;margin:0;gap:4px}
+  .bl-rail-tools button{flex:0 0 40px;height:38px}
+  .bl-canvas{height:min(54vh,460px);min-height:300px;flex:0 0 auto}
+  .bl-sidepanels{border-left:0;border-top:1px solid #1d2939;padding:10px;overflow:visible;min-height:260px}
+  .bl-rp-tabs{margin:-10px -10px 0;top:0}
+  .bl-side{width:100%;position:fixed;top:auto;height:80vh;bottom:0;border-radius:16px 16px 0 0;border-left:0;border-top:1px solid #1d2939}
+  .bl-runbar{position:sticky;bottom:env(safe-area-inset-bottom,0px);z-index:20;box-shadow:0 -12px 24px -16px rgba(0,0,0,.9)}
+  .bl-risk{bottom:8px}
+}
+@media (min-width:761px) and (max-width:1020px){
+  .bl-frame{grid-template-columns:64px minmax(0,1fr) 236px}
 }
 @media (max-width:700px){
   .bl-run-mid{display:none}
@@ -2549,6 +2636,49 @@ button.blk-v:disabled{cursor:default}
   <!-- TAB 3 — DBOTS (Deriv Bot builder workspace)                        -->
   <!-- ================================================================== -->
   <section class="tabpane" id="pane-dbots" role="tabpanel">
+    <div class="bb" id="dbotsBuilder" hidden>
+      <div class="bb-card" role="dialog" aria-modal="true" aria-labelledby="bbT">
+        <div class="bb-top"><h3 id="bbT">Bot builder</h3><button type="button" class="bb-x" id="bbClose" aria-label="Close">✕</button></div>
+        <div class="bb-body">
+          <nav class="bb-nav" role="tablist">
+            <button type="button" class="on" data-bb="p1">Trade parameters</button>
+            <button type="button" data-bb="p2">Purchase conditions</button>
+            <button type="button" data-bb="p3">Trade options</button>
+            <button type="button" data-bb="p4">Sell &amp; restart</button>
+          </nav>
+          <div class="bb-form">
+            <div class="bb-pg" data-pg="p1">
+              <label>Market<select id="bbMarket"></select></label>
+              <label>Contract type<select id="bbContract">
+                <option value="DIGITOVER">Digit Over</option><option value="DIGITUNDER">Digit Under</option>
+                <option value="DIGITMATCH">Digit Matches</option><option value="DIGITDIFF">Digit Differs</option>
+                <option value="DIGITEVEN">Digit Even</option><option value="DIGITODD">Digit Odd</option></select></label>
+              <label>Candle interval<select id="bbCandle"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="300">5 minutes</option></select></label>
+            </div>
+            <div class="bb-pg" data-pg="p2" hidden>
+              <p class="bb-h">Buy when the last digit is</p>
+              <div class="bb-row"><label>Condition<select id="bbOp"><option value="LTE">at most (≤)</option><option value="GTE">at least (≥)</option></select></label>
+              <label>Digit<input id="bbDigit" type="number" min="0" max="9" value="3"></label></div>
+              <label>…for this many ticks in a row<input id="bbStreak" type="number" min="1" max="20" value="3"></label>
+              <p class="bb-n">The bot counts consecutive ticks that match, then buys once the count is reached.</p>
+            </div>
+            <div class="bb-pg" data-pg="p3" hidden>
+              <div class="bb-row"><label>Duration (ticks)<input id="bbDur" type="number" min="1" max="10" value="1"></label>
+              <label>Prediction digit<input id="bbPred" type="number" min="0" max="9" value="3"></label></div>
+              <label>Stake<input id="bbStake" type="number" min="0.35" step="0.01" value="1"></label>
+            </div>
+            <div class="bb-pg" data-pg="p4" hidden>
+              <div class="bb-row"><label>Take profit<input id="bbTP" type="number" min="0" step="0.5" value="5"></label>
+              <label>Stop loss<input id="bbSL" type="number" min="0" step="0.5" value="10"></label></div>
+              <label class="bb-chk"><input id="bbRestart" type="checkbox" checked> Restart on error</label>
+            </div>
+            <label>Bot name<input id="bbName" type="text" maxlength="40" value="My bot"></label>
+          </div>
+        </div>
+        <div class="bb-foot"><span class="bb-n">Creates a real, runnable bot in your library. Start on a demo account.</span>
+          <button type="button" class="btn primary" id="bbCreate">Create bot</button></div>
+      </div>
+    </div>
     <div class="bl">
 
       <!-- ---------- builder: rail + canvas, side panel as a drawer ---------- -->
@@ -2557,6 +2687,7 @@ button.blk-v:disabled{cursor:default}
         <!-- left icon rail -->
         <div class="bl-rail">
           <button class="bl-qs" id="dbotsQuick" title="Load the bundled strategy">Quick strategy</button>
+          <button class="bl-qs bl-build" id="dbotsBuild" title="Build a bot from the toolbox">＋ Build bot</button>
           <div class="bl-rail-tools">
             <button data-bl="library" class="active" title="Bot library" aria-label="Bot library">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -2669,6 +2800,11 @@ button.blk-v:disabled{cursor:default}
         <!-- right-hand stack: summary, journal, transactions. Each one is a
              collapsible panel exactly like the official builder's side rail. -->
         <div class="bl-sidepanels" id="dbotsSidePanels">
+          <div class="bl-rp-tabs" role="tablist" aria-label="Run panel">
+            <button type="button" role="tab" class="on" data-rp="dbotsSummaryPanel" aria-selected="true">Summary</button>
+            <button type="button" role="tab" data-rp="dbotsTxPanel" aria-selected="false">Transactions <i id="rpTxN">0</i></button>
+            <button type="button" role="tab" data-rp="dbotsJournalPanel" aria-selected="false">Journal</button>
+          </div>
 
           <section class="bl-panel" id="dbotsSummaryPanel">
             <button class="bl-panel-head" type="button" aria-expanded="false" aria-controls="dbotsSummaryBody">
@@ -9133,9 +9269,74 @@ const DBots = {
         }
       });
     });
+    const tabs = host.querySelectorAll(".bl-rp-tabs button");
+    const show = id => {
+      tabs.forEach(b => {
+        const on = b.dataset.rp === id;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      const panel = $id(id);
+      const head = panel && panel.querySelector(".bl-panel-head");
+      if (panel && !panel.classList.contains("open") && head) head.click();
+    };
+    tabs.forEach(b => b.addEventListener("click", () => show(b.dataset.rp)));
+    host.addEventListener("click", ev => {
+      const b = ev.target.closest && ev.target.closest('[data-act="reset"]');
+      if (!b || this.running) return;
+      this.txs = []; this.wins = 0; this.losses = 0; this.pl = 0; this.lossStreak = 0;
+      this.renderSummary(); this.renderTransactions();
+      this.log("sys", "Session stats reset.");
+    });
+    show("dbotsSummaryPanel");
     this.renderSummary();
     this.renderSideJournal();
     this.renderTransactions();
+  },
+
+  /** Toolbox-style builder: edits the bundled template through the XML, then imports it like any file. */
+  initBuilder() {
+    const m = $id("dbotsBuilder"); if (!m) return;
+    const q = id => $id(id);
+    q("bbMarket").innerHTML = Object.keys(MARKETS).map(k => '<option value="' + k + '"' + (k === "1HZ100V" ? " selected" : "") + ">" + esc(MARKETS[k].name) + "</option>").join("");
+    const open = on => { m.hidden = !on; document.body.classList.toggle("bb-open", on); if (on) q("bbMarket").focus(); };
+    $id("dbotsBuild").addEventListener("click", () => open(true));
+    q("bbClose").addEventListener("click", () => open(false));
+    m.addEventListener("click", e => { if (e.target === m) open(false); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && !m.hidden) open(false); });
+    m.querySelectorAll(".bb-nav button").forEach(b => b.addEventListener("click", () => {
+      m.querySelectorAll(".bb-nav button").forEach(x => x.classList.toggle("on", x === b));
+      m.querySelectorAll(".bb-pg").forEach(g => { g.hidden = g.dataset.pg !== b.dataset.bb; });
+    }));
+    const clamp = (id, lo, hi, d) => { const v = Math.round(Number(q(id).value)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+    q("bbCreate").addEventListener("click", () => {
+      const doc = new DOMParser().parseFromString(DBOTS_SAMPLE_XML, "application/xml");
+      if (doc.getElementsByTagName("parsererror")[0]) { toast("Builder", "Template could not be read.", "err"); return; }
+      const blocks = Array.from(doc.getElementsByTagName("block"));
+      const byId = id => blocks.find(b => b.getAttribute("id") === id);
+      const fld = (b, n) => b && Array.from(b.getElementsByTagName("field")).find(f => f.getAttribute("name") === n);
+      const set = (id, n, v) => { const f = fld(byId(id), n); if (f) f.textContent = String(v); };
+      const num = (id, v) => { const b = byId(id); const mn = b && Array.from(b.getElementsByTagName("block")).find(x => x.getAttribute("type") === "math_number"); const f = fld(mn, "NUM"); if (f) f.textContent = String(v); };
+      const c = q("bbContract").value;
+      const tt = /OVER|UNDER/.test(c) ? "overunder" : /EVEN|ODD/.test(c) ? "evenodd" : "matchesdiffers";
+      const stake = Math.max(0.35, Number(q("bbStake").value) || 1);
+      set("b_market", "SYMBOL_LIST", q("bbMarket").value);
+      set("b_tradetype", "TRADETYPE_LIST", tt);
+      set("b_contracttype", "TYPE_LIST", c);
+      set("b_purchase", "PURCHASE_LIST", c);
+      set("b_candle", "CANDLEINTERVAL_LIST", q("bbCandle").value);
+      set("b_restart_err", "RESTARTONERROR", q("bbRestart").checked ? "TRUE" : "FALSE");
+      num("b_init_stake", stake); num("b_init_tp", Math.max(0, Number(q("bbTP").value) || 0)); num("b_init_sl", Math.max(0, Number(q("bbSL").value) || 0));
+      set("b_cmp_low", "OP", q("bbOp").value); num("b_cmp_low", clamp("bbDigit", 0, 9, 3));
+      num("b_cmp_enter", clamp("bbStreak", 1, 20, 3));
+      const to = byId("b_tradeoptions");
+      const shadows = to ? Array.from(to.getElementsByTagName("shadow")) : [];
+      const sv = (i, v) => { const f = shadows[i] && fld(shadows[i], "NUM"); if (f) f.textContent = String(v); };
+      sv(0, clamp("bbDur", 1, 10, 1)); sv(2, clamp("bbPred", 0, 9, 3));
+      const name = (q("bbName").value || "My bot").trim().replace(/[^\w .-]/g, "").slice(0, 40) || "My bot";
+      const rec = this.add(new XMLSerializer().serializeToString(doc), name);
+      if (rec !== null) { open(false); toast("Bot created", name + " is in your library. Press Run when ready.", "ok"); }
+    });
   },
 
   /** Summary: what this bot is, and how the session is going. */
@@ -9157,6 +9358,23 @@ const DBots = {
     const mo = this.moneyFor(this.selectedId);
     const pl = num(this.pl);
     const rows = [];
+    {
+      const st = this.txs.reduce((a, t) => {
+        a.stake += num(t.stake);
+        if (t.profit != null && t.profit >= 0) a.payout += num(t.payout);
+        return a;
+      }, { stake: 0, payout: 0 });
+      const tile = (k, v, c, w) => '<div class="bl-tile' + (w ? " wide" : "") + '"><span class="k">' + k +
+        '</span><span class="v ' + (c || "") + '">' + esc(v) + "</span></div>";
+      rows.push('<div class="bl-tiles">' +
+        tile("Total stake", money(st.stake)) + tile("Total payout", money(st.payout)) +
+        tile("No. of runs", String(this.txs.length)) + tile("Contracts lost", String(this.losses)) +
+        tile("Contracts won", String(this.wins)) +
+        tile("Total profit/loss", (pl >= 0 ? "+" : "") + money(pl), pl > 0 ? "ok" : pl < 0 ? "bad" : "") +
+        "</div>" +
+        '<button type="button" class="bl-reset" data-act="reset"' + (this.running ? " disabled" : "") +
+        ">Reset stats</button>");
+    }
     const row = (k, v, cls, mono) => rows.push(
       '<div class="bl-sum-row"><span class="k">' + esc(k) + '</span><span class="v ' + (cls || "") +
       (mono ? " mono" : "") + '">' + v + "</span></div>");
@@ -9229,6 +9447,8 @@ const DBots = {
     if (!host) return;
     const badge = $id("dbotsTxBadge");
     if (badge) badge.textContent = String(this.txs.length);
+    const rpn = $id("rpTxN");
+    if (rpn) rpn.textContent = String(this.txs.length);
     if (!this.txs.length) {
       host.innerHTML = '<div class="bl-tx-empty">No transactions yet. Run the bot to see each purchase here.</div>';
       return;
@@ -9471,6 +9691,7 @@ const DBots = {
 
     this.initCanvasEditor();
     this.initSidePanels();
+    this.initBuilder();
     this.initCanvasNav();
 
     if (this.library.length) this.select(this.library[0].id);

@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<!-- Landing gate intentionally disabled: landing.html is not written yet, so
-     redirecting cold visitors here would 404 the whole site. Re-enable the
-     block below once landing.html ships. Its "Log in" must point at /?app=1 so
-     the registered Deriv OAuth redirect URI stays exactly "/".
-
 <script>
+/* Landing gate: visitors without a live session see landing.html first. The
+   terminal itself stays at "/" because that is the redirect URI registered with
+   Deriv, so landing.html's "Log in" points at /?app=1 to land here instead.
+
+   Skipped for: ?app=1 (the explicit "go to the app" entry point), an OAuth
+   callback (?code/?state/?error — redirecting those would drop the code before
+   it is exchanged), and anyone who already has a session in this tab. */
 (function(){try{
   if(/[?&](app|code|state|error)=/.test(location.search))return;
   if(sessionStorage.getItem("tickforge.oauth.token"))return;
   location.replace("/landing.html");
 }catch(_){}})();
 </script>
--->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <meta name="theme-color" content="#070707" />
@@ -2267,7 +2268,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
           <span class="kv"><b>Window</b> <span id="chartSpanLabel" class="mono">60 ticks</span></span>
           <span class="seg" id="stripSeg" title="Ticks used for the digit strip percentages">
             <button data-win="50">50</button>
-            <button data-win="100" class="active">100</button>
+            <button data-win="1000" class="active">1000</button>
             <button data-win="250">250</button>
           </span>
           <span class="kv"><b>Epoch</b> <span id="tickEpoch" class="mono">—</span></span>
@@ -3443,7 +3444,11 @@ const state = {
   openContractSub: null,
   trades: [],                  // profit_table rows (normalised)
   localTrades: [],             // real API contracts closed during this session
-  analysisWindow: 100,
+  /* Deriv's own digit strip measures each digit over the last 1000 ticks: its
+     published percentages are always exact multiples of 0.1% and sum to ~100.
+     A 100-tick window produces 1%-granularity numbers (13.0%, 12.0%) that can
+     never match, which is why the ticket disagreed with deriv.com. */
+  analysisWindow: 1000,
   miniWindow: 100,
   signals: [],                 // last computed signal cards
   scan: [],
@@ -3895,7 +3900,32 @@ function digitStats(digits) {
   const n = digits.length;
   const counts = new Array(10).fill(0);
   digits.forEach(d => { if (d >= 0 && d <= 9) counts[d]++; });
-  const shares = counts.map(c => (n ? (c / n) * 100 : 0));
+  /* Exact one-decimal shares that sum to 100.0. Rounding each share on its own
+     lets the column total drift (e.g. 99.8 or 100.3), which looks wrong next to
+     Deriv's strip; largest-remainder hands the leftover tenths to the digits
+     with the biggest discarded fraction so the row always adds up. */
+  const raw = counts.map(c => (n ? (c / n) * 100 : 0));
+  let shares = raw.map(v => Math.round(v * 10) / 10);
+  if (n) {
+    const total = shares.reduce((a, b) => a + b, 0);
+    let diff = Math.round((100 - total) * 10);   // in tenths
+    if (diff !== 0) {
+      const order = raw.map((v, i) => ({ i, frac: (v * 10) - Math.floor(v * 10) }))
+        .sort((a, b) => (diff > 0 ? b.frac - a.frac : a.frac - b.frac));
+      while (diff !== 0) {
+        let moved = false;
+        for (const o of order) {
+          if (diff === 0) break;
+          const step = diff > 0 ? 0.1 : -0.1;
+          if (diff < 0 && shares[o.i] < 0.1) continue;   // never go negative
+          shares[o.i] = Math.round((shares[o.i] + step) * 10) / 10;
+          diff += diff > 0 ? -1 : 1;
+          moved = true;
+        }
+        if (!moved) break;
+      }
+    }
+  }
   let even = 0, odd = 0;
   digits.forEach(d => { if (d % 2 === 0) even++; else odd++; });
   return {
@@ -4021,6 +4051,9 @@ async function startLogin() {
 function cleanOAuthUrl() {
   try {
     const u = new URL(location.href);
+    /* Keep ?app=1: it is the marker that this tab chose the app explicitly.
+       Without it a refresh right after login would send the user back to the
+       landing page mid-session. */
     ["code", "state", "error", "error_description"].forEach(k => u.searchParams.delete(k));
     history.replaceState({}, document.title, u.pathname + (u.search ? u.search : "") + (u.hash || ""));
   } catch (_) {}
@@ -8504,9 +8537,15 @@ const DBots = {
 
   runtime(tick) {
     const t = tick || this.lastSeenTick || null;
+    /* `sym` used to be referenced here but was never declared or passed, so
+       every evaluation threw ReferenceError. The tick listener catches
+       exceptions to protect the feed, which made the failure silent: the bot
+       appeared to be "waiting" forever and never placed a trade. Read the
+       market off the analysed config instead. */
+    const market = (this.cfg && this.cfg.market) || state.market;
     return {
       vars: this.vars,
-      lastDigit: t ? lastDigit(t.quote, sym) : null,
+      lastDigit: t ? lastDigit(t.quote, market) : null,
       totalProfit: this.totalProfit,
       steps: 0,
       log: msg => this.log("sys", "notify: " + msg)
@@ -8695,16 +8734,22 @@ const DBots = {
     if (!cfg.market) { toast("Market unsupported", cfg.symbol ? ("“" + cfg.symbol + "” is not streamed by this terminal.") : "The bot has no market.", "warn"); return; }
 
     /* Run settings come from one place: the side panel's Setup tab. The canvas
-       money-management block writes into the same store, so both stay in step. */
-    const money = this.moneyFor(this.selectedId);
-    const stake = Math.max(0.35, num($id("dbotsStake").value, money.stake || 1));
-    const tp = Math.max(0, num($id("dbotsTP").value, money.tp));
-    const sl = Math.max(0, num($id("dbotsSL").value, money.sl));
+       money-management block writes into the same store, so both stay in step.
+
+       This object MUST NOT be named `money`: doing so shadowed the global
+       money() currency formatter, and the log line below calls money(stake).
+       The result was a TypeError thrown from begin() *after* this.running had
+       already been set to true — so the bot showed as running, never subscribed
+       to ticks and never traded. */
+    const mm = this.moneyFor(this.selectedId);
+    const stake = Math.max(0.35, num($id("dbotsStake").value, mm.stake || 1));
+    const tp = Math.max(0, num($id("dbotsTP").value, mm.tp));
+    const sl = Math.max(0, num($id("dbotsSL").value, mm.sl));
     const cooldown = Math.max(0, num($id("dbotsCooldown").value, 0));
-    const martingale = !!money.martingale;
-    const mult = clamp(num(money.mult, 2), 1.05, 5);
-    const maxSteps = clamp(Math.round(num(money.maxSteps, 3)), 1, 8);
-    const maxLoss = clamp(Math.round(num(money.maxLoss, 3)), 1, 20);
+    const martingale = !!mm.martingale;
+    const mult = clamp(num(mm.mult, 2), 1.05, 5);
+    const maxSteps = clamp(Math.round(num(mm.maxSteps, 3)), 1, 8);
+    const maxLoss = clamp(Math.round(num(mm.maxLoss, 3)), 1, 20);
     if (state.balance != null && stake > num(state.balance)) { toast("Low balance", "The stake is larger than the available balance.", "err"); return; }
 
     this.cfg = cfg;
@@ -9723,7 +9768,19 @@ const DBots = {
 Markets.onChange((sym, tick) => {
   if (!DBots.running || !tick) return;
   if (!DBots.cfg || sym !== DBots.cfg.market) return;
-  DBots.onTick(sym);
+  try {
+    DBots.onTick(sym);
+  } catch (err) {
+    /* onTick already catches evaluation errors, so reaching here means a bug in
+       the runner itself. Report it once and stop, rather than letting the
+       listener swallow it and leaving the bot looking like it is "waiting". */
+    DBots.errorCount = (DBots.errorCount || 0) + 1;
+    const msg = (err && err.message) || String(err);
+    if (DBots.errorCount === 1) {
+      DBots.log("err", "Runner error: " + msg + " — bot stopped instead of failing silently.");
+      DBots.stop("Runner error.");
+    }
+  }
 });
 setInterval(() => {
   if (DBots.running) DBots.renderStatus();

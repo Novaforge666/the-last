@@ -23,8 +23,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/png" href="/assets/tick-extinction-icon.png" />
-<title>Tick Extinction — Deriv Volatility Terminal</title>
-<meta name="description" content="A third-party Deriv trading terminal for volatility indices: manual digit trades, auto bots, tick analysis and live entry signals." />
+<title>Tick Extinction — Deriv Trading Terminal</title>
+<meta name="description" content="A third-party Deriv trading terminal with live market data, manual trades, bots, tick analysis and entry signals." />
 <!--
   ============================================================================
   TICK EXTINCTION — SINGLE-FILE DERIV TERMINAL
@@ -59,8 +59,7 @@
     disabled instead of silently falling back to Deriv's public demo app.
 
   RISK WARNING
-    Deriv volatility indices are synthetic products. Trading them carries a
-    high risk of losing money rapidly. Nothing in this UI is financial advice.
+    Trading Deriv products carries a high risk of losing money rapidly. Nothing in this UI is financial advice.
     This file is an educational third-party client, not affiliated with Deriv.
   ============================================================================
 -->
@@ -771,7 +770,6 @@ footer.foot .links a:hover{color:var(--acc)}
   .signals{grid-template-columns:minmax(0,1fr)}
   .topbar-spacer{display:none}
   .acct{order:3}
-  .header-market{display:none}
 }
 @media (max-width:420px){
   .brand-txt strong{font-size:13.5px}
@@ -826,6 +824,12 @@ footer.foot .links a:hover{color:var(--acc)}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .mt-chart-head .sym small{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:1px}
+.chart-market{min-width:0;max-width:min(300px,52vw)}
+.chart-market-label{display:block;color:var(--dim);font:600 9px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.chart-market select{width:100%;max-width:100%;min-width:0;padding:4px 26px 4px 7px;font-size:12px;font-weight:700}
+#marketCatalogStatus{font-size:9px;line-height:1.3}
+.market-retry{border:0;background:transparent;color:var(--acc);font:600 10px var(--sans);padding:2px 0;cursor:pointer;text-decoration:underline}
+@media(max-width:500px){.mt-chart-head{align-items:flex-start;gap:6px}.mt-chart-tools{gap:3px;flex-wrap:wrap;justify-content:flex-end}.chart-market{max-width:48vw}.mt-chart-tools .seg button{padding:5px}}
 .sym-ico{
   width:26px;height:26px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;
   font-family:var(--display);font-weight:800;font-size:12px;
@@ -1371,7 +1375,6 @@ html[data-theme="light"] .mt-block-pred .mt-digits button.cold:not(.active) s{co
   .topbar{position:sticky;top:0;z-index:50}
   .topbar-inner{flex-wrap:wrap;gap:8px;padding:9px 12px}
   .brand-txt span{display:none}
-  .header-market{flex:1 1 140px !important}
   .tabbar-inner{overflow-x:auto;scrollbar-width:none}
   .tabbar-inner::-webkit-scrollbar{display:none}
   .tab .n{display:none}
@@ -1762,7 +1765,7 @@ button.blk-v:disabled{cursor:default}
   position:fixed;z-index:120;min-width:168px;max-width:260px;
   background:#0f172a;border:1px solid #2f6bff;border-radius:7px;
   box-shadow:0 22px 48px -22px rgba(0,0,0,.95), 0 0 0 1px rgba(47,107,255,.22);
-  padding:5px;display:flex;flex-direction:column;gap:2px;
+  padding:5px;display:flex;flex-direction:column;gap:2px;max-height:min(60vh,480px);overflow-y:auto;
   font-family:var(--sans);
   animation:blpop .12s ease;
 }
@@ -1777,6 +1780,7 @@ button.blk-v:disabled{cursor:default}
   padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
 .bl-pop button:hover{background:rgba(47,107,255,.28)}
+.bl-pop button[hidden]{display:none}
 .bl-pop button.on{background:#2f6bff;color:#fff;font-weight:600}
 .bl-pop button .bp-k{font-family:var(--mono);font-size:9px;color:#93c5fd}
 .bl-pop button.on .bp-k{color:rgba(255,255,255,.8)}
@@ -2206,7 +2210,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
       <img class="logo" src="/assets/tick-extinction-mark.webp" alt="" width="30" height="30" />
       <div class="brand-txt">
         <strong>TICK <em>EXTINCTION</em></strong>
-        <span>Deriv volatility terminal</span>
+        <span>Deriv market terminal</span>
       </div>
     </div>
 
@@ -2215,23 +2219,6 @@ body.bb-open #toasts{bottom:auto;top:10px}
     </span>
 
     <div class="topbar-spacer"></div>
-
-    <!-- Global market selector: drives Manual Trade, Analysis and Entry Points -->
-    <label class="field header-market" style="min-width:0;flex:0 1 205px">
-      <span class="lbl" style="margin-bottom:2px;font-size:8.5px">Market</span>
-      <select id="headerMarket" aria-label="Market">
-        <option value="R_10">Volatility 10 Index</option>
-        <option value="R_25">Volatility 25 Index</option>
-        <option value="R_50" selected>Volatility 50 Index</option>
-        <option value="R_75">Volatility 75 Index</option>
-        <option value="R_100">Volatility 100 Index</option>
-        <option value="1HZ10V">Volatility 10 (1s) Index</option>
-        <option value="1HZ25V">Volatility 25 (1s) Index</option>
-        <option value="1HZ50V">Volatility 50 (1s) Index</option>
-        <option value="1HZ75V">Volatility 75 (1s) Index</option>
-        <option value="1HZ100V">Volatility 100 (1s) Index</option>
-      </select>
-    </label>
 
     <!-- Account block -->
     <div class="acct" id="acctBlock">
@@ -2280,13 +2267,22 @@ body.bb-open #toasts{bottom:auto;top:10px}
       <!-- ---------- Chart workspace ---------- -->
       <div class="panel mt-chart">
         <div class="mt-chart-head">
-          <span class="sym">
-            <i class="sym-ico">V</i>
-            <span>
-              <b id="tickSource">Volatility 50 Index</b>
+          <div class="sym">
+            <i class="sym-ico" aria-hidden="true">◈</i>
+            <div class="chart-market">
+              <label for="headerMarket" class="chart-market-label">Market</label>
+              <select id="headerMarket" aria-label="Choose market for chart and trading">
+                <option value="R_10">Volatility 10 Index</option><option value="R_25">Volatility 25 Index</option>
+                <option value="R_50" selected>Volatility 50 Index</option><option value="R_75">Volatility 75 Index</option>
+                <option value="R_100">Volatility 100 Index</option><option value="1HZ10V">Volatility 10 (1s) Index</option>
+                <option value="1HZ25V">Volatility 25 (1s) Index</option><option value="1HZ50V">Volatility 50 (1s) Index</option>
+                <option value="1HZ75V">Volatility 75 (1s) Index</option><option value="1HZ100V">Volatility 100 (1s) Index</option>
+              </select>
               <small><span class="mono" id="tickQuoteMini">—</span> <span id="tickDirMini" class="tiny">—</span></small>
-            </span>
-          </span>
+              <small id="marketCatalogStatus" aria-live="polite">Loading additional markets…</small>
+              <button class="market-retry hidden" id="marketCatalogRetry" type="button">Retry market list</button>
+            </div>
+          </div>
           <span class="mt-chart-tools">
             <span class="seg">
               <button data-span="30">30</button>
@@ -2402,7 +2398,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
                 <button type="button" data-d="8"><b>8</b><s>—</s></button>
                 <button type="button" data-d="9"><b>9</b><s>—</s></button>
               </div>
-              <span class="mt-block-note" id="digitPickHint">deriv.com theoretical 10.0%</span>
+              <span class="mt-block-note" id="digitPickHint">10.0% if digits are uniform</span>
               <select id="barrier" class="mt-hidden-selects" aria-hidden="true" tabindex="-1">
                 <option value="0">0</option><option value="1">1</option><option value="2">2</option>
                 <option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
@@ -3173,8 +3169,8 @@ body.bb-open #toasts{bottom:auto;top:10px}
               The last <b>1000 ticks</b> are requested with <span class="mono tiny">ticks_history</span>
               (<span class="mono tiny">end: "latest", style: "ticks"</span>) and then kept current with a
               <span class="mono tiny">ticks</span> stream. All percentages are calculated in your browser
-              from those real ticks — nothing is simulated. Synthetic indices are statistically
-              independent per tick, so past frequencies are descriptive, not predictive.
+              from those real ticks — nothing is simulated. Past frequencies are descriptive,
+              not predictive; digit distributions can differ across markets.
             </p>
           </div>
         </div>
@@ -3251,7 +3247,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
           First configure a matching Free bot in DBots and select the same market here.
           Pressing <b>Entry now</b> starts the bot and places that signal trade immediately;
           the bot repeats that signal until stopped or a risk limit is reached, without its own analysis. “Entry now” is <b>not</b> a prediction:
-          each tick is independent, so hit rates describe the past window only.
+          hit rates describe the past window only. The reference percentages assume evenly distributed digits; other markets may behave differently. Available contracts and durations depend on Deriv and your account.
         </div>
       </div>
     </div>
@@ -3387,6 +3383,10 @@ const MARKETS = {
   "1HZ100V":{ name: "Volatility 100 (1s) Index",short: "Vol 100 (1s)",pip: 2, secs: 1 }
 };
 
+// Keep the existing volatility-only scanner bounded even as the market catalogue grows.
+const VOLATILITY_MARKETS = Object.keys(MARKETS);
+VOLATILITY_MARKETS.forEach(sym => { MARKETS[sym].market = "synthetic_index"; MARKETS[sym].submarket = "random_index"; });
+
 const CONTRACT_LABEL = {
   DIGITOVER: "Digit Over", DIGITUNDER: "Digit Under", DIGITEVEN: "Digit Even",
   DIGITODD: "Digit Odd", DIGITMATCH: "Digit Matches", DIGITDIFF: "Digit Differs",
@@ -3498,12 +3498,13 @@ function lastDigit(quote, sym) {
     const fixed = Math.abs(v).toFixed(pip);
     return Number(fixed[fixed.length - 1]);
   }
-  const s = String(quote).replace(/[^0-9]/g, "");
-  return s ? Number(s[s.length - 1]) : null;
+  // Never infer a last digit from an unpadded quote without tick precision.
+  return null;
 }
 function fmtPrice(quote, sym) {
-  const pip = MARKETS[sym] && Number.isFinite(MARKETS[sym].pip) ? MARKETS[sym].pip : 2;
-  return num(quote).toFixed(pip);
+  const pip = MARKETS[sym] && Number.isFinite(MARKETS[sym].pip) ? MARKETS[sym].pip : null;
+  if (quote == null || quote === "") return "—";
+  return pip == null ? String(quote) : num(quote).toFixed(pip);
 }
 function fmtDuration(sec) {
   if (!sec && sec !== 0) return "—";
@@ -3966,9 +3967,8 @@ const Markets = {
       value: num(tick.quote),
       digit: lastDigit(tick.quote, sym)
     };
-    // Deriv can resend the last tick when a subscription is restored.
-    const prev = b.ticks[b.ticks.length - 1];
-    if (prev && prev.epoch === t.epoch && prev.quote === t.quote) return;
+    // Different ticks can share both a second and a price, especially on
+    // non-synthetic markets. Do not collapse consecutive live events.
     b.ticks.push(t);
     if (b.ticks.length > BUFFER_MAX) b.ticks.splice(0, b.ticks.length - BUFFER_MAX);
     this.listeners.forEach(fn => { try { fn(sym, t, b); } catch (e) { console.error(e); } });
@@ -3988,8 +3988,15 @@ const Markets = {
     }
     // Merge with anything that arrived while the history request was in flight.
     const tickKey = t => t.epoch + "|" + Number(t.quote);
-    const seen = new Set(ticks.map(tickKey));
-    const extra = b.ticks.filter(t => !seen.has(tickKey(t)));
+    // Match overlapping history/live occurrences as a multiset. A Set would
+    // erase every repeated quote with the same second and price.
+    const overlap = new Map();
+    ticks.forEach(t => { const key = tickKey(t); overlap.set(key, (overlap.get(key) || 0) + 1); });
+    const extra = b.ticks.filter(t => {
+      const key = tickKey(t), count = overlap.get(key) || 0;
+      if (!count) return true;
+      overlap.set(key, count - 1); return false;
+    });
     b.ticks = ticks.concat(extra).sort((a, b) => a.epoch - b.epoch).slice(-BUFFER_MAX);
     b.primed = true;
     this.listeners.forEach(fn => { try { fn(sym, null, b); } catch (e) { console.error(e); } });
@@ -4819,10 +4826,141 @@ $$(".tab").forEach(t => t.addEventListener("click", () => switchTab(t.dataset.ta
 /* ---------------------------------------------------------------------------
    10. MARKET SELECTOR
    --------------------------------------------------------------------------- */
+// The Options API returns symbol metadata, not price precision: its pip_size
+// is a price increment. Only ticks/history supply the decimal-place count used
+// for last digits. Keep the ten built-in symbols as an offline fallback.
+const MARKET_GROUPS = {
+  synthetic_index: "Derived / Synthetic indices", forex: "Forex", cryptocurrency: "Cryptocurrencies",
+  crypto: "Cryptocurrencies", commodities: "Commodities", indices: "Stock indices",
+  stock_index: "Stock indices", stocks: "Stocks & ETFs", etf: "Stocks & ETFs",
+  basket_index: "Basket indices"
+};
+function marketGroupName(key) {
+  return MARKET_GROUPS[key] || String(key || "Other markets").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+function marketIsTradable(sym) {
+  const m = Object.hasOwn(MARKETS, sym) ? MARKETS[sym] : null;
+  return !!m && m.available !== false && !m.suspended && m.exchangeOpen !== false;
+}
+function populateMarketSelect(el, chosen) {
+  if (!el) return;
+  const selected = chosen || el.value || state.market;
+  // Don't close a native dropdown that the user is currently interacting with.
+  if (document.activeElement === el) { el.dataset.pendingRefresh = "1"; return; }
+  delete el.dataset.pendingRefresh;
+  const groups = new Map();
+  Object.keys(MARKETS).forEach(sym => {
+    const m = MARKETS[sym];
+    if (m.available === false && sym !== selected) return;
+    const name = marketGroupName(m.market);
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(sym);
+  });
+  const ordered = [...groups.keys()].sort((a, b) => a === "Derived / Synthetic indices" ? -1 : b === "Derived / Synthetic indices" ? 1 : a.localeCompare(b));
+  const fragment = document.createDocumentFragment();
+  ordered.forEach(name => {
+    const group = document.createElement("optgroup"); group.label = name;
+    groups.get(name).sort((a, b) => MARKETS[a].name.localeCompare(MARKETS[b].name)).forEach(sym => {
+      const m = MARKETS[sym], opt = document.createElement("option");
+      opt.value = sym;
+      opt.textContent = m.name + (m.available === false ? " (unavailable)" : m.suspended ? " (suspended)" : m.exchangeOpen === false ? " (closed)" : "");
+      group.appendChild(opt);
+    });
+    fragment.appendChild(group);
+  });
+  el.replaceChildren(fragment);
+  if (MARKETS[selected] && el.querySelector('option[value="' + selected + '"]')) el.value = selected;
+}
+function refreshMarketControls() {
+  populateMarketSelect($id("headerMarket"), state.market);
+  populateMarketSelect($id("market"), state.market);
+  const bot = $id("botMarket");
+  populateMarketSelect(bot, bot && bot.value || state.market);
+  const builder = $id("bbMarket");
+  populateMarketSelect(builder, builder && builder.value || "1HZ100V");
+}
+function marketCatalogueStatus(text, retry) {
+  const label = $id("marketCatalogStatus"), btn = $id("marketCatalogRetry");
+  if (label) label.textContent = text;
+  if (btn) btn.classList.toggle("hidden", !retry);
+}
+let catalogBusy = false;
+let catalogFailed = false;
+let marketAvailabilityRevision = 0;
+async function loadMarketCatalog() {
+  if (catalogBusy || socket.status !== "open") return;
+  catalogBusy = true;
+  const generation = socket.generation;
+  try {
+    const result = await socket.request({ active_symbols: "brief" }, 20000, "active_symbols");
+    if (generation !== socket.generation || socket.status !== "open") return;
+    if (!Array.isArray(result.active_symbols) || !result.active_symbols.length) throw new Error("Empty market list");
+    const entries = [];
+    for (const row of result.active_symbols) {
+      if (!row || typeof row !== "object") continue;
+      const sym = String(row.underlying_symbol || row.symbol || "").trim();
+      if (!/^[A-Za-z0-9_]{2,30}$/.test(sym) || ["__proto__", "prototype", "constructor"].includes(sym)) continue;
+      const name = String(row.underlying_symbol_name || row.display_name || sym).trim().slice(0, 120) || sym;
+      const group = /^[a-z0-9_]+$/i.test(String(row.market || "")) ? String(row.market) : "other";
+      const sub = /^[a-z0-9_]+$/i.test(String(row.submarket || "")) ? String(row.submarket) : "";
+      entries.push({ sym, name, group, sub, row });
+    }
+    if (!entries.length) throw new Error("No usable market symbols");
+    const wasTradable = marketIsTradable(state.market);
+    Object.keys(MARKETS).forEach(sym => { MARKETS[sym].available = false; });
+    entries.forEach(({ sym, name, group, sub, row }) => {
+      const existing = Object.hasOwn(MARKETS, sym) ? MARKETS[sym] : null;
+      // Do not treat active_symbols.pip_size as tick decimal places.
+      const m = existing || { pip: null, secs: null };
+      m.name = name; m.short = name; m.market = group; m.submarket = sub;
+      m.available = true;
+      m.exchangeOpen = row.exchange_is_open === undefined || row.exchange_is_open === null ? null : !!Number(row.exchange_is_open);
+      m.suspended = row.is_trading_suspended === true || Number(row.is_trading_suspended) === 1;
+      MARKETS[sym] = m;
+    });
+    refreshMarketControls();
+    if (wasTradable !== marketIsTradable(state.market)) {
+      ++marketAvailabilityRevision;
+      ++state.proposalSeq;
+      state.proposal = null; state.proposalAlt = null; state.proposalAt = 0;
+      ticketDirty = true;
+      renderProposal();
+      if (state.auth && marketIsTradable(state.market)) scheduleProposal(true);
+    }
+    const selected = MARKETS[state.market];
+    catalogFailed = false;
+    marketCatalogueStatus(!selected || selected.available === false ? "Market unavailable; choose another."
+      : selected.suspended ? "Market suspended by Deriv." : selected.exchangeOpen === false ? "Market closed; quotes may be unavailable."
+      : "Markets from Deriv · contract availability varies", false);
+    updateBuyState();
+    if (state.bot.running && state.bot.cfg && !marketIsTradable(state.bot.cfg.market)) stopBot("Market closed or unavailable.");
+    if (DBots.running && DBots.cfg && !marketIsTradable(DBots.cfg.market)) DBots.stop("Market closed or unavailable.");
+    // A saved bot may have been opened before its market metadata arrived.
+    if (!DBots.running && !DBots.starting && !DBots.busy && DBots.cfg && !DBots.cfg.market && MARKETS[DBots.cfg.symbol]) {
+      const rec = DBots.selected();
+      if (rec) { DBots.cfg = DBots.parse(rec.xml); DBots.render(); }
+    }
+    if (state.tab === "signals") renderSignals();
+  } catch (err) {
+    if (generation === socket.generation) { catalogFailed = true; marketCatalogueStatus("Market list unavailable; retry to refresh.", true); }
+  } finally {
+    catalogBusy = false;
+    if (generation !== socket.generation && socket.status === "open") setTimeout(loadMarketCatalog, 0);
+  }
+}
+["headerMarket", "market", "botMarket", "bbMarket"].forEach(id => {
+  const el = $id(id);
+  if (el) el.addEventListener("blur", () => { if (el.dataset.pendingRefresh) populateMarketSelect(el, el.value); });
+});
+$id("marketCatalogRetry").addEventListener("click", () => { marketCatalogueStatus("Loading additional markets…", false); loadMarketCatalog(); });
+socket.on("status", ({ status, detail }) => { if (status === "open" && detail !== "ping") loadMarketCatalog(); });
+setInterval(() => { if (socket.status === "open") loadMarketCatalog(); }, 60000);
+
 function setMarket(sym, opts) {
   opts = opts || {};
-  if (!MARKETS[sym]) return;
+  if (!Object.hasOwn(MARKETS, sym)) return;
   const changed = sym !== state.market;
+  if (changed) ++marketAvailabilityRevision;
   state.market = sym;
   ["#market", "#headerMarket"].forEach(sel => {
     const el = $(sel);
@@ -4831,6 +4969,11 @@ function setMarket(sym, opts) {
   if ($id("ticketMarket")) $id("ticketMarket").textContent = MARKETS[sym].name;
   if ($id("tickSource")) $id("tickSource").textContent = MARKETS[sym].name;
   if ($id("sigMarketName")) $id("sigMarketName").textContent = MARKETS[sym].name;
+  if (catalogFailed) marketCatalogueStatus("Market list unavailable; retry to refresh.", true);
+  else if (MARKETS[sym].available === false) marketCatalogueStatus("Market unavailable; choose another.", false);
+  else if (MARKETS[sym].suspended) marketCatalogueStatus("Market suspended by Deriv.", false);
+  else if (MARKETS[sym].exchangeOpen === false) marketCatalogueStatus("Market closed; quotes may be unavailable.", false);
+  else if (Object.keys(MARKETS).length > VOLATILITY_MARKETS.length) marketCatalogueStatus("Markets from Deriv · contract availability varies", false);
 
   Markets.ensure(sym).catch(err => {
     if (err && err.code !== "CLOSED") {
@@ -4850,14 +4993,16 @@ function setMarket(sym, opts) {
     if (state.tab === "signals") renderSignals();
   }
   // A quote belongs to one market only — never show the previous market's payout.
+  ++state.proposalSeq;
   state.proposal = null;
+  state.proposalAlt = null;
   state.proposalAt = 0;
   renderProposal(true);
   ticketDirty = true;
   if (state.auth) scheduleProposal(true);
   if (!opts.silent) pushLog("sys", "Market → " + MARKETS[sym].name);
 }
-/* Both market selects (header + ticket) drive the same global market state. */
+/* The chart selector and hidden ticket field drive the same market state. */
 ["#market", "#headerMarket"].forEach(sel => {
   const el = $(sel);
   if (el) el.addEventListener("change", e => setMarket(e.target.value));
@@ -5108,7 +5253,7 @@ function renderTickPanel(sym) {
     const dir = $id("tickDirMini");
     if (dir) {
       dir.textContent = (prev ? (up ? "▲" : "▼") : "") + " " +
-        (prev ? (up ? "+" : "−") + num(Math.abs(t.value - prev.value)).toFixed(MARKETS[sym].pip) : "") +
+        (prev && Number.isInteger(MARKETS[sym].pip) ? (up ? "+" : "−") + num(Math.abs(t.value - prev.value)).toFixed(MARKETS[sym].pip) : "") +
         " (" + (prev && prev.value ? (((t.value - prev.value) / prev.value) * 100).toFixed(2) : "0.00") + "%)";
       dir.className = "tiny " + (prev ? (up ? "ok" : "bad") : "dim");
     }
@@ -5134,7 +5279,7 @@ function renderTickPanel(sym) {
   const iv = $id("tickInterval");
   if (iv) iv.textContent = (t && prev && t.epoch && prev.epoch)
     ? Math.max(0, t.epoch - prev.epoch).toFixed(0) + "s"
-    : MARKETS[sym].secs + "s (typical)";
+    : (MARKETS[sym].secs ? MARKETS[sym].secs + "s (typical)" : "varies");
 
   chart.render();
   renderDigitHeat();
@@ -5203,7 +5348,7 @@ function renderDigitHeat() {
   const extremes = digitExtremes(st);
   const buffer = Markets.buf(sym);
   const newest = buffer.ticks[buffer.ticks.length - 1];
-  const current = socket.status === "open" && buffer.live && newest ? newest.digit : null;
+  const current = socket.status === "open" && buffer.live && marketIsTradable(sym) && newest ? newest.digit : null;
   const picked = $id("barrier") ? $id("barrier").value : null;
   const needPick = ["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"].indexOf($id("ct").value) >= 0;
 
@@ -5412,7 +5557,7 @@ let proposalBusy = false;
 let proposalQueued = false;
 
 async function refreshProposal(force) {
-  if (!state.auth) { renderProposal(true); return; }
+  if (!state.auth || !marketIsTradable(state.market)) { renderProposal(true); return; }
   if (proposalBusy) { proposalQueued = true; return; }
   if (!force && !ticketDirty && state.proposalAt) {
     /* nothing changed since the last quote and no tick has landed */
@@ -5487,7 +5632,7 @@ function currentTicketProposal(direction) {
   const pair = contractPair($id("ct").value);
   const contract = direction === "down" ? pair.down : pair.up;
   const p = direction === "down" ? state.proposalAlt : state.proposal;
-  return p && state.auth && p.contract_type === contract && p.__account === state.auth.loginid &&
+  return p && state.auth && marketIsTradable(state.market) && p.contract_type === contract && p.__account === state.auth.loginid &&
     p.__generation === socket.generation && p.__request === JSON.stringify(ticketRequestFor(contract)) ? p : null;
 }
 
@@ -5545,6 +5690,7 @@ function updateBuyState() {
   };
 
   if (!loggedIn) { setPair(true, "Log in to trade — each button buys the contract it shows."); return; }
+  if (!marketIsTradable(state.market)) { setPair(true, "This market is closed or unavailable. Choose an open market."); return; }
   if (state.orderUncertain) { setPair(true, "Order status unknown. Check Deriv positions and history before reloading."); return; }
   if (buyInFlight) { setPair(true, "Waiting for the current order."); return; }
   if (bal != null && stake > bal) {
@@ -5835,6 +5981,7 @@ async function instantBuy(direction) {
   if (buyInFlight) return;
   if (state.orderUncertain) { toast("Order status unknown", "Check Deriv positions and history before reloading.", "warn"); return; }
   if (!state.auth || !state.token) { toast("Login required", "Log in with Deriv before buying.", "warn"); return; }
+  if (!marketIsTradable(state.market)) { toast("Market unavailable", "Choose an open market before buying.", "warn"); return; }
 
   const pair = contractPair($id("ct").value);
   const contractType = direction === "down" ? pair.down : pair.up;
@@ -5846,11 +5993,11 @@ async function instantBuy(direction) {
   const stake = num(state.stake != null ? state.stake : $id("stake").value, 0);
   const request = ticketRequestFor(contractType);
   const requestKey = JSON.stringify(request);
-  const account = state.auth.loginid, token = state.token, generation = socket.generation;
+  const account = state.auth.loginid, token = state.token, generation = socket.generation, availabilityRevision = marketAvailabilityRevision;
   const contextValid = () => {
     const now = contractPair($id("ct").value);
     return !!state.auth && state.auth.loginid === account && state.token === token && socket.generation === generation &&
-      socket.status === "open" && !state.orderUncertain &&
+      socket.status === "open" && !state.orderUncertain && marketIsTradable(state.market) && availabilityRevision === marketAvailabilityRevision &&
       (direction === "down" ? now.down : now.up) === contractType && JSON.stringify(ticketRequestFor(contractType)) === requestKey;
   };
 
@@ -6554,10 +6701,10 @@ function computeSignals() {
   /* Only the open family's cards are computed and rendered: with Over/Under
      open, no Matches/Differs card exists on the page (and vice versa). */
   const buffer = Markets.buf(state.market);
-  const fresh = socket.status === "open" && buffer.live && buffer.primed;
+  const fresh = socket.status === "open" && buffer.live && buffer.primed && marketIsTradable(state.market);
   state.signals = signalDefs().map(def => {
     const signal = computeSignal(def, digits, cfg);
-    if (!fresh) { signal.entry = false; signal.why = "Waiting for live data and history to sync."; }
+    if (!fresh) { signal.entry = false; signal.why = marketIsTradable(state.market) ? "Waiting for live data and history to sync." : "Market closed or unavailable."; }
     return signal;
   });
   state.signalCfg = cfg;
@@ -6678,16 +6825,17 @@ async function quickTrade(s, btn) {
   if (buyInFlight) return;
   if (state.orderUncertain) { toast("Order status unknown", "Check Deriv positions and history before reloading.", "warn"); return; }
   if (!state.auth || !state.token) { toast("Login required", "Log in to Deriv before trading.", "warn"); return; }
+  if (!marketIsTradable(state.market)) { toast("Market unavailable", "Choose an open market before trading.", "warn"); return; }
   const stake = 1;
   if (state.balance != null && num(state.balance) < stake) {
     toast("Low balance", "A quick trade needs at least 1.00 " + (state.currency || "USD") + ".", "err");
     return;
   }
   const def = Object.assign({}, s.def);
-  const market = state.market, account = state.auth.loginid, token = state.token, generation = socket.generation;
+  const market = state.market, account = state.auth.loginid, token = state.token, generation = socket.generation, availabilityRevision = marketAvailabilityRevision;
   const isVirtual = state.auth.is_virtual, accountType = state.accountType;
   const contextValid = () => !!state.auth && state.auth.loginid === account && state.token === token &&
-    state.market === market && socket.generation === generation && socket.status === "open" && !state.orderUncertain;
+    state.market === market && socket.generation === generation && socket.status === "open" && !state.orderUncertain && marketIsTradable(market) && availabilityRevision === marketAvailabilityRevision;
   const req = {
     proposal: 1, amount: stake.toFixed(2), basis: "stake",
     contract_type: def.type, currency: state.currency || "USD",
@@ -6763,7 +6911,7 @@ async function runSignalBot(s, btn) {
   if (signalBotStarting || DBots.starting) return;
   if (!state.auth || !state.token) { toast("Login required", "Log in to Deriv before running a bot.", "warn"); return; }
   const buffer = Markets.buf(state.market);
-  if (socket.status !== "open" || !buffer.live || !buffer.primed) {
+  if (socket.status !== "open" || !buffer.live || !buffer.primed || !marketIsTradable(state.market)) {
     toast("Market data syncing", "Wait for the live feed and history before using an entry.", "warn"); return;
   }
   if (state.orderUncertain || DBots.uncertainOrder) {
@@ -6901,7 +7049,7 @@ $("#btnScanAll").addEventListener("click", async () => {
   const statusEl = $("#scanStatus");
   const cfg = sigConfig();
   const results = [];
-  const syms = Object.keys(MARKETS);
+  const syms = VOLATILITY_MARKETS.slice();
   const perCall = Math.max(500, cfg.window);
   try {
     // Five markets per request stays well inside the API's request limit.
@@ -7030,7 +7178,7 @@ function renderStrategyParams() {
           '<option value="continuation">ride the streak</option>' +
         "</select></label>" +
       "</div>";
-    $("#stratNote").innerHTML = "Waits until <b>N</b> ticks in a row close above (or below) the trigger barrier, then trades your contract. “Fade” bets the run ends, “ride” bets it continues. Each tick of a volatility index is independent, so neither is more likely than the payout implies.";
+    $("#stratNote").innerHTML = "Waits until <b>N</b> ticks in a row close above (or below) the trigger barrier, then trades your contract. “Fade” bets the run ends, “ride” bets it continues. Past streaks do not guarantee the next result.";
   } else if (strategy === "frequency") {
     host.innerHTML =
       '<div class="grid g-2">' +
@@ -7158,6 +7306,7 @@ $("#btnBotStart").addEventListener("click", async () => {
   const problem = validateBotSettings();
   if (problem) { toast("Check settings", problem, "warn"); return; }
   const cfg = botConfig();
+  if (!marketIsTradable(cfg.market)) { toast("Market unavailable", "Choose an open market before starting a bot.", "warn"); return; }
 
   if (state.balance != null && cfg.stake > num(state.balance)) {
     toast("Low balance", "Your stake is larger than the available balance.", "err");
@@ -7180,7 +7329,7 @@ $("#btnBotStart").addEventListener("click", async () => {
     ); } finally { state.bot.starting = false; }
     if (!ok) { pushLog("warn", "Start cancelled on the real account."); return; }
     if (!state.auth || state.token !== startToken || state.auth.loginid !== startAccount || socket.status !== "open" || socket.generation !== startGeneration ||
-        JSON.stringify(botConfig()) !== JSON.stringify(cfg) || state.bot.running || state.bot.tradeInFlight || state.bot.pendingContract != null || state.bot.uncertainOrder || state.orderUncertain) {
+        !marketIsTradable(cfg.market) || JSON.stringify(botConfig()) !== JSON.stringify(cfg) || state.bot.running || state.bot.tradeInFlight || state.bot.pendingContract != null || state.bot.uncertainOrder || state.orderUncertain) {
       toast("Account or bot changed", "Check your settings and start again.", "warn"); return;
     }
   } else if (state.accountType === "demo") {
@@ -7350,6 +7499,7 @@ function botOnTick(sym) {
   if (!b.running || b.busy || b.pendingContract) return;
   const cfg = b.cfg;
   if (!cfg || sym !== cfg.market) return;
+  if (!marketIsTradable(sym)) { stopBot("Market closed or unavailable."); return; }
   // A strategy must not evaluate an incomplete post-connect history.
   if (!Markets.buf(sym).primed && !(cfg.continuous && b.armed)) return;
   /* Continuous mode has no cooldown and no throttle: every tick interval is
@@ -7425,7 +7575,7 @@ async function placeBotTrade(cfg, decision) {
     throw { code: "LOW_BALANCE", message: "Balance too low for this stake." };
   }
 
-  if (!b.running || b.runId !== runId) throw { message: "Bot stopped before purchase." };
+  if (!b.running || b.runId !== runId || !marketIsTradable(cfg.market)) throw { message: "Bot stopped or market unavailable before purchase." };
   let bresp;
   try {
     bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "bot buy");
@@ -8198,9 +8348,9 @@ const DBots = {
       blocking.add(b.type);
     });
 
-    const market = symbol && MARKETS[symbol] ? symbol : "";
+    const market = symbol && Object.hasOwn(MARKETS, symbol) ? symbol : "";
     if (!symbol) issues.push({ level: "err", text: "No market is set in the trade definition." });
-    else if (!market) issues.push({ level: "err", text: "Market “" + symbol + "” is not one of the volatility indices this terminal streams." });
+    else if (!market) issues.push({ level: "err", text: "Market “" + symbol + "” is not in the current Deriv market list. Refresh the market list or choose an available market." });
     if (!contract) issues.push({ level: "err", text: "No contract type is set in the trade definition." });
     else if (!CONTRACT_LABEL[contract]) issues.push({ level: "err", text: "Contract “" + contract + "” is not supported by the ticket yet." });
     if (contract && BARRIER_CONTRACTS.includes(contract) && finalBarrier == null) {
@@ -8259,9 +8409,25 @@ const DBots = {
     pop.appendChild(head);
 
     if (model.kind === "select") {
+      let search = null;
+      if (field === "market") {
+        search = document.createElement("input");
+        search.type = "search"; search.placeholder = "Search markets…";
+        search.setAttribute("aria-label", "Search markets");
+        pop.appendChild(search);
+        search.addEventListener("input", () => {
+          const term = search.value.trim().toLocaleLowerCase();
+          pop.querySelectorAll("button[data-market-option]").forEach(b => {
+            b.hidden = !b.textContent.toLocaleLowerCase().includes(term);
+          });
+        });
+        search.addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); this.closeEditor(); } });
+        setTimeout(() => { if (search.isConnected) search.focus(); }, 0);
+      }
       model.options.forEach(opt => {
         const b = document.createElement("button");
         b.type = "button";
+        if (field === "market") b.dataset.marketOption = "1";
         b.innerHTML = '<span>' + esc(opt.label) + '</span><span class="bp-k">' + esc(opt.value) + "</span>";
         if (String(opt.value) === String(model.value)) b.classList.add("on");
         b.addEventListener("click", () => { this.applyEdit(field, opt.value); this.closeEditor(); });
@@ -8738,7 +8904,7 @@ const DBots = {
     return {
       market: {
         label: "Market", kind: "select", value: cfg.symbol,
-        options: Object.keys(MARKETS).map(k => ({ value: k, label: MARKETS[k].name }))
+        options: Object.keys(MARKETS).filter(k => MARKETS[k].available !== false || k === cfg.symbol).sort((a, b) => MARKETS[a].name.localeCompare(MARKETS[b].name)).map(k => ({ value: k, label: MARKETS[k].name + (MARKETS[k].suspended ? " (suspended)" : MARKETS[k].exchangeOpen === false ? " (closed)" : "") }))
       },
       tradetype: {
         label: "Trade type", kind: "select", value: String(cfg.tradeType || "").toLowerCase(),
@@ -8958,7 +9124,12 @@ const DBots = {
     /* Contract type: the trade_definition block names the family, but a
        `purchase` block can carry its own PURCHASE_LIST and the parser lets
        that win. Write both, so the pill and the runner agree. */
-    if (field === "contract") {
+    if (field === "market") {
+      const m = Object.hasOwn(MARKETS, value) ? MARKETS[value] : null;
+      if (!m || !writeField("trade_definition_market", "SYMBOL_LIST", value)) return;
+      if (m.market) writeField("trade_definition_market", "MARKET_LIST", m.market);
+      if (m.submarket) writeField("trade_definition_market", "SUBMARKET_LIST", m.submarket);
+    } else if (field === "contract") {
       if (!writeField("trade_definition_contracttype", "TYPE_LIST", value)) return;
       writeField("purchase", "PURCHASE_LIST", value);
     } else if (field === "stake") {
@@ -9452,6 +9623,7 @@ const DBots = {
       return;
     }
     if (!cfg.market) { toast("Market unsupported", cfg.symbol ? ("“" + cfg.symbol + "” is not streamed by this terminal.") : "The bot has no market.", "warn"); return; }
+    if (!marketIsTradable(cfg.market)) { toast("Market unavailable", "Choose an open market before starting a bot.", "warn"); return; }
     if (options.signal && (rec.id !== options.selectedId || cfg.market !== options.signal.market ||
         signalBotKind(rec) !== botKindForContract(options.signal.def.type))) {
       toast("Bot settings changed", "Check the bot and market, then choose the entry again.", "warn"); return;
@@ -9550,14 +9722,14 @@ const DBots = {
       }
       if (!ok) { this.log("warn", "Start cancelled on the real account."); return; }
       if (!state.auth || state.token !== startToken || state.auth.loginid !== startAccount ||
-          socket.status !== "open" || socket.generation !== startGeneration ||
+          socket.status !== "open" || socket.generation !== startGeneration || !marketIsTradable(cfg.market) ||
           this.selectedId !== rec.id || rec.xml !== startXml || this.cfg !== cfg || this.running || this.pending != null || state.orderUncertain) {
         toast("Bot settings changed", "Check the account and bot, then start again.", "warn"); return;
       }
     }
     if (options.signal) {
       const feed = Markets.buf(options.signal.market);
-      if (state.market !== options.signal.market || socket.status !== "open" || !feed.live || !feed.primed) {
+      if (state.market !== options.signal.market || socket.status !== "open" || !feed.live || !feed.primed || !marketIsTradable(options.signal.market)) {
         toast("Market data changed", "Wait for the selected market to sync and choose the entry again.", "warn"); return;
       }
       /* Persist the signal into the actual bot fields, without replacing its
@@ -9591,9 +9763,10 @@ const DBots = {
     if (!this.running || this.busy || this.pending) return;
     const cfg = this.cfg;
     if (!cfg || sym !== cfg.market) return;
+    if (!marketIsTradable(sym)) { this.stop("Market closed or unavailable."); return; }
     const buf = Markets.buf(sym);
     const last = buf.ticks[buf.ticks.length - 1];
-    if (!last) return;
+    if (!last || last.digit == null) return;
     if (last.epoch === this.lastEpoch) return;
     this.lastEpoch = last.epoch;
     this.lastSeenTick = last;
@@ -9661,7 +9834,7 @@ const DBots = {
     if (state.balance != null && num(p.ask_price) > num(state.balance)) {
       throw { code: "LOW_BALANCE", message: "Balance too low for this stake." };
     }
-    if (!this.running || this.runId !== runId || (entry && this.runId !== entry.runId)) {
+    if (!this.running || this.runId !== runId || !marketIsTradable(entry ? entry.market : cfg.market) || (entry && this.runId !== entry.runId)) {
       throw { message: "Bot stopped before the purchase." };
     }
     let bresp;
@@ -9869,7 +10042,7 @@ const DBots = {
     setTxt("blkStake", stakeVar ? stakeVar + " = " + cfg.vars[stakeVar] : "from the run panel", false);
     setTxt("blkPrediction", BARRIER_CONTRACTS.includes(cfg.contract) ? String(cfg.barrier) : "not used", BARRIER_CONTRACTS.includes(cfg.contract));
     const sub = $id("blkSubLabel");
-    if (sub) sub.textContent = cfg.symbol && cfg.symbol.indexOf("1HZ") === 0 ? "1s volatility" : "volatility";
+    if (sub) sub.textContent = MARKETS[cfg.market] ? marketGroupName(MARKETS[cfg.market].market) : "market";
 
     /* 4-6. lifecycle stacks */
     const paint = (hostId, rootBlock, statement) => {
@@ -10175,7 +10348,12 @@ const DBots = {
       const c = q("bbContract").value;
       const tt = /OVER|UNDER/.test(c) ? "overunder" : /EVEN|ODD/.test(c) ? "evenodd" : "matchesdiffers";
       const stake = Math.max(0.35, Number(q("bbStake").value) || 1);
-      set("b_market", "SYMBOL_LIST", q("bbMarket").value);
+      const selectedMarket = q("bbMarket").value;
+      const marketInfo = MARKETS[selectedMarket];
+      if (!marketInfo) { toast("Market unavailable", "Choose a market from the current list.", "warn"); return; }
+      set("b_market", "SYMBOL_LIST", selectedMarket);
+      if (marketInfo.market) set("b_market", "MARKET_LIST", marketInfo.market);
+      if (marketInfo.submarket) set("b_market", "SUBMARKET_LIST", marketInfo.submarket);
       set("b_tradetype", "TRADETYPE_LIST", tt);
       set("b_contracttype", "TYPE_LIST", c);
       set("b_purchase", "PURCHASE_LIST", c);

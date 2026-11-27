@@ -85,10 +85,28 @@ function seedDigits(sym, digits) {
   check('guest header shows login and no account identifier', ev(`!document.getElementById('btnLogin').classList.contains('hidden') && document.getElementById('btnLogout').classList.contains('hidden') && document.getElementById('acctId').textContent==='Not logged in'`));
   ev(`state.auth={loginid:'VRTC_PRIVATE',is_virtual:true};state.token='test';state.accountType='demo';renderAuth()`);
   check('demo header shows Demo rather than the user ID', ev(`document.getElementById('acctId').classList.contains('hidden') && document.getElementById('acctBadge').textContent==='Demo' && !document.getElementById('acctBlock').textContent.includes('VRTC_PRIVATE') && !document.getElementById('btnLogout').classList.contains('hidden')`));
+  check('signed-in theme and logout are in the collapsed left panel, not the top bar', ev(`!document.getElementById('userMenu').classList.contains('hidden') && document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='false' && document.getElementById('userPanel').contains(document.getElementById('themeToggle')) && document.getElementById('userPanel').contains(document.getElementById('btnLogout')) && !document.querySelector('.topbar #themeToggle, .topbar #btnLogout')`));
+  ev(`document.getElementById('userMenuToggle').click()`);
+  check('three-dot button opens accessible account panel', ev(`!document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='true'`));
+  ev(`window.themeBefore=currentTheme(); document.getElementById('themeToggle').click()`);
+  check('theme switch in the panel changes and persists theme', ev(`currentTheme()!==themeBefore && localStorage.getItem('tickforge.theme.v1')===currentTheme()`));
+  ev(`document.getElementById('themeToggle').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  check('Escape collapses panel and restores focus', ev(`document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='false' && document.activeElement.id==='userMenuToggle' && currentTheme()===themeBefore`));
+  ev(`document.getElementById('userMenuToggle').click(); document.body.dispatchEvent(new Event('pointerdown',{bubbles:true}))`);
+  check('clicking outside collapses the panel', ev(`document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='false'`));
+  ev(`document.getElementById('userMenuToggle').click(); document.getElementById('userMenuToggle').click()`);
+  check('three-dot button toggles the panel closed', ev(`document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='false'`));
+  ev(`state.bot.running=true;document.getElementById('userMenuToggle').click();document.getElementById('btnLogout').click()`);
+  check('logout still confirms before stopping a running bot', ev(`!document.getElementById('modalBack').classList.contains('hidden') && state.auth!==null`));
+  ev(`closeModal(false)`);
+  await sleep(0);
+  check('cancelling logout keeps the session and bot running', ev(`state.auth!==null && state.bot.running`));
+  ev(`state.bot.running=false;setUserMenuOpen(false)`);
   ev(`state.auth={loginid:'CR_PRIVATE',is_virtual:false};state.accountType='real';renderAuth()`);
   check('real account remains clearly labelled Real and warns about real money', ev(`document.getElementById('acctBadge').textContent==='Real' && document.getElementById('acctBadge').classList.contains('real') && !document.getElementById('acctBlock').textContent.includes('CR_PRIVATE') && document.body.textContent.includes('Orders placed here spend real money.')`));
   ev(`state.auth=null;state.token=null;state.accountType=null;renderAuth()`);
   check('guest controls return after logout state', ev(`!document.getElementById('acctId').classList.contains('hidden') && document.getElementById('acctBadge').textContent==='Guest' && !document.getElementById('btnLogin').classList.contains('hidden') && document.getElementById('btnLogout').classList.contains('hidden')`));
+  check('guest theme button returns to the header and the side panel is hidden', ev(`document.getElementById('userMenu').classList.contains('hidden') && document.getElementById('userPanel').hidden && document.getElementById('guestActions').contains(document.getElementById('themeToggle')) && !document.getElementById('guestActions').classList.contains('hidden')`));
   // Controlled precision, including trailing zeros and precision corrections.
   ev(`Markets.buf('R_10').ticks=[]; Markets.setPrecision('R_10',3);
       Markets.push('R_10',{epoch:100,quote:'12.34',pip_size:3});`);
@@ -251,6 +269,9 @@ function seedDigits(sym, digits) {
   check('disconnect clears the live cursor and stale digit display', ev(`document.querySelectorAll('#digitStrip .current').length===0 && document.getElementById('tickDigitMini').textContent==='—'`));
   check('disconnect also clears the prediction-grid live marker without changing the barrier', ev(`document.querySelectorAll('#digitPick .current').length===0 && document.querySelector('#digitPick [data-d="3"]').classList.contains('active') && document.getElementById('barrier').value==='3'`));
   check('digit strip includes an accessible color and live-marker key', ev(`document.querySelector('.digit-key').textContent.includes('Most') && document.querySelector('.digit-key').textContent.includes('Least') && document.querySelector('.digit-key').textContent.includes('Live digit')`));
+  // Exercise the actual logout button after all feed assertions.
+  ev(`state.auth={loginid:'VRTC_PRIVATE',is_virtual:true};state.token='test';state.accountType='demo';state.bot.running=false; DBots.running=false; socket.restart=()=>{};renderAuth(); document.getElementById('userMenuToggle').click(); document.getElementById('btnLogout').focus(); document.getElementById('btnLogout').click()`);
+  check('panel logout clears the session and restores guest controls', ev(`state.auth===null && document.getElementById('userMenu').classList.contains('hidden') && document.getElementById('userPanel').hidden && document.getElementById('guestActions').contains(document.getElementById('themeToggle')) && !document.getElementById('btnLogin').classList.contains('hidden') && document.activeElement.id==='btnLogin'`));
   const errors=jsdomErrors.filter(m=>!/getContext|canvas|scrollTo/i.test(m));
   if(errors.length) console.log('jsdom errors:',errors.slice(0,5));
   console.log(`\n${passed} passed, ${failed} failed`);window.close();process.exit(failed?1:0);

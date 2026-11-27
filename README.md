@@ -1,11 +1,13 @@
-# Tick Extinction — Deriv Volatility Terminal
+# Tick Extinction — Deriv Trading Terminal
 
-A zero-build trading terminal for Deriv volatility indices. The whole UI lives
+A zero-build trading terminal for Deriv markets, including synthetic indices and other available markets. The whole UI lives
 in **`index.html`** (HTML + CSS + vanilla JS inline): no frameworks, no
 bundler, no mock data. The only server-side code is two small Vercel Functions:
 `api/deriv-oauth-token.js` (the OAuth 2.0 code → token exchange Deriv requires a
 backend to do) and `api/deriv-rest.js` (a narrow same-origin relay used only
 when the browser cannot read Deriv's REST responses because of CORS).
+
+The chart's top-left market selector loads the current `active_symbols` list from Deriv, grouped by market. The ten original volatility indices remain available as a fallback if discovery fails. Closed and suspended markets are labelled and trading is blocked until refreshed as open. Contract types, durations and symbols vary by account and market; Deriv's proposal remains the authority. The existing all-market signal scan still covers the original ten volatility indices.
 
 Market data, quotes, proposals, balances and trades come from Deriv's official
 Options API:
@@ -248,8 +250,7 @@ For local development, `vercel dev` serves both the page and the Function at
 
 ## Risk warning
 
-Deriv volatility indices are synthetic products. Trading them carries a high
-risk of losing money rapidly. Signals, hit rates and bots on this site describe
+Trading Deriv products carries a high risk of losing money rapidly. Signals, hit rates and bots on this site describe
 past ticks only and **do not guarantee profit**. This is an independent
 third-party client, not affiliated with or endorsed by Deriv.
 
@@ -335,4 +336,4 @@ balance.
 
 ### Simulated integration tests
 
-Run `cd tests && npm ci && npm test` with Node.js 22.22.2 or newer in the 22.x line (or a jsdom-supported newer release). The tests cover signal-driven bots, market data, tab controls and manual-order safety with a simulated WebSocket; they do not connect to Deriv or place real trades.
+Run `cd tests && npm ci && npm test` with Node.js 22.22.2 or newer in the 22.x line (or a jsdom-supported newer release). The tests cover dynamic market discovery, signal-driven bots, market data, tab controls and manual-order safety with a simulated WebSocket; they do not connect to Deriv or place real trades.

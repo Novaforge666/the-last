@@ -2700,8 +2700,8 @@ body.bb-open #toasts{bottom:auto;top:10px}
           <p class="fb-note" style="margin-top:12px">
             Every bot here is a real Deriv Bot file. Opening one loads it into the
             <b>DBots</b> tab — the canvas for editing its blocks and the Run settings
-            (stake, take profit, stop loss, cooldown) for its parameters — and nothing
-            trades until you press <b>Run</b>. Synthetic indices are independent per
+            (stake, take profit, stop loss, cooldown) for its parameters. Start it with
+            <b>Run</b> or from a matching <b>Entry now</b> signal. Synthetic indices are independent per
             tick: past digits do not predict the next one, and no payout edge is implied.
           </p>
         </div>
@@ -3228,8 +3228,10 @@ body.bb-open #toasts{bottom:auto;top:10px}
       <div class="panel-body">
         <div class="signals" id="signalCards"></div>
         <div class="hint" style="margin-top:12px">
-          “Entry now” means the rule conditions are satisfied right now — it is <b>not</b> a prediction.
-          Each tick of a volatility index is independent, so hit rates describe the past window only.
+          First configure a matching Free bot in DBots and select the same market here.
+          Pressing <b>Entry now</b> starts the bot and places that signal trade immediately;
+          afterwards it continues its own strategy. “Entry now” is <b>not</b> a prediction:
+          each tick is independent, so hit rates describe the past window only.
         </div>
       </div>
     </div>

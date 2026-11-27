@@ -204,7 +204,7 @@ value (or the trade-option field, or a purchase-block field), including the
 | `/?code=…` or `/?state=…` or `/?error=…` | the terminal — redirecting these would drop the OAuth code before it is exchanged |
 | `/` with a session in the tab | the terminal |
 
-**The rule to preserve:** landing CTAs point at **`/?app=1`**, never at `/`.
+**The rule to preserve:** landing login and terminal CTAs point at **`/?app=1`**, never at `/`. The separate sign-up button opens Deriv's official registration page in a new tab; users return here to log in.
 `location.pathname` is still exactly `/` there, so `currentRedirectUri()`
 returns the registered `https://the-last-weld.vercel.app/` and the code exchange
 keeps working. Auth that pointed at `/` would bounce a logged-out visitor

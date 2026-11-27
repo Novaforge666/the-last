@@ -240,6 +240,7 @@ footer a:hover{color:var(--txt)}
   .brand img{width:42px;height:42px}
   .cta{gap:10px}
   .btn{flex:1 1 100%;padding:15px 20px}
+  .cta #loginBtn,.cta #signupBtn{flex:1 1 calc(50% - 5px);padding:14px 8px;font-size:12px;white-space:nowrap}
   .final{padding:24px 20px}
   .final .btn{flex:0 0 auto}
   .section{padding:34px 0 0}
@@ -291,6 +292,7 @@ footer a:hover{color:var(--txt)}
         </svg>
         Log in with Deriv
       </a>
+      <a class="btn ghost" id="signupBtn" href="https://home.deriv.com/dashboard/signup?lang=en" target="_blank" rel="noopener noreferrer" aria-label="Sign up with Deriv (opens in a new tab)">Sign up with Deriv</a>
       <a class="btn ghost" href="/?app=1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 12h18" /><path d="M12 3v18" />
@@ -305,6 +307,7 @@ footer a:hover{color:var(--txt)}
       </svg>
       Login uses Deriv OAuth 2.0 with PKCE. Your password is only ever entered on
       Deriv's own site — this app never sees it, and holds no client secret.
+      Sign-up opens on Deriv in a new tab; return here to log in.
     </p>
 
     <!-- Only revealed when a session already exists, so returning users skip a step -->

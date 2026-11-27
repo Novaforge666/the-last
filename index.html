@@ -4634,7 +4634,9 @@ function renderAuth() {
   const loggedIn = !!a;
   $("#btnLogin").classList.toggle("hidden", loggedIn);
   $("#btnLogout").classList.toggle("hidden", !loggedIn);
-  $("#acctId").textContent = loggedIn ? a.loginid : "Not logged in";
+  // Keep the account identifier for safety checks and confirmations, but do not
+  // show it beside the login controls. The badge identifies demo vs real.
+  $("#acctId").classList.toggle("hidden", loggedIn);
   const badge = $("#acctBadge");
   if (loggedIn) {
     badge.className = "badge " + (a.is_virtual ? "demo" : "real");
@@ -4656,7 +4658,7 @@ function renderAuth() {
   updateBuyState();
   validateBotSettings();
   /* No standing "demo connected" banner: the account block in the header
-     already names the account and whether it is demo or real. A banner is only
+     already shows whether the account is demo or real. A banner is only
      raised for a problem, or once for a real account (money at stake). */
   if (!loggedIn) { if (!state.loginFailed) setBanner(null); }
   else if (state.accountType === "real" && state.authMode !== "oauth-real-ack") {

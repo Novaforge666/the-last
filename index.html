@@ -30,9 +30,8 @@
        https://your-site.vercel.app/
     c) Copy the generated client_id/app id into the APP_ID constant at the top
        of the main script block below. This deployment uses the user's registered app.
-    d) For the optional "API token" button: create a PAT-type application (or
-       use the same dashboard account if it permits both types), then create a
-       Personal Access Token with the trade scope.
+    d) OAuth is the only login path: the page has no API-token form, so a PAT
+       application is not needed.
 
   STEP 2 — HOST IT
     Vercel serves index.html from the root and api/deriv-oauth-token.js as a
@@ -105,6 +104,59 @@
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   --track:.12em;          /* micro-label letter-spacing */
+  --on-inv:#0a0a0a;                /* text on a --txt-coloured (inverted) chip */
+  --wash:rgba(255,255,255,.045);   /* hover/inset tint that follows the theme */
+  --wash-2:rgba(255,255,255,.08);
+  --shade:rgba(0,0,0,.55);         /* scrim behind drawers and modals */
+}
+
+/* ---------------------------------------------------------------------------
+   LIGHT THEME
+   ---------------------------------------------------------------------------
+   The same layout with daylight surfaces. Only tokens and the handful of
+   hardcoded shadows are redefined; every component reads the tokens, so the
+   whole app flips without a second stylesheet.
+   --------------------------------------------------------------------------- */
+html[data-theme="light"]{
+  --bg:#f5f6f8;
+  --bg-2:#ffffff;
+  --panel:#ffffff;
+  --panel-2:#f2f4f7;
+  --panel-3:#e8ebef;
+  --line:#e4e7ec;
+  --line-2:#d8dce3;
+  --line-3:#c2c8d2;
+
+  --txt:#12151a;
+  --muted:#5a6472;
+  --dim:#8a94a3;
+
+  --acc:#b8860b;            /* darker yellow so it stays legible on white */
+  --acc-2:#9a7009;
+  --acc-dim:#8a6508;
+  --acc-ink:#ffffff;
+  --acc-soft:rgba(184,134,11,.12);
+  --acc-line:rgba(184,134,11,.4);
+
+  --up:#0f9d58;
+  --down:#d93025;
+  --blue:#0b72c4;
+  --purple:#6d4bd8;
+  --warn:#c2620a;
+  --danger:#d93025;
+
+  --shadow:0 10px 26px -22px rgba(16,24,40,.45), inset 0 1px 0 #fff;
+  --shadow-pop:0 18px 48px -22px rgba(16,24,40,.35);
+
+  --on-inv:#ffffff;
+  --wash:rgba(16,24,40,.045);
+  --wash-2:rgba(16,24,40,.075);
+  --shade:rgba(16,24,40,.42);
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(1100px 600px at 78% -12%, rgba(184,134,11,.07), transparent 62%),
+    var(--bg);
 }
 
 /* ---------------------------------------------------------------------------
@@ -291,7 +343,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .panel-head{
   display:flex;align-items:center;gap:10px;
   padding:9px 14px;border-bottom:1px solid var(--line);
-  background:linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,0));
+  background:linear-gradient(180deg, var(--wash), transparent);
   min-height:38px;
 }
 /* card title: display face, sentence case, with a small yellow tick */
@@ -345,7 +397,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
   font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:0;
   padding:0;border:0;
 }
-.tab:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+.tab:hover{color:var(--txt);background:var(--wash)}
 .tab.active{
   color:var(--acc-ink);background:var(--acc);font-weight:700;
   box-shadow:0 8px 20px -12px rgba(250,204,21,.9);
@@ -455,7 +507,7 @@ th{
   backdrop-filter:blur(6px);
 }
 tbody tr{transition:background .15s ease}
-tbody tr:hover{background:rgba(255,255,255,.035)}
+tbody tr:hover{background:var(--wash)}
 td.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
 th.num{text-align:right}
 .empty{padding:26px 12px;text-align:center;color:var(--dim);font-size:12.5px}
@@ -466,7 +518,7 @@ th.num{text-align:right}
 .stat{
   border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);
   padding:13px 14px;min-width:0;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  box-shadow:inset 0 1px 0 var(--wash);
   transition:border-color .16s ease,background .16s ease;
 }
 .stat:hover{border-color:var(--line-2);background:var(--panel-2)}
@@ -489,7 +541,7 @@ th.num{text-align:right}
 }
 .payout .big{font-family:var(--display);font-size:30px;font-weight:800;color:var(--txt);line-height:1.05;letter-spacing:-.03em}
 .payout .sub{font-size:11.5px;color:var(--muted);margin-top:4px}
-.payout .split{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.payout .split{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--wash-2)}
 .payout .split div{font-size:11px;color:var(--dim)}
 .payout .split b{display:block;font-family:var(--mono);font-size:14px;color:var(--txt);margin-top:3px;font-variant-numeric:tabular-nums}
 
@@ -498,7 +550,7 @@ th.num{text-align:right}
 .open-card .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .open-card .cid{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px}
 .pl-big{font-family:var(--display);font-size:24px;font-weight:800;letter-spacing:-.02em}
-.progress{height:6px;border-radius:var(--radius-pill);background:#0a0a0a;overflow:hidden;margin-top:11px;border:1px solid var(--line)}
+.progress{height:6px;border-radius:var(--radius-pill);background:var(--panel-3);overflow:hidden;margin-top:11px;border:1px solid var(--line)}
 .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--acc-dim),var(--acc));transition:width .3s ease}
 
 /* ---------------------------------------------------------------------------
@@ -526,7 +578,7 @@ th.num{text-align:right}
 }
 .seg button + button{border-left:0}
 .seg button.active{background:var(--acc);color:var(--acc-ink);font-weight:700}
-.seg button:hover:not(.active){background:rgba(255,255,255,.05);color:var(--txt)}
+.seg button:hover:not(.active){background:var(--wash);color:var(--txt)}
 
 .status-pill{
   display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:var(--radius-pill);
@@ -623,6 +675,25 @@ th.num{text-align:right}
 .pat-account.real{border-color:rgba(239,68,68,.36)}
 .pat-account.real .go{color:#fca5a5}
 .acct-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+
+/* theme switch: one icon shows, the other one is the state you can go to */
+.icon-btn.theme-btn{
+  appearance:none;cursor:pointer;flex:0 0 auto;
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid var(--line-2);background:var(--panel-2);color:var(--muted);
+  display:grid;place-items:center;
+  transition:background .16s,color .16s,border-color .16s,transform .16s;
+}
+.icon-btn.theme-btn:hover{background:var(--panel-3);color:var(--txt);border-color:var(--line-3);transform:rotate(-14deg)}
+.icon-btn.theme-btn svg{
+  width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.icon-btn.theme-btn .ico-sun{display:none}
+html[data-theme="light"] .icon-btn.theme-btn .ico-sun{display:block}
+html[data-theme="light"] .icon-btn.theme-btn .ico-moon{display:none}
+html[data-theme="light"] .icon-btn.theme-btn{color:#b8860b;border-color:rgba(184,134,11,.35);background:rgba(184,134,11,.09)}
+html[data-theme="light"] .icon-btn.theme-btn .ico-moon{stroke-width:1.7}
 
 /* ---------------------------------------------------------------------------
    15. FOOTER
@@ -754,12 +825,12 @@ footer.foot .links a:hover{color:var(--acc)}
   appearance:none;width:24px;height:24px;border:0;border-radius:6px;cursor:pointer;
   background:transparent;color:var(--muted);font:600 13px var(--mono);line-height:1;
 }
-.mt-rail button:hover{background:rgba(255,255,255,.07);color:var(--txt)}
+.mt-rail button:hover{background:var(--wash-2);color:var(--txt)}
 .mt-price-tag{
   position:absolute;right:0;top:0;z-index:3;transform:translateY(-50%);
   padding:3px 8px;border-radius:6px 0 0 6px;
   font-family:var(--mono);font-size:11px;font-weight:700;
-  background:var(--txt);color:#0a0a0a;white-space:nowrap;
+  background:var(--txt);color:var(--on-inv);white-space:nowrap;
   box-shadow:0 6px 16px -8px rgba(0,0,0,.9);
 }
 .mt-canvas-wrap.mt-scroll{overflow:auto}
@@ -784,7 +855,7 @@ footer.foot .links a:hover{color:var(--acc)}
   padding:4px 0 5px;border-radius:9px;border:1px solid transparent;
   cursor:pointer;background:transparent;transition:background .15s,border-color .15s;
 }
-.mt-digi:hover{background:rgba(255,255,255,.045)}
+.mt-digi:hover{background:var(--wash)}
 .mt-digi .n{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--muted);line-height:1}
 .mt-digi .p{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.02em}
 .mt-digi .pip{width:14px;height:2px;border-radius:2px;background:var(--line-3);margin-top:1px}
@@ -872,7 +943,7 @@ footer.foot .links a:hover{color:var(--acc)}
   appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
   font:600 16px var(--mono);line-height:1;
 }
-.stepper > button:hover{background:rgba(255,255,255,.07);color:var(--txt)}
+.stepper > button:hover{background:var(--wash-2);color:var(--txt)}
 .stepper > button:first-child{border-right:1px solid var(--line)}
 .stepper > button:last-child{border-left:1px solid var(--line)}
 .stepper label{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px}
@@ -915,19 +986,93 @@ footer.foot .links a:hover{color:var(--acc)}
 .mt-mini-bars .mb b{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--dim)}
 .mt-mini-bars .mb.hot b{color:var(--acc)}
 
+/* ---------- bottom drawer: one panel, slides from the left ---------- */
+.mt-drawer-tab{
+  position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:11px 7px 11px 6px;cursor:pointer;
+  border:1px solid var(--line-2);border-left:0;
+  border-radius:0 10px 10px 0;
+  background:var(--panel);color:var(--muted);
+  font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:.04em;
+  box-shadow:6px 0 22px -14px rgba(0,0,0,.9);
+  transition:background .16s,color .16s,border-color .16s,opacity .2s;
+  writing-mode:vertical-rl;text-orientation:mixed;
+}
+.mt-drawer-tab:hover{background:var(--panel-2);color:var(--txt);border-color:var(--line-3)}
+.mt-drawer-tab .mt-drawer-ico{writing-mode:horizontal-tb;font-size:12px;color:var(--acc)}
+.mt-drawer-tab.live{border-color:var(--acc-line);color:var(--acc)}
+.mt-drawer-badge{
+  writing-mode:horizontal-tb;
+  font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 5px;border-radius:999px;background:var(--up);color:#04241f;
+}
+body.drawer-open .mt-drawer-tab{opacity:0;pointer-events:none}
+
+.mt-drawer-back{
+  position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;transition:opacity .22s ease;
+  backdrop-filter:blur(2px);
+}
+.mt-drawer-back.show{opacity:1;pointer-events:auto}
+
+.mt-drawer{
+  position:fixed;top:0;left:0;bottom:0;z-index:80;
+  width:min(430px,92vw);
+  display:flex;flex-direction:column;gap:0;
+  background:var(--bg-2);border-right:1px solid var(--line-2);
+  box-shadow:24px 0 60px -30px rgba(0,0,0,.95);
+  transform:translateX(-102%);
+  transition:transform .26s cubic-bezier(.32,.72,0,1);
+  will-change:transform;
+}
+.mt-drawer.open{transform:translateX(0)}
+.mt-drawer-head{
+  display:flex;align-items:center;gap:8px;
+  padding:13px 14px;border-bottom:1px solid var(--line);
+  background:var(--panel);flex:0 0 auto;
+}
+.mt-drawer-head h3{
+  font-family:var(--display);font-size:13.5px;font-weight:800;letter-spacing:-.01em;margin:0;
+}
+.mt-drawer-x{
+  appearance:none;cursor:pointer;width:26px;height:26px;flex:0 0 auto;
+  border:1px solid var(--line-2);border-radius:6px;background:var(--bg-2);
+  color:var(--muted);font-size:12px;display:grid;place-items:center;
+  transition:background .14s,color .14s;
+}
+.mt-drawer-x:hover{background:var(--panel-3);color:var(--txt)}
+.mt-drawer-sec{
+  display:flex;flex-direction:column;min-height:0;
+  border-bottom:1px solid var(--line);padding:11px 14px 13px;
+}
+.mt-drawer-sec.grow{flex:1 1 auto;min-height:0;border-bottom:0}
+.mt-drawer-title{
+  display:flex;align-items:center;gap:7px;flex:0 0 auto;margin-bottom:8px;
+  font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim);
+}
+.mt-drawer-body{min-height:0;overflow-y:auto}
+.mt-drawer-body.tight{padding-bottom:4px}
+
+@media(max-width:720px){
+  .mt-drawer-tab{top:auto;bottom:74px;transform:none;writing-mode:horizontal-tb;flex-direction:row;padding:9px 12px;border-radius:0 10px 10px 0}
+  .mt-drawer{width:min(360px,94vw)}
+}
+
 /* ---------- the ticket card: dbtraders-style clean blocks ---------- */
 .mt-ticketcard{display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .mt-trade-head{
   display:flex;align-items:center;justify-content:space-between;gap:6px;
   padding:6px 8px;border-bottom:1px solid var(--line);flex:0 0 auto;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);
+  background:linear-gradient(180deg,var(--wash),transparent);
 }
 .mt-trade-name{
   flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;
   appearance:none;border:0;background:transparent;cursor:pointer;padding:3px 4px;
   border-radius:5px;transition:background .14s;
 }
-.mt-trade-name:hover{background:rgba(255,255,255,.045)}
+.mt-trade-name:hover{background:var(--wash)}
 .mt-trade-name:hover b{color:var(--acc)}
 .mt-trade-name i{
   font-style:normal;width:20px;height:20px;border-radius:5px;display:grid;place-items:center;
@@ -979,15 +1124,26 @@ input[type="range"]#durRange::-moz-range-thumb{
   width:12px;height:12px;border:2px solid #0a0a0a;border-radius:50%;background:var(--acc);cursor:grab;
 }
 
-/* digit grid: 5 x 2 like the reference, white-on-dark pills */
+/* digit grid: 5 x 2, each cell carries the digit and its Deriv percentage */
 .mt-block-pred .mt-digits{width:100%;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .mt-block-pred .mt-digits button{
-  padding:3px 0;font-size:11px;line-height:1.35;border-radius:4px;background:var(--panel);
+  padding:4px 0 3px;line-height:1.1;border-radius:5px;background:var(--panel);
   border:1px solid var(--line-2);color:var(--txt);font-family:var(--sans);font-weight:600;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  transition:background .14s,border-color .14s,color .14s;
 }
+.mt-block-pred .mt-digits button b{font-size:13px;font-weight:700;line-height:1}
+.mt-block-pred .mt-digits button s{
+  text-decoration:none;font-family:var(--mono);font-size:8.5px;font-weight:500;
+  color:var(--dim);letter-spacing:.01em;line-height:1;
+}
+.mt-block-pred .mt-digits button.heavy s{color:var(--acc)}
+.mt-block-note{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.02em;align-self:flex-end}
+.mt-block-pred .mt-digits button.active b{color:var(--on-inv)}
+.mt-block-pred .mt-digits button.active s{color:rgba(10,10,10,.62)}
 .mt-block-pred .mt-digits button:hover{background:var(--panel-2);border-color:var(--line-3)}
 .mt-block-pred .mt-digits button.active{
-  background:var(--txt);color:#0a0a0a;border-color:var(--txt);box-shadow:none;
+  background:var(--txt);color:var(--on-inv);border-color:var(--txt);box-shadow:none;
 }
 .mt-block-pred .mt-digits button.active::after{display:none}
 
@@ -1001,8 +1157,8 @@ input[type="range"]#durRange::-moz-range-thumb{
   font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--muted);
   padding:6px 4px;transition:background .15s,color .15s;
 }
-.mt-tabs button:hover{color:var(--txt);background:rgba(255,255,255,.04)}
-.mt-tabs button.active{background:var(--txt);color:#0a0a0a;font-weight:700}
+.mt-tabs button:hover{color:var(--txt);background:var(--wash)}
+.mt-tabs button.active{background:var(--txt);color:var(--on-inv);font-weight:700}
 
 /* stake stepper row */
 .mt-stepper-row{
@@ -1031,6 +1187,23 @@ input[type="range"]#durRange::-moz-range-thumb{
 
 /* payout line + the two direction buttons */
 .mt-trade{display:flex;flex-direction:column;gap:4px;margin-top:1px}
+/* Both sides of the trade can sit next to each other when the ticket is wide
+   enough. The payout line stays attached to its own button, so each column is
+   [payout, button] and the pair still reads left-to-right. */
+@media(min-width:1180px){
+  .mt-trade{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:5px 8px;align-items:end;
+  }
+  .mt-trade .mt-payline{grid-row:auto}
+  .mt-trade .mt-dir{grid-row:auto}
+  .mt-trade .mt-payline:nth-of-type(1){grid-column:1;grid-row:1}
+  .mt-trade #btnBuy{grid-column:1;grid-row:2}
+  .mt-trade .mt-payline:nth-of-type(2){grid-column:2;grid-row:1}
+  .mt-trade #btnBuyAlt{grid-column:2;grid-row:2}
+  .mt-dir{padding:11px 12px}
+  .mt-dir-t{font-size:14px}
+}
 .mt-payline{
   display:flex;align-items:center;justify-content:space-between;gap:8px;
   font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
@@ -1088,11 +1261,6 @@ input[type="range"]#durRange::-moz-range-thumb{
 }
 .mt-dir.win{box-shadow:0 0 0 0 rgba(34,197,94,.55)}
 .mt-dir.lose{box-shadow:0 0 0 0 rgba(239,68,68,.55)}
-/* "armed" state for real-money double clicks */
-.mt-dir.armed{
-  background:linear-gradient(180deg,#facc15,#eab308) !important;
-  color:#231a02 !important;border-color:#d4a907 !important;
-}
 .mt-dir.busy .mt-dir-p{font-size:10.5px}
 
 /* quote metadata + compact price split */
@@ -1114,18 +1282,6 @@ input[type="range"]#durRange::-moz-range-thumb{
 .mt-ticketcard .mt-payout .split div{font-size:8.5px}
 .mt-ticketcard .mt-payout .split b{font-size:11px}
 
-/* ---------- bottom strip ---------- */
-/* Bottom strip: collapsed by default (headers only) so the chart keeps the room. */
-.mt-bottom{
-  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-  gap:10px;margin-top:10px;flex:0 0 auto;
-}
-.mt-bottom > .panel{min-height:0;overflow:hidden}
-.mt-bottom > .panel:not(.collapsed){
-  display:flex;flex-direction:column;max-height:186px;
-}
-.mt-bottom > .panel:not(.collapsed) .panel-body{overflow-y:auto;min-height:0}
-.mt-bottom > .panel.collapsed{flex:0 0 auto}
 .mt-trades{max-height:none}
 .mt-trades th,.mt-trades td{padding:7px 10px}
 
@@ -1143,18 +1299,105 @@ input[type="range"]#durRange::-moz-range-thumb{
 
 @media (max-width:1240px){
   .mt{grid-template-columns:minmax(0,1.45fr) minmax(300px,.95fr)}
-  .mt-bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }
+/* Tablet: the chart keeps most of the width, the ticket narrows. */
 @media (max-width:1020px){
-  html,body{height:auto;overflow:auto}
-  body{height:auto;overflow:auto}
-  .tabpane{overflow:visible}
-  .mt{grid-template-columns:minmax(0,1fr);height:auto;flex:0 0 auto}
-  #pane-manual.active{display:block}
-  .mt-canvas-wrap{height:300px;flex:0 0 auto}
-  .mt-bottom{grid-template-columns:minmax(0,1fr);max-height:none}
+  .mt{grid-template-columns:minmax(0,1.15fr) minmax(292px,.85fr)}
+  .mt-canvas-wrap{min-height:220px}
   footer.foot .disc{display:none}
 }
+
+/* Phone: one column, ticket first so it is reachable with a thumb, and the
+   page is allowed to scroll because there is no honest way to fit a chart
+   plus a ticket on 390 px without making both useless. */
+@media (max-width:860px){
+  html,body{height:auto;overflow-y:auto;overflow-x:hidden}
+  body{min-height:100%}
+  .app,.shell,.wrap{height:auto;min-height:0}
+  .tabpane{overflow:visible !important;height:auto !important;min-height:0}
+  body #pane-manual.tabpane.active{display:flex;flex-direction:column;height:auto;overflow:visible}
+  .mt{grid-template-columns:minmax(0,1fr);height:auto;flex:0 0 auto;gap:10px}
+  .mt-side{grid-template-rows:auto auto;overflow:visible;height:auto}
+  .mt-canvas-wrap{height:238px;flex:0 0 auto;min-height:0}
+  .mt-chart{min-height:0}
+  .mt-ticketcard{max-height:none}
+  .mt-ticketcard > .panel-body{overflow:visible}
+  .mt-mini{display:none}
+  .mt-drawer-tab{bottom:16px}
+  .topbar{position:sticky;top:0;z-index:50}
+  .topbar-inner{flex-wrap:wrap;gap:8px;padding:9px 12px}
+  .brand-txt span{display:none}
+  .header-market{flex:1 1 140px !important}
+  .tabbar-inner{overflow-x:auto;scrollbar-width:none}
+  .tabbar-inner::-webkit-scrollbar{display:none}
+  .tab .n{display:none}
+  .tab{white-space:nowrap;padding:9px 12px;font-size:12px}
+  .mt-block-pred .mt-digits button{padding:7px 0 6px}
+  .mt-block-pred .mt-digits button b{font-size:15px}
+  .mt-block-pred .mt-digits button s{font-size:9.5px}
+  .mt-dir{padding:12px 14px}
+  .mt-dir-t{font-size:16px}
+  .mt-price-tag{font-size:10px}
+  .bl,.cols{height:auto;min-height:0}
+  .bl-canvas{min-height:420px;height:58vh}
+  .bl-side{position:fixed;inset:auto 0 0 0;max-height:70vh;border-radius:14px 14px 0 0;z-index:75}
+}
+
+/* Very small phones: trim the chrome further, never the trade buttons. */
+@media (max-width:420px){
+  .mt-trade-head{padding:5px 6px}
+  .mt-block{padding:5px 7px}
+  .mt-amount input{width:66px;font-size:15px}
+  .mt-drawer{width:100vw}
+  .brand-txt strong{font-size:15px}
+  .acct-actions .btn{padding:7px 11px;font-size:11.5px}
+}
+
+/* ---------------------------------------------------------------------------
+   LIGHT THEME OVERRIDES
+   ---------------------------------------------------------------------------
+   The token swap covers most of the app. These are the places that carried a
+   literal dark value (the bot canvas, the dark overlays, the shadows that read
+   as light-on-dark) and need an explicit daylight version.
+   --------------------------------------------------------------------------- */
+html[data-theme="light"] .bl-canvas{
+  background:
+    radial-gradient(circle at 1px 1px, rgba(16,24,40,.09) 1px, transparent 0) 0 0/20px 20px,
+    #eef1f5;
+}
+html[data-theme="light"] .blk,
+html[data-theme="light"] .bl-side{box-shadow:0 1px 2px rgba(16,24,40,.06), 0 8px 20px -18px rgba(16,24,40,.4)}
+html[data-theme="light"] .blk-def{border-top:2px solid var(--acc)}
+html[data-theme="light"] .bl-risk{
+  background:#fff7e6;border-color:rgba(184,134,11,.45);color:#8a6508;
+}
+html[data-theme="light"] .bl-risk::before{color:#b8860b}
+html[data-theme="light"] .blk-h{background:linear-gradient(180deg, rgba(184,134,11,.06), transparent)}
+html[data-theme="light"] .bl-run .blk-h{background:linear-gradient(180deg, rgba(11,114,196,.05), transparent)}
+html[data-theme="light"] .bl-tree .bl-node,
+html[data-theme="light"] .bl-tree .blk-empty{background:var(--panel-2)}
+html[data-theme="light"] .bl-pop{box-shadow:0 20px 50px -24px rgba(16,24,40,.4);border-color:var(--line-2);background:#fff}
+html[data-theme="light"] .mt-drawer-back{background:rgba(16,24,40,.35)}
+html[data-theme="light"] .mt-drawer{box-shadow:22px 0 60px -34px rgba(16,24,40,.45)}
+html[data-theme="light"] .mt-drawer-tab{box-shadow:6px 0 18px -10px rgba(16,24,40,.35);background:#fff}
+html[data-theme="light"] .modal{box-shadow:0 30px 80px -30px rgba(16,24,40,.45)}
+html[data-theme="light"] .mt-canvas-wrap{
+  background:
+    linear-gradient(180deg, rgba(184,134,11,.045), transparent 45%),
+    var(--bg-2);
+}
+html[data-theme="light"] .mt-price-tag{background:#12151a;color:#fff}
+html[data-theme="light"] .topbar{background:rgba(255,255,255,.86)}
+html[data-theme="light"] .tabbar{background:rgba(255,255,255,.7)}
+html[data-theme="light"] footer.foot{background:rgba(255,255,255,.8)}
+html[data-theme="light"] .toast{box-shadow:0 14px 34px -16px rgba(16,24,40,.4)}
+html[data-theme="light"] .bl-runbar{background:#fff}
+html[data-theme="light"] .bl-run-btn{box-shadow:0 10px 22px -14px rgba(15,157,88,.9)}
+/* the accent yellow is too pale on white; use the darker token everywhere */
+html[data-theme="light"] .badge.demo{color:#8a6508;background:rgba(184,134,11,.12);border-color:rgba(184,134,11,.35)}
+html[data-theme="light"] .mt-digi.hot{background:rgba(184,134,11,.12);border-color:rgba(184,134,11,.35)}
+html[data-theme="light"] .mt-digi.hot .n{color:#8a6508}
+html[data-theme="light"] .dbots-item.active{background:rgba(184,134,11,.08)}
 
 /* ---------------------------------------------------------------------------
    18b. DBOTS BUILDER — Deriv Bot canvas: rail, block cards, run bar
@@ -1680,8 +1923,11 @@ button.blk-v:disabled{cursor:default}
         <div class="bal"><span id="balance">—</span><small id="balanceCur"></small></div>
       </div>
       <div class="acct-actions">
+        <button class="icon-btn theme-btn" id="themeToggle" type="button" aria-label="Switch to light theme" title="Switch theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
         <button class="btn sm primary" id="btnLogin">Log in</button>
-        <button class="btn sm ghost" id="btnToken">API token</button>
         <button class="btn sm ghost hidden" id="btnLogout">Log out</button>
       </div>
     </div>
@@ -1820,17 +2066,18 @@ button.blk-v:disabled{cursor:default}
             <div class="mt-block mt-block-pred" id="barrierWrap">
               <span class="mt-block-t">Last Digit Prediction</span>
               <div class="mt-digits" id="digitPick" role="radiogroup" aria-label="Barrier digit">
-                <button type="button" data-d="0">0</button>
-                <button type="button" data-d="1">1</button>
-                <button type="button" data-d="2">2</button>
-                <button type="button" data-d="3" class="active">3</button>
-                <button type="button" data-d="4">4</button>
-                <button type="button" data-d="5">5</button>
-                <button type="button" data-d="6">6</button>
-                <button type="button" data-d="7">7</button>
-                <button type="button" data-d="8">8</button>
-                <button type="button" data-d="9">9</button>
+                <button type="button" data-d="0"><b>0</b><s>—</s></button>
+                <button type="button" data-d="1"><b>1</b><s>—</s></button>
+                <button type="button" data-d="2"><b>2</b><s>—</s></button>
+                <button type="button" data-d="3" class="active"><b>3</b><s>—</s></button>
+                <button type="button" data-d="4"><b>4</b><s>—</s></button>
+                <button type="button" data-d="5"><b>5</b><s>—</s></button>
+                <button type="button" data-d="6"><b>6</b><s>—</s></button>
+                <button type="button" data-d="7"><b>7</b><s>—</s></button>
+                <button type="button" data-d="8"><b>8</b><s>—</s></button>
+                <button type="button" data-d="9"><b>9</b><s>—</s></button>
               </div>
+              <span class="mt-block-note" id="digitPickHint">deriv.com theoretical 10.0%</span>
               <select id="barrier" class="mt-hidden-selects" aria-hidden="true" tabindex="-1">
                 <option value="0">0</option><option value="1">1</option><option value="2">2</option>
                 <option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
@@ -1931,28 +2178,39 @@ button.blk-v:disabled{cursor:default}
       </div>
     </div>
 
-    <!-- ---------- Bottom strip: position + history (collapsible) ---------- -->
-    <div class="mt-bottom">
-      <div class="panel collapsible" data-panel="open" data-open="1">
-        <div class="panel-head">
-          <h3>Open contract</h3>
-          <div class="spacer"></div>
-          <span class="tiny dim" id="openHint">No open position</span>
-        </div>
-        <div class="panel-body tight" id="openContract">
+    <!-- ---------- Bottom drawer: open contract + recent trades, one panel ---------- -->
+    <button class="mt-drawer-tab" id="mtDrawerTab" type="button" aria-expanded="false" aria-controls="mtDrawer">
+      <span class="mt-drawer-ico">▤</span>
+      <span>Positions</span>
+      <b class="mt-drawer-badge hidden" id="mtDrawerCount">0</b>
+    </button>
+
+    <div class="mt-drawer-back" id="mtDrawerBack"></div>
+
+    <aside class="mt-drawer" id="mtDrawer" aria-hidden="true" aria-label="Open contract and recent trades">
+      <header class="mt-drawer-head">
+        <h3>Positions &amp; trades</h3>
+        <div class="spacer"></div>
+        <span class="tiny dim" id="openHint">No open position</span>
+        <button class="mt-drawer-x" id="mtDrawerClose" type="button" aria-label="Close panel">✕</button>
+      </header>
+
+      <div class="mt-drawer-sec">
+        <div class="mt-drawer-title"><span>Open contract</span></div>
+        <div class="mt-drawer-body" id="openContract">
           <div class="empty">When you buy a contract it appears here and updates live until it settles.</div>
         </div>
       </div>
 
-      <div class="panel collapsible" data-panel="trades">
-        <div class="panel-head">
-          <h3>Recent trades</h3>
+      <div class="mt-drawer-sec grow">
+        <div class="mt-drawer-title">
+          <span>Recent trades</span>
           <span class="badge soft hidden" id="ptNote">profit_table</span>
           <div class="spacer"></div>
           <button class="btn xs hidden" id="btnMoreTrades">Load older</button>
           <button class="btn xs" id="btnRefreshTrades">Refresh</button>
         </div>
-        <div class="panel-body tight">
+        <div class="mt-drawer-body tight">
           <div class="tbl-scroll mt-trades">
             <table>
               <thead>
@@ -1968,7 +2226,7 @@ button.blk-v:disabled{cursor:default}
           </div>
         </div>
       </div>
-    </div>
+    </aside>
 
     <!-- Contract picker (compact overlay instead of a full select on the ticket) -->
     <div class="modal-back hidden" id="ctPickBack" role="dialog" aria-modal="true" aria-labelledby="ctPickTitle">
@@ -2071,7 +2329,7 @@ button.blk-v:disabled{cursor:default}
             </div>
             <div class="row" style="margin-top:12px">
               <span class="tiny dim">Account in use:</span>
-              <span class="badge soft" id="botAcctBadge">Demo only</span>
+              <span class="badge soft" id="botAcctBadge">—</span>
             </div>
             <div class="row" style="margin-top:12px">
               <button class="btn primary" id="btnBotStart">▶ Start bot</button>
@@ -2201,6 +2459,18 @@ button.blk-v:disabled{cursor:default}
                   <div class="blk-row"><span class="blk-l">Duration</span><button class="blk-v" id="blkDuration" data-edit="duration" type="button">—</button></div>
                   <div class="blk-row"><span class="blk-l">Stake</span><button class="blk-v" id="blkStake" data-edit="stake" type="button">—</button></div>
                   <div class="blk-row"><span class="blk-l">Prediction</span><button class="blk-v" id="blkPrediction" data-edit="prediction" type="button">—</button></div>
+                </div>
+              </div>
+
+              <div data-key="money" class="blk blk-def blk-money">
+                <div class="blk-h">7b. Money management</div>
+                <div class="blk-b">
+                  <div class="blk-row"><span class="blk-l">Take profit</span><button class="blk-v" id="blkTP" data-edit="takeprofit" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Stop loss</span><button class="blk-v" id="blkSL" data-edit="stoploss" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Martingale</span><button class="blk-v" id="blkMart" data-edit="martingale" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Multiplier</span><button class="blk-v" id="blkMult" data-edit="multiplier" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Max steps</span><button class="blk-v" id="blkSteps" data-edit="maxsteps" type="button">—</button></div>
+                  <div class="blk-row"><span class="blk-l">Max losses</span><button class="blk-v" id="blkMaxLoss" data-edit="maxloss" type="button">—</button></div>
                 </div>
               </div>
 
@@ -2627,32 +2897,11 @@ button.blk-v:disabled{cursor:default}
   </div>
 </div>
 
-<!-- API token login (Personal Access Token; no redirect) -->
-<div class="modal-back hidden" id="patBack" role="dialog" aria-modal="true" aria-labelledby="patTitle">
-  <div class="modal">
-    <h4 id="patTitle">Log in with API token</h4>
-    <div class="pat-help">
-      Create a token at <a href="https://developers.deriv.com" target="_blank" rel="noopener noreferrer">developers.deriv.com</a>
-      with the <b>trade</b> scope. Tokens beginning with <span class="mono">pat_</span> use the current Deriv Options API: this page keeps the token in this browser tab only and exchanges it for a single-use WebSocket URL.
-    </div>
-    <label class="field">
-      <span class="lbl">API token</span>
-      <input type="password" id="patInput" autocomplete="off" spellcheck="false" autocapitalize="none" placeholder="Paste your token" />
-    </label>
-    <div class="pat-error hidden" id="patError"></div>
-    <div class="pat-accounts" id="patAccounts"></div>
-    <div class="actions">
-      <button class="btn ghost sm" id="patCancel">Cancel</button>
-      <button class="btn primary sm" id="patFind">Find accounts</button>
-    </div>
-  </div>
-</div>
-
 <!-- Account picker used after OAuth login when Deriv returns multiple accounts and no demo default -->
 <div class="modal-back hidden" id="accountPickBack" role="dialog" aria-modal="true" aria-labelledby="accountPickTitle">
   <div class="modal">
     <h4 id="accountPickTitle">Choose Options account</h4>
-    <p>Deriv returned these Options accounts for this login. Pick the account to connect. A real account requires confirmation before trading.</p>
+    <p>Deriv returned more than one Options account for this login. Pick the one to use.</p>
     <div class="pat-accounts" id="accountPickList"></div>
     <div class="actions">
       <button class="btn ghost sm" id="accountPickDisconnect">Disconnect</button>
@@ -2679,8 +2928,7 @@ button.blk-v:disabled{cursor:default}
    - for "Log in" (OAuth): choose an OAuth 2.0 app, select the trade scope and
      set the redirect URL to exactly where this file is hosted, e.g.
      https://the-last-weld.vercel.app/
-   - for the "API token" button: choose a PAT-type app and create a PAT with
-     the trade scope.
+   - there is no API-token login: OAuth PKCE is the only way in.
 
    OAuth uses Authorization Code + PKCE and exchanges the code through the
    same-origin /api/deriv-oauth-token function (Deriv does not issue refresh
@@ -3575,92 +3823,15 @@ function makeOptionsProvider(accountId, kind) {
   };
 }
 
-function showPatError(message) {
-  const box = $("#patError");
-  if (!box) return;
-  box.textContent = message || "Could not use that token.";
-  box.classList.remove("hidden");
-}
-function clearPatError() {
-  const box = $("#patError");
-  if (box) box.classList.add("hidden");
-}
-function openTokenDialog() {
-  const input = $("#patInput");
-  const list = $("#patAccounts");
-  if (input) input.value = "";
-  if (list) list.replaceChildren();
-  clearPatError();
-  const btn = $("#patFind");
-  if (btn) { btn.disabled = false; btn.textContent = "Find accounts"; }
-  $("#patBack").classList.remove("hidden");
-  setTimeout(() => { if (input) input.focus(); }, 30);
-}
-function closeTokenDialog() {
-  $("#patBack").classList.add("hidden");
-  clearPatError();
-  const input = $("#patInput");
-  if (input) input.value = "";
-  const list = $("#patAccounts");
-  if (list) list.replaceChildren();
-}
-
-function showAccountPicker(accounts, token, kind) {
-  return new Promise(resolve => {
-    accountPickResolve = resolve;
-    const host = $("#accountPickList");
-    if (!host) return resolve(null);
-    host.replaceChildren();
-    accounts.forEach(account => {
-      const isReal = account.account_type === "real";
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "pat-account" + (isReal ? " real" : "");
-      btn.innerHTML =
-        '<span><b>' + esc(account.account_id) + '</b><small>' +
-          esc(String(account.account_type || "").toUpperCase()) + ' · ' + esc(account.currency || "USD") +
-          ' balance ' + esc(money(account.balance, account.currency || "USD")) +
-        '</small></span><span class="go">Connect</span>';
-      btn.addEventListener("click", async () => {
-        const ok = await connectOptionsAccount(account, token, kind, { skipRealConfirm: false });
-        if (ok) { $("#accountPickBack").classList.add("hidden"); accountPickResolve = null; resolve(account); }
-      });
-      host.appendChild(btn);
-    });
-    $("#accountPickBack").classList.remove("hidden");
-  });
-}
+/* The account picker can be dismissed: that drops the pending login and leaves
+   the terminal in guest mode rather than half-authorised. */
 function disconnectFromAccountPicker() {
   clearSession("oauth");
   state.token = null; state.authMode = null; state.authExpiresAt = null;
-  $("#accountPickBack").classList.add("hidden");
+  const back = $id("accountPickBack");
+  if (back) back.classList.add("hidden");
   if (accountPickResolve) { const r = accountPickResolve; accountPickResolve = null; r(null); }
   setBanner("warn", "<b>Deriv login not completed.</b> No account was selected. Live market data is still available.");
-}
-
-function renderOptionsAccounts(accounts, token, kind) {
-  const host = $("#patAccounts");
-  if (!host) return;
-  host.replaceChildren();
-
-  const label = document.createElement("div");
-  label.className = "tiny dim";
-  label.textContent = accounts.length === 1 ? "1 Options account found" : accounts.length + " Options accounts found";
-  host.appendChild(label);
-
-  accounts.forEach(account => {
-    const isReal = account.account_type === "real";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "pat-account" + (isReal ? " real" : "");
-    btn.innerHTML =
-      '<span><b>' + esc(account.account_id) + '</b><small>' +
-        esc(String(account.account_type || "").toUpperCase()) + ' · ' + esc(account.currency || "USD") +
-        ' balance ' + esc(money(account.balance, account.currency || "USD")) +
-      '</small></span><span class="go">Connect</span>';
-    btn.addEventListener("click", () => connectOptionsAccount(account, token, kind, { skipRealConfirm: false }));
-    host.appendChild(btn);
-  });
 }
 
 async function chooseOptionsAccount(accounts, token, kind) {
@@ -3678,7 +3849,6 @@ async function chooseOptionsAccount(accounts, token, kind) {
 
 async function connectOptionsAccount(account, token, kind, opts) {
   opts = opts || {};
-  clearPatError();
   const isReal = String(account.account_type || "").toLowerCase() === "real";
   if (isReal && !opts.skipRealConfirm) {
     const ok = await confirmDialog(
@@ -3690,8 +3860,6 @@ async function connectOptionsAccount(account, token, kind, opts) {
     if (!ok) return false;
   }
 
-  const find = kind === "pat" ? $("#patFind") : null;
-  if (find) { find.disabled = true; find.textContent = "Connecting…"; }
   try {
     const url = await fetchOptionsWsUrl(account.account_id, token, kind);
     const expiresAt = kind === "oauth" ? Number(storageGet(OAUTH_EXPIRES_KEY) || 0) : null;
@@ -3702,15 +3870,12 @@ async function connectOptionsAccount(account, token, kind, opts) {
     state.auth = null;
     state.balance = null;
     socket.restart(url, false, makeOptionsProvider(account.account_id, kind));
-    if (kind === "pat") closeTokenDialog();
-    setBanner("info", "<b>" + (kind === "oauth" ? "OAuth" : "API token") + " connected.</b> Authorising " +
+    setBanner("info", "<b>OAuth connected.</b> Authorising " +
       esc(String(account.account_type || "").toUpperCase()) + " account <span class='mono'>" + esc(account.account_id) + "</span>…");
     return true;
   } catch (err) {
     const msg = (err && err.message) ? err.message : "Could not connect this account.";
-    if (kind === "pat") showPatError(msg);
-    else { setBanner("err", "<b>Could not connect.</b> " + esc(msg)); toast("Login failed", msg, "err"); }
-    if (find) { find.disabled = false; find.textContent = "Find accounts"; }
+    setBanner("err", "<b>Could not connect.</b> " + esc(msg)); toast("Login failed", msg, "err");
     return false;
   }
 }
@@ -3810,20 +3975,14 @@ async function restoreStoredOptionsSession() {
     return finishOptionsLogin(oauth.token, "oauth");
   }
 
-  const token = getStoredPatToken();
-  const accountId = getStoredPatAccountId();
-  if (!token || !accountId) return false;
-  state.token = token;
-  state.authMode = "pat";
-  state.authExpiresAt = null;
-  setBanner("info", "<b>Restoring API token session…</b>");
-  return finishOptionsLogin(token, "pat");
+  /* API-token sessions are no longer offered, so there is nothing else to restore. */
+  return false;
 }
 
 function applyOptionsAuth() {
   const account = state.optionsAccount;
   if (!account) return;
-  const kind = state.authMode === "oauth" ? "oauth" : "pat";
+  const kind = "oauth";
   const isDemo = String(account.account_type || "").toLowerCase() !== "real";
   const firstConnect = !state.optionsApplied;
   state.auth = {
@@ -3846,7 +4005,7 @@ function applyOptionsAuth() {
   loadProfitTable();
   ticketDirty = true;
   scheduleProposal(true);
-  pushLog("sys", "Authorized " + account.account_id + " (" + (isDemo ? "demo" : "real") + ", " + state.currency + ") via " + (kind === "oauth" ? "OAuth" : "API token") + ".");
+  pushLog("sys", "Authorized " + account.account_id + " (" + (isDemo ? "demo" : "real") + ", " + state.currency + ") via OAuth.");
   if (firstConnect) {
     toast("Logged in", "Account " + account.account_id + " · " + (isDemo ? "Demo" : "Real") + " balance " + money(account.balance), "ok");
   }
@@ -3922,17 +4081,20 @@ function renderAuth() {
   const botBadge = $("#botAcctBadge");
   if (loggedIn) {
     botBadge.className = "badge " + (a.is_virtual ? "demo" : "real");
-    botBadge.textContent = a.is_virtual ? "Demo " + a.loginid : "REAL " + a.loginid;
+    botBadge.textContent = a.is_virtual ? "virtual" : "real";
   } else {
     botBadge.className = "badge soft";
     botBadge.textContent = "Not logged in";
   }
   updateBuyState();
   validateBotSettings();
+  /* No standing "demo connected" banner: the account block in the header
+     already names the account and whether it is demo or real. A banner is only
+     raised for a problem, or once for a real account (money at stake). */
   if (!loggedIn) { if (!state.loginFailed) setBanner(null); }
-  else if (state.accountType === "real") {
-    setBanner("warn", "<b>Real account in use.</b> Orders placed here spend real money. The auto bot asks for confirmation before it runs on a real account.");
-  } else setBanner("okay", "<b>Demo account connected.</b> Trades here use virtual funds.");
+  else if (state.accountType === "real" && state.authMode !== "oauth-real-ack") {
+    setBanner("warn", "<b>Real account in use.</b> Orders placed here spend real money.");
+  } else setBanner(null);
 }
 
 /* Readout strip: keeps the status pill row in sync with state. */
@@ -4222,8 +4384,17 @@ const chart = {
     const yOf = v => padT + plotH - ((v - lo) / (hi - lo)) * plotH;
     const xOf = i => padL + (i / (pts.length - 1)) * plotW;
 
+    const dark = document.documentElement.getAttribute("data-theme") !== "light";
+    const grid = dark ? "rgba(255,255,255,.045)" : "rgba(16,24,40,.07)";
+    const gridSoft = dark ? "rgba(255,255,255,.032)" : "rgba(16,24,40,.05)";
+    const axisLine = dark ? "rgba(255,255,255,.09)" : "rgba(16,24,40,.13)";
+    const axisText = dark ? "rgba(140,140,150,.95)" : "rgba(90,100,114,.95)";
+    const crosshair = dark ? "rgba(255,255,255,.22)" : "rgba(16,24,40,.22)";
+    const warmLine = dark ? "#8ef0c0" : "#0f9d58";
+    const coolLine = dark ? "#ffb3b3" : "#d93025";
+
     /* horizontal grid + right-hand price labels */
-    c.strokeStyle = "rgba(255,255,255,.045)";
+    c.strokeStyle = grid;
     c.lineWidth = 1;
     c.font = "10px 'JetBrains Mono', ui-monospace, monospace";
     c.textAlign = "right";
@@ -4233,11 +4404,11 @@ const chart = {
       const val = lo + ((hi - lo) / rows) * i;
       const y = Math.round(padT + plotH - (i / rows) * plotH) + 0.5;
       c.beginPath(); c.moveTo(padL, y); c.lineTo(W - padR, y); c.stroke();
-      c.fillStyle = "rgba(140,140,150,.95)";
+      c.fillStyle = axisText;
       c.fillText(fmtPrice(val, state.market), W - padR + 48, clamp(y, 8, H - 18));
     }
     /* a solid edge marks the price gutter, like the reference axis */
-    c.strokeStyle = "rgba(255,255,255,.09)";
+    c.strokeStyle = axisLine;
     c.beginPath(); c.moveTo(Math.round(W - padR) + 0.5, padT); c.lineTo(Math.round(W - padR) + 0.5, padT + plotH); c.stroke();
 
     /* vertical grid + time labels along the bottom */
@@ -4245,7 +4416,7 @@ const chart = {
     c.textBaseline = "alphabetic";
     for (let i = 0; i <= 4; i++) {
       const x = Math.round(padL + (plotW / 4) * i) + 0.5;
-      c.strokeStyle = "rgba(255,255,255,.032)";
+      c.strokeStyle = gridSoft;
       c.beginPath(); c.moveTo(x, padT); c.lineTo(x, padT + plotH); c.stroke();
       const ep = this.epochs || [];
       const t = ep.length ? ep[clamp(Math.round((ep.length - 1) * (i / 4)), 0, ep.length - 1)] : null;
@@ -4254,7 +4425,7 @@ const chart = {
         const hh = String(d.getHours()).padStart(2, "0");
         const mm = String(d.getMinutes()).padStart(2, "0");
         const ss = String(d.getSeconds()).padStart(2, "0");
-        c.fillStyle = "rgba(120,120,130,.95)";
+        c.fillStyle = axisText;
         const label = hh + ":" + mm + ":" + ss;
         const half = c.measureText(label).width / 2 + 2;
         c.fillText(label, clamp(x, padL + half, W - padR - half), H - 6);
@@ -4264,7 +4435,7 @@ const chart = {
     const rising = pts[pts.length - 1] >= pts[0];
     /* the reference draws a neutral line and lets the fill carry the tone;
        we keep a subtle green/red tint so direction is readable at a glance */
-    const line = rising ? "#8ef0c0" : "#ffb3b3";
+    const line = rising ? warmLine : coolLine;
 
     /* dotted lead-in to the latest price, like the reference chart */
     const lx = xOf(pts.length - 1), ly = yOf(pts[pts.length - 1]);
@@ -4315,7 +4486,7 @@ const chart = {
       const hx = xOf(idx), hy = yOf(pts[idx]);
       c.save();
       c.setLineDash([3, 3]);
-      c.strokeStyle = "rgba(255,255,255,.22)";
+      c.strokeStyle = crosshair;
       c.beginPath(); c.moveTo(hx, padT); c.lineTo(hx, padT + plotH); c.stroke();
       c.beginPath(); c.moveTo(padL, hy); c.lineTo(W - padR, hy); c.stroke();
       c.restore();
@@ -4326,13 +4497,17 @@ const chart = {
       const tw = c.measureText(label).width + 10;
       c.fillStyle = "rgba(17,17,17,.95)";
       c.fillRect(clamp(hx + 6, padL, W - tw - padR), clamp(hy - 20, padT, H - 22), tw, 15);
-      c.strokeStyle = "rgba(255,255,255,.14)";
+      c.strokeStyle = axisLine;
       c.strokeRect(clamp(hx + 6, padL, W - tw - padR) + 0.5, clamp(hy - 20, padT, H - 22) + 0.5, tw, 15);
       c.fillStyle = "#e4e4e7";
       c.fillText(label, clamp(hx + 11, padL + 5, W - tw - padR + 5), clamp(hy - 9, padT + 11, H - 11));
     }
   }
 };
+
+/* The theme switcher repaints the canvas through this hook (the chart object is
+   not reachable from that scope). */
+window.__tfRepaintChart = () => { try { chart.draw(); } catch (_) {} };
 
 /* Pointer + zoom wiring for the chart workspace. */
 function initChartWorkspace() {
@@ -4403,6 +4578,60 @@ function renderTickPanel(sym) {
 
 /* The strip under the chart: one cell per digit with its share of the window.
    It doubles as the barrier picker, which is why it lives on the chart. */
+/* ---------------------------------------------------------------------------
+   Deriv's published last-digit percentages for the synthetic indices.
+   These are the numbers deriv.com shows next to each digit when you build a
+   digit contract, and they are the same for every tick because each tick is an
+   independent draw. Returns null for markets Deriv does not publish a table for
+   (the caller then falls back to the live sample from the tick buffer).
+   --------------------------------------------------------------------------- */
+function derivDigitTable(sym) {
+  const m = String(sym || "");
+  /* 1s and 2s indices share the uniform table; everything else in this
+     terminal is a standard volatility index on the same basis. */
+  if (/^(R_10|R_25|R_50|R_75|R_100)$/.test(m)) {
+    return [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
+  }
+  if (/^1HZ(10|25|50|75|100)V$/.test(m)) {
+    return [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
+  }
+  return null;
+}
+
+/* Paint the percentages under each digit of the prediction grid.
+
+   Deriv's synthetics are uniform: every digit is a 10% draw, which is the
+   number deriv.com quotes when you build a digit contract. That flat 10% is
+   useless for reading a market, so each cell shows the observed share over the
+   analysis window — the same arithmetic Deriv's own digit tools use — and the
+   theoretical 10% is the fallback before there are enough ticks. */
+function renderDigitPercents() {
+  const table = derivDigitTable(state.market);
+  const grid = $id("digitPick");
+  if (!grid) return;
+  const st = digitStats(Markets.digits(state.market, state.analysisWindow));
+  const enough = st.n >= 20;
+  grid.querySelectorAll("button[data-d]").forEach(b => {
+    const d = Number(b.dataset.d);
+    const cell = b.querySelector("s");
+    if (!cell) return;
+    const observed = enough ? st.shares[d] : null;
+    const value = observed != null ? observed : (table ? table[d] : null);
+    cell.textContent = value == null ? "—" : value.toFixed(1) + "%";
+    /* mark the digits currently running above the 10% baseline */
+    b.classList.toggle("heavy", value != null && value > 10);
+    b.title = "Digit " + d + " · " +
+      (observed != null
+        ? observed.toFixed(1) + "% of the last " + st.n + " ticks (theoretical 10.0%)"
+        : "theoretical 10.0% — waiting for ticks");
+  });
+  /* the caption states which number is on screen, so it is never ambiguous */
+  const cap = $id("digitPickHint");
+  if (cap) cap.textContent = enough
+    ? "observed % · last " + st.n + " ticks"
+    : "deriv.com theoretical 10.0%";
+}
+
 function renderDigitHeat() {
   const host = $id("digitStrip");
   if (!host) return;
@@ -4435,6 +4664,7 @@ function renderDigitHeat() {
     });
     host.appendChild(el);
   }
+  renderDigitPercents();
 }
 
 function setBarrierDigit(d) {
@@ -4595,6 +4825,8 @@ async function refreshProposal() {
     if (seq !== state.proposalSeq) return; // a newer quote is in flight
     state.proposal = upResp.proposal || null;
     state.proposalAlt = downResp.proposal || null;
+    if (state.proposal) state.proposal.__at = Date.now();
+    if (state.proposalAlt) state.proposalAlt.__at = Date.now();
     state.proposalAt = Date.now();
     renderProposal();
   } catch (err) {
@@ -4672,16 +4904,22 @@ function updateBuyState() {
     return;
   }
   if (stake < 0.35) { setPair(true, "The minimum stake is 0.35."); return; }
-  if (!state.proposal) { setPair(true, "Waiting for a live quote from Deriv…"); return; }
 
   const ct = $id("ct").value;
   const barrier = $id("barrier").value;
   if (ct === "DIGITOVER" && barrier === "9") { setPair(true, "Over 9 can never win — pick 0–8."); return; }
   if (ct === "DIGITUNDER" && barrier === "0") { setPair(true, "Under 0 can never win — pick 1–9."); return; }
 
+  /* A missing or stale quote must NOT disable the buttons: tapping one now
+     fetches a fresh price and buys it. Only genuine blockers disable them. */
   setPair(false, null);
-  const ask = num(state.proposal.ask_price);
-  hint.textContent = "One click buys " + money(ask) + " of " + (CONTRACT_LABEL[state.proposal.contract_type] || "") + " at the live price.";
+  if (state.proposal) {
+    const ask = num(state.proposal.ask_price);
+    hint.textContent = "One tap buys " + money(ask) + " of " +
+      (CONTRACT_LABEL[state.proposal.contract_type] || "") + " at the live price.";
+  } else {
+    hint.textContent = "Tap a direction to buy — the price is fetched the moment you tap.";
+  }
 }
 
 /* Wire ticket inputs -> re-quote */
@@ -4930,72 +5168,85 @@ async function instantBuy(direction) {
 
   const pair = contractPair($id("ct").value);
   const contractType = direction === "down" ? pair.down : pair.up;
-  const proposal = direction === "down" ? state.proposalAlt : state.proposal;
   const btn = direction === "down" ? $id("btnBuyAlt") : $id("btnBuy");
   const stake = num(state.stake != null ? state.stake : $id("stake").value, 0);
 
-  if (!proposal || proposal.contract_type !== contractType) {
-    toast("No quote yet", "The payout for this contract is still loading — try again in a moment.", "warn");
-    ticketDirty = true; refreshProposal();
-    return;
-  }
   if (state.balance != null && stake > num(state.balance)) {
     toast("Low balance", "Your stake " + money(stake) + " is above the " + money(state.balance) + " balance.", "err");
-    updateBuyState();
     return;
   }
-  /* Real money needs a deliberate double click, like Deriv's own trade button. */
-  if (state.accountType === "real" && !btn.classList.contains("armed")) {
-    btn.classList.add("armed");
-    btn.querySelector(".mt-dir-t").textContent = "Tap again";
-    setTimeout(() => {
-      if (!btn.classList.contains("armed")) return;
-      btn.classList.remove("armed");
-      btn.querySelector(".mt-dir-t").textContent = direction === "down" ? pair.downLabel : pair.upLabel;
-    }, 3200);
-    toast("Confirm real money", "Tap " + (CONTRACT_LABEL[contractType] || contractType) + " again within 3 seconds to buy with real funds.", "warn");
-    return;
-  }
-  btn.classList.remove("armed");
-  btn.querySelector(".mt-dir-t").textContent = direction === "down" ? pair.downLabel : pair.upLabel;
 
   buyInFlight = true;
-  const label = btn.querySelector(".mt-dir-p");
+  const label = btn ? btn.querySelector(".mt-dir-p") : null;
+  const titleEl = btn ? btn.querySelector(".mt-dir-t") : null;
+  const originalTitle = titleEl ? titleEl.textContent : "";
   const originalPct = label ? label.textContent : "";
-  [state.proposal, state.proposalAlt] = [null, null];
-  btn.classList.add("busy");
+  btn && btn.classList.add("busy");
   if (label) label.textContent = "buying…";
-  $id("btnBuy").disabled = true;
-  $id("btnBuyAlt").disabled = true;
+  if (titleEl) titleEl.textContent = "Sending…";
+  if ($id("btnBuy")) $id("btnBuy").disabled = true;
+  if ($id("btnBuyAlt")) $id("btnBuyAlt").disabled = true;
+
+  /* The quote may be seconds old (or missing entirely). Ask Deriv for a fresh
+     one right now and buy that, instead of dead-ending on a stale proposal. */
+  let proposal = direction === "down" ? state.proposalAlt : state.proposal;
+  const quoteIsFresh = proposal && proposal.contract_type === contractType &&
+    (Date.now() - (proposal.__at || 0) < 12000);
 
   try {
-    /* Send the price that was shown. Deriv rejects a stale price (PriceMoved)
-       instead of silently charging more. */
-    const payload = { buy: proposal.id, price: Number(proposal.ask_price).toFixed(2) };
-    const resp = await socket.request(payload, 25000, "buy");
+    if (!quoteIsFresh) {
+      if (titleEl) titleEl.textContent = "Pricing…";
+      const resp = await socket.request(ticketRequestFor(contractType), 15000, "proposal");
+      proposal = resp.proposal || null;
+      if (proposal) proposal.__at = Date.now();
+    }
+    if (!proposal) throw { code: "NO_PROPOSAL", message: "Deriv did not return a price for this contract." };
+
+    /* Send the price that was shown. Deriv rejects a stale price instead of
+       silently charging more; we retry once with a brand-new quote so a normal
+       market tick never looks like a failed trade. */
+    let resp = null;
+    let lastErr = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        resp = await socket.request(
+          { buy: proposal.id, price: Number(proposal.ask_price).toFixed(2) }, 25000, "buy");
+        break;
+      } catch (err) {
+        lastErr = err;
+        const moved = err && (err.code === "PriceMoved" || /price.*moved|rejected|expired/i.test(apiMessage(err)));
+        if (!moved || attempt === 1) throw err;
+        /* one silent re-quote, then buy again at the new price */
+        if (titleEl) titleEl.textContent = "Re-pricing…";
+        const again = await socket.request(ticketRequestFor(contractType), 15000, "proposal");
+        proposal = again.proposal;
+        if (!proposal) throw lastErr;
+      }
+    }
+    if (!resp || !resp.buy) throw lastErr || { message: "Deriv did not confirm the buy." };
+
     const c = resp.buy;
-    toast("Contract bought", (CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " + money(c.buy_price) + " → " + money(c.payout), "ok");
+    toast("Contract bought", (CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " +
+      money(c.buy_price) + " → " + money(c.payout), "ok");
     pushLog("buy", "Instant buy " + c.contract_id + " · " + money(c.buy_price) + " → " + money(c.payout));
     state.lastBuySide = direction;
     state.lastBuyType = c.contract_type;
     subscribeOpenContract(c.contract_id);
-    state.proposal = null; state.proposalAlt = null;
+    state.proposal = null;
+    state.proposalAlt = null;
     renderBalance();
     ticketDirty = true;
-    setTimeout(() => refreshProposal(), 600);
+    setTimeout(() => refreshProposal(), 500);
   } catch (err) {
-    const msg = apiMessage(err);
-    if (err && (err.code === "PriceMoved" || /price.*moved|rejected/i.test(msg))) {
-      toast("Price moved", "Deriv rejected that price — a fresh quote is loading, try once more.", "warn");
-      ticketDirty = true;
-      setTimeout(() => refreshProposal(), 200);
-    } else {
-      toast("Buy failed", msg, "err");
-    }
+    toast("Buy failed", apiMessage(err), "err");
+    pushLog("err", "Buy failed: " + apiMessage(err));
+    ticketDirty = true;
+    setTimeout(() => refreshProposal(), 300);
   } finally {
     buyInFlight = false;
-    btn.classList.remove("busy");
+    if (btn) btn.classList.remove("busy");
     if (label) label.textContent = originalPct;
+    if (titleEl) titleEl.textContent = originalTitle;
     updateBuyState();
   }
 }
@@ -5087,7 +5338,7 @@ function renderOpenContract() {
   const host = $("#openContract");
   const c = state.openContract;
   const hint = $("#openHint");
-  if (c) autoExpandPanel("open");
+  if (c) mtDrawerBadge();
   if (!state.auth) {
     host.innerHTML = '<div class="empty">Log in to trade. Open positions appear here.</div>';
     hint.textContent = "Not logged in";
@@ -5217,6 +5468,50 @@ function shortcodeType(code) {
   const parts = String(code).split("_");
   for (const p of parts) if (map[p.toUpperCase()]) return map[p.toUpperCase()];
   return parts[2] || code;
+}
+
+/* ---------------------------------------------------------------------------
+   Bottom drawer: open contract + recent trades in ONE panel that slides in
+   from the left edge on demand. Nothing occupies the trading view by default,
+   so the chart, the digits and the ticket all fit on one screen.
+   --------------------------------------------------------------------------- */
+function mtDrawerOpen(open) {
+  const drawer = $id("mtDrawer");
+  const back = $id("mtDrawerBack");
+  const tab = $id("mtDrawerTab");
+  if (!drawer) return;
+  const on = open == null ? !drawer.classList.contains("open") : !!open;
+  drawer.classList.toggle("open", on);
+  if (back) back.classList.toggle("show", on);
+  if (tab) tab.setAttribute("aria-expanded", on ? "true" : "false");
+  drawer.setAttribute("aria-hidden", on ? "false" : "true");
+  document.body.classList.toggle("drawer-open", on);
+  if (on) renderOpenContract();
+}
+
+/* The tab shows a dot when a contract is live, so the drawer stays out of the
+   way but still tells you something is running. */
+function mtDrawerBadge() {
+  const badge = $id("mtDrawerCount");
+  const tab = $id("mtDrawerTab");
+  if (!badge) return;
+  const live = !!state.openContract;
+  badge.classList.toggle("hidden", !live);
+  if (tab) tab.classList.toggle("live", live);
+  if (live) badge.textContent = "live";
+}
+
+function initDrawer() {
+  const tab = $id("mtDrawerTab");
+  const close = $id("mtDrawerClose");
+  const back = $id("mtDrawerBack");
+  if (tab) tab.addEventListener("click", () => mtDrawerOpen());
+  if (close) close.addEventListener("click", () => mtDrawerOpen(false));
+  if (back) back.addEventListener("click", () => mtDrawerOpen(false));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && $id("mtDrawer") && $id("mtDrawer").classList.contains("open")) mtDrawerOpen(false);
+  });
+  mtDrawerBadge();
 }
 
 function renderTrades() {
@@ -5959,7 +6254,7 @@ $("#btnBotStart").addEventListener("click", async () => {
     );
     if (!ok) { pushLog("warn", "Start cancelled on the real account."); return; }
   } else if (state.accountType === "demo") {
-    pushLog("sys", "Starting on the demo account — virtual funds only.");
+    pushLog("sys", "Starting on a virtual account — no real funds.");
   }
 
   // Reset session accounting
@@ -6248,40 +6543,9 @@ function botOnContractClosed(c) {
    --------------------------------------------------------------------------- */
 $("#btnLogin").addEventListener("click", startLogin);
 $("#accountPickDisconnect").addEventListener("click", disconnectFromAccountPicker);
-$("#btnToken").addEventListener("click", openTokenDialog);
-$("#patCancel").addEventListener("click", closeTokenDialog);
-$("#patBack").addEventListener("click", e => { if (e.target.id === "patBack") closeTokenDialog(); });
-$("#patInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#patFind").click(); } });
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && !$("#patBack").classList.contains("hidden")) closeTokenDialog();
-});
-$("#patFind").addEventListener("click", async () => {
-  const input = $("#patInput");
-  const btn = $("#patFind");
-  const token = input ? input.value.trim() : "";
-  clearPatError();
-  $("#patAccounts").replaceChildren();
-  if (!token) { showPatError("Paste an API token first."); return; }
-
-  if (!isPat(token)) {
-    showPatError("Only pat_ tokens are accepted here. For an OAuth login, use the Log in button.");
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = "Finding accounts…";
-  try {
-    const accounts = await fetchOptionsAccounts(token, "pat");
-    if (!accounts.length) throw { code: "NoAccounts", message: "No active Options accounts were returned for this token." };
-    renderOptionsAccounts(accounts, token, "pat");
-    btn.disabled = false;
-    btn.textContent = "Find accounts";
-  } catch (err) {
-    showPatError((err && err.message) ? err.message : "Deriv rejected this token.");
-    btn.disabled = false;
-    btn.textContent = "Find accounts";
-  }
-});
+/* API-token login is intentionally retired: OAuth PKCE is the only way in, so
+   there is no second credential path to explain or support. */
+/* The API-token dialog is gone: OAuth PKCE is the only login path. */
 $("#btnLogout").addEventListener("click", async () => {
   if (state.bot.running || DBots.running) {
     const ok = await confirmDialog("Stop the bot?", "A bot is running. Logging out stops it first.", "Stop and log out", true);
@@ -6356,10 +6620,10 @@ async function boot() {
   renderBotStatus();
   renderBotStats();
   DBots.render();
-  pushLog("sys", "Terminal ready · app id " + (ACTIVE_APP_ID || "not configured") + " · OAuth PKCE and API token supported");
+  pushLog("sys", "Terminal ready · app id " + (ACTIVE_APP_ID || "not configured") + " · OAuth PKCE login");
   if (!APP_ID_IS_REAL) {
     setBanner("warn",
-      "<b>OAuth login not configured.</b> Live market data works. Register an OAuth 2.0 application and set its app id as <span class='mono'>APP_ID</span>, or use the <b>API token</b> button with a PAT-type application.");
+      "<b>OAuth login not configured.</b> Live market data works. Register an OAuth 2.0 application and set its app id as <span class='mono'>APP_ID</span> to enable trading.");
   }
 
   // 1) Complete any OAuth callback or restore a stored Options session before opening the public socket.
@@ -7440,8 +7704,58 @@ const DBots = {
       prediction: {
         label: "Prediction", kind: "digit", value: cfg.barrier, disabled: !digit,
         note: digit ? "The digit the barrier is compared against." : "Only digit contracts use a prediction."
+      },
+      /* Money management: these are runner settings, persisted per bot next to
+         the canvas layout, so they survive a reload like the XML itself. */
+      takeprofit: {
+        label: "Take profit", kind: "number", value: this.money.tp, min: 0, step: 0.5,
+        note: "Stop the bot once session profit reaches this. 0 disables it."
+      },
+      stoploss: {
+        label: "Stop loss", kind: "number", value: this.money.sl, min: 0, step: 0.5,
+        note: "Stop the bot once session loss reaches this. 0 disables it."
+      },
+      martingale: {
+        label: "Martingale", kind: "toggle", value: !!this.money.martingale,
+        note: "Multiply the stake after each loss, reset on a win."
+      },
+      multiplier: {
+        label: "Multiplier", kind: "number", value: this.money.mult, min: 1.05, max: 5, step: 0.05,
+        note: "Each loss multiplies the next stake by this. Growth is fast."
+      },
+      maxsteps: {
+        label: "Max steps", kind: "number", value: this.money.maxSteps, min: 1, max: 8, step: 1,
+        note: "How many rungs the ladder may climb before the bot stops."
+      },
+      maxloss: {
+        label: "Max losses", kind: "number", value: this.money.maxLoss, min: 1, max: 20, step: 1,
+        note: "Stop after this many consecutive losses."
       }
     };
+  },
+
+  /* Runner money settings per bot id. Not part of the XML: Deriv keeps these
+     in the bot's own configuration, and so do we. */
+  moneyFor(id) {
+    const all = this.moneyStore || (this.moneyStore = {});
+    return Object.assign({ tp: 5, sl: 10, martingale: false, mult: 2, maxSteps: 3, maxLoss: 3 }, all[id] || {});
+  },
+
+  saveMoney(patch) {
+    if (!this.selectedId) return;
+    this.moneyStore = this.moneyStore || {};
+    this.moneyStore[this.selectedId] = Object.assign(this.moneyFor(this.selectedId), patch || {});
+    this.money = this.moneyFor(this.selectedId);
+    this.saveMoneyStore();
+  },
+
+  saveMoneyStore() {
+    try { localStorage.setItem("tickforge.dbots.money.v1", JSON.stringify(this.moneyStore || {})); } catch (_) {}
+  },
+
+  loadMoneyStore() {
+    try { this.moneyStore = JSON.parse(localStorage.getItem("tickforge.dbots.money.v1") || "{}") || {}; }
+    catch (_) { this.moneyStore = {}; }
   },
 
   stakeOf(cfg) {
@@ -7458,6 +7772,8 @@ const DBots = {
     const map = {
       market: ["trade_definition_market", "SYMBOL_LIST", value, "market"],
       contract: ["trade_definition_contracttype", "TYPE_LIST", value, "contract"],
+      /* the purchase block can name its own contract, and the parser lets it
+         win over TYPE_LIST — write both so a change always sticks */
       candle: ["trade_definition_candleinterval", "CANDLEINTERVAL_LIST", value, "candle"],
       restartbuy: ["trade_definition_restartbuysell", "TIME_MACHINE_ENABLED", value ? "TRUE" : "FALSE", "restartbuy"],
       restarterror: ["trade_definition_restartonerror", "RESTARTONERROR", value ? "TRUE" : "FALSE", "restarterror"],
@@ -7510,9 +7826,43 @@ const DBots = {
       return true;
     };
 
-    if (field === "stake") {
+    /* Money management lives in this terminal's per-bot settings, not in the
+       XML, so it is handled before any document work. */
+    const MONEY_FIELDS = { takeprofit: "tp", stoploss: "sl", martingale: "martingale", multiplier: "mult", maxsteps: "maxSteps", maxloss: "maxLoss" };
+    if (MONEY_FIELDS[field]) {
+      const key = MONEY_FIELDS[field];
+      let v = value;
+      if (key === "martingale") v = !!value;
+      else if (key === "tp" || key === "sl") v = Math.max(0, num(value, 0));
+      else if (key === "mult") v = clamp(num(value, 2), 1.05, 5);
+      else if (key === "maxSteps") v = clamp(Math.round(num(value, 3)), 1, 8);
+      else if (key === "maxLoss") v = clamp(Math.round(num(value, 3)), 1, 20);
+      this.saveMoney({ [key]: v });
+      /* mirror into the side panel so both views agree */
+      const mirror = { tp: "dbotsTP", sl: "dbotsSL" }[key];
+      if (mirror && $id(mirror)) $id(mirror).value = String(v);
+      this.render();
+      this.log("sys", "Set " + field + " to " + v);
+      return;
+    }
+
+    /* Contract type: the trade_definition block names the family, but a
+       `purchase` block can carry its own PURCHASE_LIST and the parser lets
+       that win. Write both, so the pill and the runner agree. */
+    if (field === "contract") {
+      if (!writeField("trade_definition_contracttype", "TYPE_LIST", value)) return;
+      writeField("purchase", "PURCHASE_LIST", value);
+    } else if (field === "stake") {
       const key = Object.keys((this.cfg && this.cfg.vars) || {}).find(k => /^(stake|stakeamount|amount)$/i.test(k)) || "Stake";
       if (!writeVar(key, value)) return;
+    } else if (field === "takeprofit" || field === "stoploss") {
+      /* TP / SL live as variables in the initialization stack; create them if
+         the file never declared one, so the user can always set them here. */
+      const name = field === "takeprofit" ? "TakeProfit" : "StopLoss";
+      const existing = Object.keys((this.cfg && this.cfg.vars) || {}).find(k => k.toLowerCase() === name.toLowerCase());
+      if (!writeVar(existing || name, value)) {
+        if (!this.addVar(name, value)) return;
+      }
     } else if (field === "duration" || field === "prediction") {
       const opts = Array.from(doc.getElementsByTagName("block")).find(el => el.getAttribute("type") === "trade_definition_tradeoptions");
       if (!opts) return;
@@ -7552,6 +7902,77 @@ const DBots = {
     if (this.cfg) this.applyDefaults();
     this.render();
     this.log("sys", "Edited " + field + " → " + value + " (" + rec.name + ")");
+  },
+
+  /** Create a variables_set block for `name` in the initialization stack.
+      Deriv bots declare Stake / TakeProfit / StopLoss there; when an imported
+      file is missing one, the canvas can still add it. */
+  addVar(name, value) {
+    const rec = this.selected();
+    if (!rec) return false;
+    const parser = new DOMParser();
+    let doc;
+    try { doc = parser.parseFromString(rec.xml, "application/xml"); } catch (_) { return false; }
+    if (doc.getElementsByTagName("parsererror")[0]) return false;
+
+    /* the variables block lists every variable the workspace knows about */
+    let varsBlock = Array.from(doc.getElementsByTagName("block")).find(el => el.getAttribute("type") === "variables");
+    if (!varsBlock) {
+      const top = Array.from(doc.getElementsByTagName("block")).find(el => el.parentNode === doc.documentElement || el.parentNode.nodeName === "xml");
+      if (!top) return false;
+      varsBlock = doc.createElement("block");
+      varsBlock.setAttribute("type", "variables");
+      varsBlock.setAttribute("id", "b_vars_" + Date.now().toString(36));
+      top.parentNode.insertBefore(varsBlock, top);
+    }
+    let varEl = Array.from(varsBlock.getElementsByTagName("variable")).find(v => String(v.textContent).toLowerCase() === name.toLowerCase());
+    if (!varEl) {
+      varEl = doc.createElement("variable");
+      varEl.setAttribute("id", "v_" + name.toLowerCase() + "_" + Math.random().toString(36).slice(2, 6));
+      varEl.textContent = name;
+      varsBlock.appendChild(varEl);
+    }
+
+    /* the initialization tree is whatever block sits directly under <xml> */
+    const rootBlocks = Array.from(doc.documentElement.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "block");
+    const initHost = rootBlocks.find(b => b.getAttribute("type") === "variables_set") || rootBlocks[0];
+    if (!initHost) return false;
+
+    const block = doc.createElement("block");
+    block.setAttribute("type", "variables_set");
+    block.setAttribute("id", "b_init_" + name.toLowerCase() + "_" + Math.random().toString(36).slice(2, 6));
+    const f = doc.createElement("field");
+    f.setAttribute("name", "VAR");
+    f.setAttribute("id", varEl.getAttribute("id"));
+    f.textContent = name;
+    block.appendChild(f);
+    const val = doc.createElement("value");
+    val.setAttribute("name", "VALUE");
+    const mn = doc.createElement("block");
+    mn.setAttribute("type", "math_number");
+    const nf = doc.createElement("field");
+    nf.setAttribute("name", "NUM");
+    nf.textContent = String(value);
+    mn.appendChild(nf);
+    val.appendChild(mn);
+    block.appendChild(val);
+
+    /* walk to the end of the initialization chain and append */
+    let tail = initHost;
+    while (true) {
+      const nx = Array.from(tail.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "next")[0];
+      if (!nx) break;
+      const nb = Array.from(nx.childNodes).filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === "block")[0];
+      if (!nb) break;
+      tail = nb;
+    }
+    const nextEl = doc.createElement("next");
+    nextEl.appendChild(block);
+    tail.appendChild(nextEl);
+
+    rec.xml = new XMLSerializer().serializeToString(doc);
+    this.save();
+    return true;
   },
 
   /* ---------------- library ---------------- */
@@ -7602,6 +8023,7 @@ const DBots = {
       toast("Could not read this bot", (err && err.message) || "Unknown parse error.", "err");
     }
     if (this.cfg) this.applyDefaults();
+    this.money = this.moneyFor(this.selectedId);
     this.render();
     this.loadCanvasState();
     this.applyCanvasState();
@@ -7669,7 +8091,13 @@ const DBots = {
   },
 
   /** The live value of the file's Stake variable, or the panel stake. */
+  /* The stake for the next purchase. With martingale on, the ladder value
+     wins over the XML variable so a recovery step is never silently dropped. */
   stakeValue() {
+    if (this.martingale) {
+      const s = Number(this.nextStake);
+      if (Number.isFinite(s) && s >= 0.35) return Math.min(s, 1e6);
+    }
     const key = Object.keys(this.vars || {}).find(k => /^(stake|stakeamount|amount)$/i.test(k));
     if (!key) return this.stake;
     const v = Number(this.vars[key]);
@@ -7843,14 +8271,24 @@ const DBots = {
     }
     if (!cfg.market) { toast("Market unsupported", cfg.symbol ? ("“" + cfg.symbol + "” is not streamed by this terminal.") : "The bot has no market.", "warn"); return; }
 
-    const stake = Math.max(0.35, num($id("dbotsStake").value, 1));
-    const tp = Math.max(0, num($id("dbotsTP").value, 0));
-    const sl = Math.max(0, num($id("dbotsSL").value, 0));
+    /* Run settings come from one place: the side panel's Setup tab. The canvas
+       money-management block writes into the same store, so both stay in step. */
+    const money = this.moneyFor(this.selectedId);
+    const stake = Math.max(0.35, num($id("dbotsStake").value, money.stake || 1));
+    const tp = Math.max(0, num($id("dbotsTP").value, money.tp));
+    const sl = Math.max(0, num($id("dbotsSL").value, money.sl));
     const cooldown = Math.max(0, num($id("dbotsCooldown").value, 0));
+    const martingale = !!money.martingale;
+    const mult = clamp(num(money.mult, 2), 1.05, 5);
+    const maxSteps = clamp(Math.round(num(money.maxSteps, 3)), 1, 8);
+    const maxLoss = clamp(Math.round(num(money.maxLoss, 3)), 1, 20);
     if (state.balance != null && stake > num(state.balance)) { toast("Low balance", "The stake is larger than the available balance.", "err"); return; }
 
     this.cfg = cfg;
     this.stake = stake; this.tp = tp; this.sl = sl; this.cooldown = cooldown;
+    this.baseStake = stake;
+    this.martingale = martingale; this.mult = mult; this.maxSteps = maxSteps; this.maxLoss = maxLoss;
+    this.step = 0; this.nextStake = stake; this.lossStreak = 0;
     this.purchaseContract = cfg.purchaseContract || cfg.contract;
     this.vars = Object.assign({}, cfg.vars);
     /* The panel overrides the file's own Stake / TakeProfit / StopLoss. */
@@ -7873,7 +8311,8 @@ const DBots = {
       this.log("sys", "Started " + rec.name + " · " + MARKETS[cfg.market].name + " · " +
         (CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) +
         (DIGIT_CONTRACTS.indexOf(this.purchaseContract) >= 0 ? " barrier " + cfg.barrier : "") +
-        " · stake " + money(stake) + " · TP " + (tp ? money(tp) : "none") + " · SL " + (sl ? money(sl) : "none"));
+        " · stake " + money(stake) + " · TP " + (tp ? money(tp) : "none") + " · SL " + (sl ? money(sl) : "none") +
+        (martingale ? " · martingale ×" + mult + " max " + maxSteps : ""));
       Markets.ensure(cfg.market).then(() => {
         this.log("sys", "Streaming " + MARKETS[cfg.market].name + " ticks. Waiting for an entry…");
       }).catch(err => {
@@ -7931,6 +8370,7 @@ const DBots = {
     if (Date.now() < this.cooldownUntil) return;
     if (this.tp > 0 && this.pl >= this.tp) { this.stop("take profit reached (" + money(this.pl) + ")."); return; }
     if (this.sl > 0 && this.pl <= -Math.abs(this.sl)) { this.stop("stop loss reached (" + money(this.pl) + ")."); return; }
+    if (this.maxLoss && this.lossStreak >= this.maxLoss) { this.stop(this.maxLoss + " consecutive losses."); return; }
     if (!cfg.trees.before || !cfg.trees.before.statements.BEFORE_PURCHASE_STACK) return;
 
     const rt = this.runtime(last);
@@ -8019,6 +8459,33 @@ const DBots = {
     this.pl += profit;
     this.totalProfit = this.pl;
     if (won) this.wins++; else this.losses++;
+
+    /* money management: the ladder resets on a win and climbs on a loss */
+    if (won) {
+      this.lossStreak = 0;
+      this.step = 0;
+      this.nextStake = this.baseStake;
+    } else {
+      this.lossStreak = (this.lossStreak || 0) + 1;
+      if (this.martingale) {
+        this.step = (this.step || 0) + 1;
+        if (this.step > this.maxSteps) {
+          this.stop("martingale ladder exhausted (" + this.maxSteps + " steps).");
+          return;
+        }
+        this.nextStake = Math.min(this.baseStake * Math.pow(this.mult, this.step), 1e6);
+        this.log("warn", "Martingale step " + this.step + " / " + this.maxSteps + " · next stake " + money(this.nextStake));
+        if (state.balance != null && this.nextStake > num(state.balance)) {
+          this.stop("the next stake " + money(this.nextStake) + " exceeds the balance.");
+          return;
+        }
+      }
+      if (this.maxLoss && this.lossStreak >= this.maxLoss) {
+        this.stop(this.maxLoss + " consecutive losses.");
+        return;
+      }
+    }
+
     /* Refresh the "last digit" the after_purchase blocks read. */
     const buf = cfg ? Markets.buf(cfg.market) : null;
     if (buf && buf.ticks.length) this.lastSeenTick = buf.ticks[buf.ticks.length - 1];
@@ -8077,7 +8544,8 @@ const DBots = {
 
     if (!cfg) {
       ["blkMarket","blkTradeType","blkContract","blkCandle","blkRestartBuy","blkRestartErr",
-       "blkDuration","blkStake","blkPrediction"].forEach(id => setTxt(id, "—"));
+       "blkDuration","blkStake","blkPrediction","blkTP","blkSL","blkMart","blkMult","blkSteps","blkMaxLoss"]
+        .forEach(id => setTxt(id, "—"));
       ["blkInit","blkBefore","blkDuring","blkAfter"].forEach(id => {
         const el = $id(id);
         if (el) el.innerHTML = '<span class="blk-empty">No strategy loaded</span>';
@@ -8096,16 +8564,29 @@ const DBots = {
     setTxt("blkRestartBuy", cfg.restartBuy ? "true" : "false", false);
     setTxt("blkRestartErr", cfg.restartOnError ? "true" : "false", false);
 
+    /* 1b. money management (this terminal's own settings) */
+    const mo = this.moneyFor(this.selectedId);
+    setTxt("blkTP", mo.tp ? money(mo.tp) : "off", !!mo.tp);
+    setTxt("blkSL", mo.sl ? money(mo.sl) : "off", !!mo.sl);
+    setTxt("blkMart", mo.martingale ? "on" : "off", !!mo.martingale);
+    setTxt("blkMult", "×" + mo.mult, mo.martingale);
+    setTxt("blkSteps", mo.maxSteps, mo.martingale);
+    setTxt("blkMaxLoss", mo.maxLoss, false);
+
     /* 2. initialization: every variables_set in the file */
     const init = $id("blkInit");
     if (init) {
       const keys = Object.keys(cfg.vars || {});
       init.innerHTML = keys.length
         ? keys.map(k => {
-            const editable = /^(stake|stakeamount|amount)$/i.test(k);
+            const kLow = String(k).toLowerCase();
+            const editable = /^(stake|stakeamount|amount)$/.test(kLow) ? "stake"
+              : /^(takeprofit|tp)$/.test(kLow) ? "takeprofit"
+              : /^(stoploss|sl)$/.test(kLow) ? "stoploss"
+              : "";
             return '<div class="blk-row"><span class="blk-l">' + esc(k) + "</span>" +
               (editable
-                ? '<button class="blk-v" data-edit="stake" type="button">' + esc(cfg.vars[k]) + "</button>"
+                ? '<button class="blk-v" data-edit="' + editable + '" type="button">' + esc(cfg.vars[k]) + "</button>"
                 : '<span class="blk-v">' + esc(cfg.vars[k]) + "</span>") +
               "</div>";
           }).join("")
@@ -8407,6 +8888,7 @@ const DBots = {
 
   init() {
     this.load();
+    this.loadMoneyStore();
     const drop = $id("dbotsDrop");
     const input = $id("dbotsFile");
     if (drop && input) {
@@ -8559,6 +9041,51 @@ setInterval(() => {
 }, 5000);
 
 DBots.init();
+initDrawer();
+
+/* ---------------------------------------------------------------------------
+   THEME — dark by default, light on request, remembered per browser.
+   --------------------------------------------------------------------------- */
+const THEME_KEY = "tickforge.theme.v1";
+
+function applyTheme(name) {
+  const light = name === "light";
+  document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", light ? "#f5f6f8" : "#070707");
+  const btn = $id("themeToggle");
+  if (btn) {
+    btn.setAttribute("aria-label", light ? "Switch to dark theme" : "Switch to light theme");
+    btn.setAttribute("title", light ? "Dark theme" : "Light theme");
+    btn.classList.toggle("is-light", light);
+  }
+  /* the chart draws with canvas colours, so it has to be repainted. It is a
+     module-scoped const, so reach it through the documented theme hook that
+     the chart registers for itself. */
+  if (typeof window.__tfRepaintChart === "function") { try { window.__tfRepaintChart(); } catch (_) {} }
+}
+
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+}
+
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch (_) {}
+  /* No stored choice: follow the operating system the first time. */
+  if (!saved) {
+    try { saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; }
+    catch (_) { saved = "dark"; }
+  }
+  applyTheme(saved);
+  const btn = $id("themeToggle");
+  if (btn) btn.addEventListener("click", () => {
+    const next = currentTheme() === "light" ? "dark" : "light";
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
+  });
+}
+initTheme();
 
 </script>
 </body>

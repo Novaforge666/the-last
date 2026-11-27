@@ -158,6 +158,12 @@ function seedDigits(sym, digits) {
     ev(`switchTab(${JSON.stringify(tab)})`);
     check(`${tab} tab opens exactly one active pane`, ev(`state.tab===${JSON.stringify(tab)} && document.querySelectorAll('.tabpane.active').length===1 && document.getElementById('pane-${tab}').classList.contains('active')`));
   }
+  ev(`document.getElementById('tab-manual').click(); document.getElementById('tab-manual').focus(); document.getElementById('tab-manual').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));`);
+  check('tab keyboard navigation selects, focuses and labels the next panel', ev(`state.tab==='bots' && document.activeElement.id==='tab-bots' && document.getElementById('tab-bots').getAttribute('aria-selected')==='true' && document.getElementById('pane-bots').getAttribute('aria-labelledby')==='tab-bots' && document.getElementById('tab-manual').tabIndex===-1`));
+  ev(`renderHotCold(digitStats([]))`);
+  check('empty analysis does not invent hot and cold digits', ev(`document.getElementById('hotDigits').textContent.includes('Waiting') && document.getElementById('coldDigits').textContent.includes('Waiting')`));
+  ev(`window.invalidCount=Markets.buf('R_50').ticks.length; Markets.push('R_50',{epoch:123,quote:'not-a-price',pip_size:2})`);
+  check('invalid tick quotes do not enter the live buffer', ev(`Markets.buf('R_50').ticks.length===invalidCount`));
   ev(`toast('Test','Non-blocking','info');`);
   check('notifications are click-through', ev(`getComputedStyle(document.getElementById('toasts')).pointerEvents==='none'`));
   check('notifications stay capped', ev(`toast('1','x');toast('2','x');toast('3','x');document.getElementById('toasts').children.length<=3`));
@@ -169,7 +175,7 @@ function seedDigits(sym, digits) {
   check('analysis window controls stay in sync across tabs', ev(`document.querySelector('#winSeg button[data-win="250"]').classList.contains('active') && document.querySelector('#stripSeg button[data-win="250"]').classList.contains('active')`));
   ev(`state.market='R_50'; window.botCalled=[]; window.oldDriver=botOnTick; botOnTick=sym=>botCalled.push(sym); state.bot.running=true; Markets.push('R_100',{epoch:1234567,quote:'12.34',pip_size:2}); state.bot.running=false; botOnTick=oldDriver;`);
   check('Auto Bot receives ticks from its own market when chart shows another', ev(`botCalled.includes('R_100')`));
-  ev(`state.market='R_50'; state.signals=[{def:{id:'M7',type:'DIGITMATCH',barrier:7,label:'Matches 7'},entry:true,rate:15,delta:0,trend:'flat',strength:'weak',why:'test'}]; renderSignalCards();
+  ev(`switchTab('signals'); state.market='R_50'; state.signals=[{def:{id:'M7',type:'DIGITMATCH',barrier:7,label:'Matches 7'},entry:true,rate:15,delta:0,trend:'flat',strength:'weak',why:'test'}]; renderSignalCards();
       window.originalButton=document.querySelector('button[data-act="runbot"]'); originalButton.focus(); state.signals[0].rate=16; renderSignalCards();`);
   check('live signal updates preserve the entry button and focus', ev(`originalButton===document.querySelector('button[data-act="runbot"]') && document.activeElement===originalButton`));
   // A stop while awaiting the quote must prevent a later buy.
@@ -189,6 +195,8 @@ function seedDigits(sym, digits) {
   check('Auto Bot tracks a late buy after stopping', ev(`!state.bot.running && state.bot.pendingContract===811`));
   ev(`botWatch({proposal_open_contract:{contract_id:812,is_sold:1,profit:1,status:'won',buy_price:1,payout:2}})`);
   check('Auto Bot ignores settlement for another contract', ev(`state.bot.pendingContract===811`));
+  ev(`state.bot.running=true; botWatch({proposal_open_contract:{contract_id:811,is_sold:1,profit:null,status:'lost'}})`);
+  check('Auto Bot stops and stays locked when settlement profit is missing', ev(`!state.bot.running && state.bot.pendingContract===811`));
   ev(`botWatch({proposal_open_contract:{contract_id:811,is_sold:1,profit:1,status:'won',buy_price:1,payout:2}})`);
   check('Auto Bot releases stopped contract after settlement', ev(`state.bot.pendingContract==null && !state.bot.running`));
   // New socket must not be poisoned by an old connection's late onclose.
@@ -239,6 +247,8 @@ function seedDigits(sym, digits) {
   check('imported DBot tracks a buy that resolves after stop', ev(`!DBots.running && DBots.pending===994`));
   ev(`dWatch({proposal_open_contract:{contract_id:995,is_sold:1,profit:1,status:'won',buy_price:1,payout:2}})`);
   check('DBot ignores settlement for another contract', ev(`DBots.pending===994`));
+  ev(`DBots.running=true; dWatch({proposal_open_contract:{contract_id:994,is_sold:1,profit:null,status:'lost'}})`);
+  check('DBot stops and stays locked when settlement profit is missing', ev(`!DBots.running && DBots.pending===994`));
   ev(`dWatch({proposal_open_contract:{contract_id:994,is_sold:1,profit:1,status:'won',buy_price:1,payout:2}})`);
   check('imported DBot releases its stopped contract on settlement', ev(`DBots.pending==null && !DBots.running`));
   ev(`Markets.data.delete('1HZ25V'); window.retryHistoryCount=0;
@@ -279,6 +289,29 @@ function seedDigits(sym, digits) {
   check('an exactly tied distribution has no misleading high or low color', ev(`document.querySelectorAll('#digitStrip .hot, #digitStrip .cold').length===0 && document.querySelectorAll('#digitStrip .current').length===1`));
   ev(`Markets.push('R_50',{epoch:2200000110,quote:12.01,pip_size:2}); Markets.push('R_50',{epoch:2200000111,quote:12.02,pip_size:2}); renderDigitHeat()`);
   check('all digits tied for the most or least occurrences are highlighted', ev(`document.querySelectorAll('#digitStrip .hot').length===2 && document.querySelectorAll('#digitStrip .cold').length===8`));
+  // Definite trade errors should stop automation rather than retry every tick.
+  ev(`window.savedPlaceBot=placeBotTrade; placeBotTrade=()=>Promise.reject({message:'unsupported contract'});
+      state.bot.running=true; state.bot.busy=false; state.bot.pendingContract=null; state.bot.runId=555;
+      state.bot.cfg={market:'R_50',continuous:true,tp:0,sl:0,maxLoss:3}; state.bot.armed=true; state.bot.armedContract='DIGITOVER'; state.bot.lossStreak=0; state.bot.nextStake=1;
+      botOnTick('R_50')`);
+  await sleep(10);
+  check('Auto Bot stops rather than retrying a rejected trade each tick', ev(`!state.bot.running`));
+  ev(`placeBotTrade=savedPlaceBot; state.bot.busy=false; state.bot.tradeInFlight=false;
+      window.savedDPlace=DBots.placeTrade; window.savedDStack=DBots.runStack;
+      DBots.placeTrade=()=>Promise.reject({message:'unsupported contract'}); DBots.runStack=()=> 'purchase';
+      DBots.running=true; DBots.busy=false; DBots.pending=null; DBots.signalMode=false; DBots.fast=true; DBots.runId=556; DBots.lastProcessedTick=null;
+      DBots.tp=0; DBots.sl=0; DBots.maxLoss=0; DBots.cfg={market:'R_50',barrier:4,blocking:[],issues:[],trees:{before:{statements:{BEFORE_PURCHASE_STACK:{}}}}}; DBots.onTick('R_50')`);
+  await sleep(10);
+  check('DBot stops rather than retrying a rejected trade each tick', ev(`!DBots.running && !DBots.tradeInFlight`));
+  ev(`DBots.placeTrade=savedDPlace; DBots.runStack=savedDStack;`);
+  // Distinct events may share both epoch and price. Do not use epoch as a tick ID.
+  ev(`window.savedExecute=executeSignalTrade; window.tickRuns=0; executeSignalTrade=()=>{tickRuns++};
+      DBots.running=true; DBots.busy=false; DBots.pending=null; DBots.cfg={market:'R_50',barrier:4}; DBots.signalMode=true; DBots.purchaseContract='DIGITOVER'; DBots.lastProcessedTick=null; DBots.tp=0; DBots.sl=0; DBots.maxLoss=0;
+      Markets.push('R_50',{epoch:2300000000,quote:12.34,pip_size:2});
+      DBots.busy=false; DBots.signalTradeInFlight=false; DBots.onTick('R_50');
+      DBots.busy=false; Markets.push('R_50',{epoch:2300000000,quote:12.34,pip_size:2});`);
+  check('signal bot evaluates distinct same-second ticks once each', ev(`tickRuns===2`));
+  ev(`DBots.running=false; DBots.busy=false; DBots.signalTradeInFlight=false; executeSignalTrade=savedExecute;`);
   ev(`socket.setStatus('closed','test')`);
   check('disconnect clears the live cursor and stale digit display', ev(`document.querySelectorAll('#digitStrip .current').length===0 && document.getElementById('tickDigitMini').textContent==='—'`));
   check('disconnect also clears the prediction-grid live marker without changing the barrier', ev(`document.querySelectorAll('#digitPick .current').length===0 && document.querySelector('#digitPick [data-d="3"]').classList.contains('active') && document.getElementById('barrier').value==='3'`));

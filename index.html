@@ -4024,7 +4024,7 @@ const Markets = {
   },
 
   push(sym, tick) {
-    if (!tick || tick.quote == null) return;
+    if (!tick || tick.quote == null || String(tick.quote).trim() === "" || !Number.isFinite(Number(tick.quote))) return;
     this.setPrecision(sym, tick.pip_size);
     const b = this.buf(sym);
     const t = {
@@ -4441,6 +4441,25 @@ function disconnectFromAccountPicker() {
   setBanner("warn", "<b>Deriv login not completed.</b> No account was selected. Live market data is still available.");
 }
 
+function showAccountPicker(accounts) {
+  if (accountPickResolve) return Promise.resolve(null);
+  const back = $id("accountPickBack"), list = $id("accountPickList");
+  list.replaceChildren();
+  accounts.forEach(account => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn ghost";
+    button.textContent = account.account_id + " · " + String(account.account_type).toUpperCase() + " · " + (account.currency || "");
+    button.addEventListener("click", () => {
+      back.classList.add("hidden");
+      if (accountPickResolve) { const resolve = accountPickResolve; accountPickResolve = null; resolve(account); }
+    });
+    list.appendChild(button);
+  });
+  back.classList.remove("hidden");
+  return new Promise(resolve => { accountPickResolve = resolve; });
+}
+
 async function chooseOptionsAccount(accounts, token, kind) {
   const stored = getSessionAccountId(kind);
   if (stored) {
@@ -4451,12 +4470,17 @@ async function chooseOptionsAccount(accounts, token, kind) {
   if (demo) return { account: demo, skipRealConfirm: false };
   if (accounts.length === 1) return { account: accounts[0], skipRealConfirm: false };
   const picked = await showAccountPicker(accounts, token, kind);
-  return picked ? { account: picked, skipRealConfirm: true } : null;
+  return picked ? { account: picked, skipRealConfirm: false } : null;
 }
 
 async function connectOptionsAccount(account, token, kind, opts) {
   opts = opts || {};
-  const isReal = String(account.account_type || "").toLowerCase() === "real";
+  const accountKind = String(account.account_type || "").toLowerCase();
+  if (accountKind !== "demo" && accountKind !== "real") {
+    setBanner("err", "<b>Could not connect.</b> Deriv did not provide a recognised account type. No trading connection was opened.");
+    return false;
+  }
+  const isReal = accountKind === "real";
   if (isReal && !opts.skipRealConfirm) {
     const ok = await confirmDialog(
       "Connect real account?",
@@ -4590,7 +4614,7 @@ function applyOptionsAuth() {
   const account = state.optionsAccount;
   if (!account) return;
   const kind = "oauth";
-  const isDemo = String(account.account_type || "").toLowerCase() !== "real";
+  const isDemo = String(account.account_type || "").toLowerCase() === "demo";
   const firstConnect = !state.optionsApplied;
   state.auth = {
     loginid: account.account_id,
@@ -4943,7 +4967,12 @@ function initCollapsibles() {
    --------------------------------------------------------------------------- */
 function switchTab(name) {
   state.tab = name;
-  $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  $$(".tab").forEach(t => {
+    const active = t.dataset.tab === name;
+    t.classList.toggle("active", active);
+    t.setAttribute("aria-selected", String(active));
+    t.tabIndex = active ? 0 : -1;
+  });
   $$(".tabpane").forEach(p => p.classList.toggle("active", p.id === "pane-" + name));
   if (name === "analysis") {
     ensureAnalysisData();
@@ -4966,7 +4995,28 @@ function switchTab(name) {
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-$$(".tab").forEach(t => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+const primaryTabs = $$(".tab");
+primaryTabs.forEach(t => {
+  const name = t.dataset.tab, pane = $id("pane-" + name);
+  t.id = "tab-" + name;
+  t.setAttribute("aria-controls", "pane-" + name);
+  t.setAttribute("aria-selected", String(t.classList.contains("active")));
+  t.tabIndex = t.classList.contains("active") ? 0 : -1;
+  if (pane) pane.setAttribute("aria-labelledby", t.id);
+  t.addEventListener("click", () => switchTab(name));
+  t.addEventListener("keydown", ev => {
+    const i = primaryTabs.indexOf(t);
+    let next = null;
+    if (ev.key === "ArrowRight") next = (i + 1) % primaryTabs.length;
+    else if (ev.key === "ArrowLeft") next = (i - 1 + primaryTabs.length) % primaryTabs.length;
+    else if (ev.key === "Home") next = 0;
+    else if (ev.key === "End") next = primaryTabs.length - 1;
+    if (next == null) return;
+    ev.preventDefault();
+    primaryTabs[next].focus();
+    primaryTabs[next].click();
+  });
+});
 
 /* ---------------------------------------------------------------------------
    10. MARKET SELECTOR
@@ -5769,6 +5819,12 @@ function isUsableProposal(p) {
   return !!(p && p.id != null && String(p.id) && Number.isFinite(Number(p.ask_price)) && Number(p.ask_price) > 0);
 }
 
+// A null or missing settlement profit must not be counted as a win: bot
+// risk limits and martingale decisions depend on a confirmed numeric result.
+function hasSettlementProfit(c) {
+  return !!(c && c.profit != null && String(c.profit).trim() !== "" && Number.isFinite(Number(c.profit)));
+}
+
 function pctOf(p) {
   if (!p) return null;
   const stake = num(p.ask_price);
@@ -5781,7 +5837,7 @@ function currentTicketProposal(direction) {
   const pair = contractPair($id("ct").value);
   const contract = direction === "down" ? pair.down : pair.up;
   const p = direction === "down" ? state.proposalAlt : state.proposal;
-  return p && state.auth && marketIsTradable(state.market) && p.contract_type === contract && p.__account === state.auth.loginid &&
+  return p && state.auth && marketIsTradable(state.market) && isUsableProposal(p) && p.__account === state.auth.loginid &&
     p.__generation === socket.generation && p.__request === JSON.stringify(ticketRequestFor(contract)) ? p : null;
 }
 
@@ -5814,7 +5870,7 @@ function renderProposal(errorOnly, errMsg) {
   ratio(p, $id("ovPct"));
   ratio(alt, $id("unPct"));
   const detail = p || alt;
-  $id("pvSub").textContent = CONTRACT_LABEL[detail.contract_type] || detail.longcode || detail.contract_type;
+  $id("pvSub").textContent = CONTRACT_LABEL[p ? contractPair($id("ct").value).up : contractPair($id("ct").value).down] || detail.longcode || "Contract";
   $id("pvAsk").textContent = money(detail.ask_price);
   $id("pvSpot").textContent = fmtPrice(detail.spot, detail.symbol || state.market);
   $id("pvProfit").textContent = signed(num(detail.payout) - num(detail.ask_price));
@@ -5866,7 +5922,7 @@ function updateBuyState() {
   if (shown) {
     const ask = num(shown.ask_price);
     hint.textContent = "One tap buys " + money(ask) + " of " +
-      (CONTRACT_LABEL[shown.contract_type] || "") + " at the live price.";
+      (CONTRACT_LABEL[pair.up] || pair.up) + " at the live price.";
   } else {
     hint.textContent = "Tap a direction to buy — the price is fetched the moment you tap.";
   }
@@ -6110,8 +6166,8 @@ function updateBarrierVisibility() {
    dbtraders executes straight from the direction button, so there is no
    confirmation dialog here. Safety comes from the flow itself:
      · the price clicked is the price sent (a moved price fails the order),
-     · the button locks while the order is in flight,
-     · a real-money click has to be repeated within a few seconds.
+     · the button locks while the order is in flight.
+   Manual trading is one-click on both demo and real accounts.
    --------------------------------------------------------------------------- */
 let buyInFlight = false;
 
@@ -6166,17 +6222,10 @@ async function instantBuy(direction) {
   if ($id("btnBuy")) $id("btnBuy").disabled = true;
   if ($id("btnBuyAlt")) $id("btnBuyAlt").disabled = true;
 
-  /* Buy against the newest cached quote immediately. The quote engine refreshes
-     both legs on every tick, but a slow connection can delay a response.
-     Deriv's buy call rejects a moved price (PriceMoved) instead of charging
-     more — the retry below re-quotes once in that case. Waiting for a
-     same-tick quote before sending the buy would add a full proposal
-     round-trip between the click and the order, and the contract would enter
-     a tick later than it should. A fresh quote is only fetched when there is
-     no usable cached quote at all (none yet, or one for a different contract
-     type). */
+  /* A matching cached quote is tied to the full ticket, account and socket.
+     If none is available, only accept a fresh quote within the requested stake. */
   let proposal = direction === "down" ? state.proposalAlt : state.proposal;
-  if (proposal && (proposal.contract_type !== contractType || proposal.__request !== requestKey ||
+  if (proposal && (proposal.__request !== requestKey ||
       proposal.__account !== account || proposal.__generation !== generation)) proposal = null;
 
   try {
@@ -6189,28 +6238,21 @@ async function instantBuy(direction) {
     }
     if (!isUsableProposal(proposal)) throw { code: "NO_PROPOSAL", message: "Deriv did not return a usable price for this contract." };
 
-    /* Send the price that was shown. Deriv rejects a stale price instead of
-       silently charging more; we retry once with a brand-new quote so a normal
-       market tick never looks like a failed trade. */
-    let resp = null;
-    let lastErr = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (!contextValid()) throw { message: "Account, connection or ticket changed. Review it and try again." };
-      try {
-        resp = await socket.request(
-          { buy: proposal.id, price: Number(proposal.ask_price).toFixed(2) }, 25000, "buy");
-        break;
-      } catch (err) {
-        lastErr = err;
-        if (uncertainBuyError(err)) { markOrderUncertain(); throw err; }
-        const moved = err && (err.code === "PriceMoved" || /price.*moved|proposal.*expired/i.test(apiMessage(err)));
-        if (!moved || attempt === 1) throw err;
-        /* one silent re-quote, then buy again at the new price */
-        if (titleEl) titleEl.textContent = "Re-pricing…";
-        const again = await socket.request(request, 15000, "proposal");
-        proposal = again.proposal;
-        if (!isUsableProposal(proposal)) throw { code: "NO_PROPOSAL", message: "Deriv did not return a usable replacement price." };
+    if (!contextValid()) throw { message: "Account, connection or ticket changed. Review it and try again." };
+    // Never silently retry a moved/expired price: a new quote can have different
+    // price or payout. Show the refreshed quote and require a new user action.
+    if (Number(proposal.ask_price) > Number(request.amount)) {
+      throw { message: "The quote exceeds the requested stake. Adjust the stake or request another quote." };
+    }
+    let resp;
+    try {
+      resp = await socket.request({ buy: proposal.id, price: Number(proposal.ask_price) }, 25000, "buy");
+    } catch (err) {
+      if (uncertainBuyError(err)) markOrderUncertain();
+      if (err && (err.code === "PriceMoved" || /price.*moved|proposal.*expired/i.test(apiMessage(err)))) {
+        throw { message: "Price changed or quote expired. Review the refreshed quote and click again." };
       }
+      throw err;
     }
     if (!resp || !resp.buy || resp.buy.contract_id == null) {
       markOrderUncertain();
@@ -6218,12 +6260,12 @@ async function instantBuy(direction) {
     }
 
     const c = resp.buy;
-    toast("Contract bought", (CONTRACT_LABEL[c.contract_type] || c.contract_type) + " · " +
+    toast("Contract bought", (CONTRACT_LABEL[contractType] || contractType) + " · " +
       money(c.buy_price) + " → " + money(c.payout), "ok");
     pushLog("buy", "Instant buy " + c.contract_id + " · " + money(c.buy_price) + " → " + money(c.payout));
     state.lastBuySide = direction;
-    state.lastBuyType = c.contract_type;
-    subscribeOpenContract(c.contract_id);
+    state.lastBuyType = contractType;
+    subscribeOpenContract(c.contract_id, contractType);
     state.proposal = null;
     state.proposalAlt = null;
     renderBalance();
@@ -6250,15 +6292,20 @@ if (altBtn) altBtn.addEventListener("click", () => instantBuy("down"));
 /* ---------------------------------------------------------------------------
    14. TAB 1 — OPEN CONTRACT
    --------------------------------------------------------------------------- */
-function subscribeOpenContract(contractId) {
+function subscribeOpenContract(contractId, contractType) {
   socket.forget("poc");
   state.openContract = null;
   const handle = msg => {
     if (!msg || !msg.proposal_open_contract) return;
-    const c = msg.proposal_open_contract;
+    const c = Object.assign({}, msg.proposal_open_contract);
+    if (!c.contract_type && contractType) c.contract_type = contractType;
     state.openContract = c;
     renderOpenContract();
     if (c.is_sold) {
+      if (!hasSettlementProfit(c)) {
+        setBanner("warn", "<b>Settlement incomplete.</b> Profit was not provided. Check Deriv positions and history.");
+        return;
+      }
       // Settled: record it, stop the stream, refresh the balance.
       finishContract(c);
       socket.forget("poc");
@@ -6356,7 +6403,7 @@ function renderOpenContract() {
           '<div class="cid">contract ' + esc(c.contract_id) + " · " + esc(c.purchase_time ? dateTimeStr(c.purchase_time) : "") + "</div>" +
         "</div>" +
         '<div style="text-align:right">' +
-          '<div class="pl-big ' + (pl >= 0 ? "ok" : "bad") + '">' + (pl >= 0 ? "+" : "") + money(pl) + "</div>" +
+          '<div class="pl-big ' + (hasSettlementProfit(c) ? (pl >= 0 ? "ok" : "bad") : "") + '">' + (hasSettlementProfit(c) ? (pl >= 0 ? "+" : "") + money(pl) : "—") + "</div>" +
           '<div class="tiny dim">current profit</div>' +
         "</div>" +
       "</div>" +
@@ -6396,7 +6443,7 @@ async function loadProfitTable() {
     const rows = (resp.profit_table && resp.profit_table.transactions) || [];
     state.trades = rows.map(r => ({
       contract_id: r.contract_id,
-      contract_type: r.shortcode ? (r.shortcode.split("_")[2] || "") : (r.contract_type || ""),
+      contract_type: r.contract_type || "",
       buy_price: num(r.buy_price),
       payout: num(r.payout),
       profit: num(r.sell_price) - num(r.buy_price),
@@ -6430,7 +6477,7 @@ async function loadMoreTrades() {
     const rows = (resp.profit_table && resp.profit_table.transactions) || [];
     rows.forEach(r => state.trades.push({
       contract_id: r.contract_id,
-      contract_type: r.shortcode ? (r.shortcode.split("_")[2] || "") : (r.contract_type || ""),
+      contract_type: r.contract_type || "",
       buy_price: num(r.buy_price),
       payout: num(r.payout),
       profit: num(r.sell_price) - num(r.buy_price),
@@ -6628,6 +6675,11 @@ function renderRatio(st) {
 
 function renderHotCold(st) {
   const hot = $("#hotDigits"), cold = $("#coldDigits");
+  if (!st.n) {
+    if (hot) hot.textContent = "Waiting for ticks…";
+    if (cold) cold.textContent = "Waiting for ticks…";
+    return;
+  }
   if (hot) hot.innerHTML = st.hot.map(d => '<span class="badge demo">' + d + " · " + st.shares[d].toFixed(1) + "%</span>").join(" ");
   if (cold) cold.innerHTML = st.cold.map(d => '<span class="badge soft">' + d + " · " + st.shares[d].toFixed(1) + "%</span>").join(" ");
 }
@@ -6870,6 +6922,9 @@ $$("#sigFamilySeg button").forEach(btn => btn.addEventListener("click", () => {
     $("#scanStatus").textContent = "Scan cancelled after changing family.";
   }
   state.signalFamily = btn.dataset.fam;
+  state.scan = [];
+  renderScan([]);
+  $("#scanStatus").textContent = "Not scanned for this family yet.";
   $$("#sigFamilySeg button").forEach(b => b.classList.toggle("active", b === btn));
   computeSignals();
 }));
@@ -6953,7 +7008,15 @@ function renderSignalCards() {
       if (!s) return;
       if (btn.dataset.act === "open") tradeFromSignal(s);
       else if (btn.dataset.act === "quick") quickTrade(s, btn);
-      else if (btn.dataset.act === "runbot" && s.entry) runSignalBot(s, btn);
+      else if (btn.dataset.act === "runbot") {
+        // Paints are coalesced with requestAnimationFrame. Re-evaluate on the
+        // current buffer before a click can launch a signal-driven order.
+        const id = s.def.id;
+        renderSignals();
+        const current = state.signals.find(signal => signal.def.id === id);
+        if (current && current.entry) runSignalBot(current, btn);
+        else toast("Signal changed", "The latest ticks no longer meet this entry. Review the updated card.", "info");
+      }
       else if (btn.dataset.act === "bot") {
         $("#botContract").value = s.def.type;
         renderStrategyParams();
@@ -7011,13 +7074,13 @@ async function quickTrade(s, btn) {
     if (!ok) return;
     if (!contextValid()) throw { message: "Account, market or connection changed. Request a new quote." };
     let bresp;
-    try { bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "quick buy"); }
+    try { bresp = await socket.request({ buy: p.id, price: Number(p.ask_price) }, 25000, "quick buy"); }
     catch (err) { if (uncertainBuyError(err)) markOrderUncertain(); throw err; }
     const c = bresp && bresp.buy;
     if (!c || c.contract_id == null) { markOrderUncertain(); throw { message: "Order status unknown. Check positions and history before retrying." }; }
     toast("Contract bought", def.label + " · " + money(c.buy_price) + " → " + money(c.payout), "ok");
     pushLog("buy", "Entry-point buy " + c.contract_id + " · " + money(c.buy_price) + " → " + money(c.payout));
-    subscribeOpenContract(c.contract_id);
+    subscribeOpenContract(c.contract_id, def.type);
     loadProfitTable();
   } catch (err) {
     const msg = apiMessage(err);
@@ -7034,7 +7097,9 @@ function tradeFromSignal(s) {
   const def = s.def;
   $("#ct").value = def.type;
   const bar = $("#barrier");
-  if (bar && BARRIER_CONTRACTS.includes(def.type)) bar.value = String(def.barrier);
+  if (bar && BARRIER_CONTRACTS.includes(def.type)) setBarrierDigit(def.barrier);
+  syncContractTitle();
+  renderDigitHeat();
   updateBarrierVisibility();
   ticketDirty = true;
   scheduleProposal(true);
@@ -7228,9 +7293,9 @@ $("#btnScanAll").addEventListener("click", async () => {
     results.sort((a, b) => (b.best ? b.best.score : -1) - (a.best ? a.best.score : -1));
     state.scan = results;
     renderScan(results);
-    statusEl.textContent = "Scanned " + results.filter(r => r.best).length + " markets · " + new Date().toLocaleTimeString([], { hour12: false });
+    statusEl.textContent = "Snapshot: " + results.filter(r => r.best).length + " markets · " + new Date().toLocaleTimeString([], { hour12: false }) + " · rescan to update";
     const top = results.find(r => r.best);
-    if (top) toast("Scan complete", "Best current setup: " + top.best.def.label + " on " + MARKETS[top.sym].name + ".", "ok");
+    if (top) toast("Scan complete", "Highest-scoring snapshot: " + top.best.def.label + " on " + MARKETS[top.sym].name + ".", "ok");
   } finally {
     if (myToken === scanToken) {
       state.scanRunning = false;
@@ -7672,10 +7737,11 @@ function botOnTick(sym) {
   if (cfg.continuous && b.armed) {
     b.busy = true;
     b.tradeInFlight = true;
+    const tradeRunId = b.runId;
     placeBotTrade(cfg, { contract: b.armedContract, barrier: b.armedBarrier,
       reason: "continuous — every tick" }).catch(err => {
       pushLog("err", "Trade failed: " + apiMessage(err));
-      b.busy = false;
+      if (b.runId === tradeRunId && b.running) stopBot("Trade failed; review the error before restarting.");
     });
     return;
   }
@@ -7694,9 +7760,10 @@ function botOnTick(sym) {
   b.busy = true;
   b.tradeInFlight = true;
   if (!cfg.continuous) b.cooldownUntil = Date.now() + cfg.cooldown * 1000;
+  const tradeRunId = b.runId;
   placeBotTrade(cfg, decision).catch(err => {
     pushLog("err", "Trade failed: " + apiMessage(err));
-    b.busy = false;
+    if (b.runId === tradeRunId && b.running) stopBot("Trade failed; review the error before restarting.");
   });
 }
 
@@ -7720,6 +7787,7 @@ async function placeBotTrade(cfg, decision) {
   const p = presp.proposal;
   if (!isUsableProposal(p)) throw { code: "NO_PROPOSAL", message: "No usable proposal returned." };
 
+  if (Number(p.ask_price) > Number(propReq.amount)) throw { message: "The quote exceeds the configured stake." };
   if (state.balance != null && num(p.ask_price) > num(state.balance)) {
     throw { code: "LOW_BALANCE", message: "Balance too low for this stake." };
   }
@@ -7727,7 +7795,7 @@ async function placeBotTrade(cfg, decision) {
   if (!b.running || b.runId !== runId || !marketIsTradable(cfg.market)) throw { message: "Bot stopped or market unavailable before purchase." };
   let bresp;
   try {
-    bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "bot buy");
+    bresp = await socket.request({ buy: p.id, price: Number(p.ask_price) }, 25000, "bot buy");
   } catch (err) {
     if (err && ["TIMEOUT", "CLOSED", "SOCKET", "SEND"].includes(err.code)) {
       b.uncertainOrder = true;
@@ -7737,7 +7805,7 @@ async function placeBotTrade(cfg, decision) {
     }
     throw err;
   }
-  const c = bresp.buy;
+  const c = bresp && bresp.buy;
   if (!c || c.contract_id == null) {
     b.uncertainOrder = true;
     markOrderUncertain();
@@ -7769,6 +7837,10 @@ function botTrackContract(contractId) {
     state.openContract = c;
     renderOpenContract();
     if (!c.is_sold) return;
+    if (!hasSettlementProfit(c)) {
+      if (b.running) { stopBot("Settlement profit unavailable; check Deriv positions and history."); toast("Settlement incomplete", "The bot remains locked until a complete settlement arrives.", "warn"); }
+      return;
+    }
     socket.forget("botpoc");
     b.pendingContract = null;
     state.openContract = null;
@@ -9817,7 +9889,7 @@ const DBots = {
     });
     this.totalProfit = 0;
     this.pl = 0; this.wins = 0; this.losses = 0;
-    this.pending = null; this.busy = false; this.lastEpoch = 0;
+    this.pending = null; this.busy = false; this.lastEpoch = 0; this.lastProcessedTick = null;
     this.cooldownUntil = 0;
     this.startedAt = Date.now();
 
@@ -9916,7 +9988,10 @@ const DBots = {
     const buf = Markets.buf(sym);
     const last = buf.ticks[buf.ticks.length - 1];
     if (!last || last.digit == null) return;
-    if (last.epoch === this.lastEpoch) return;
+    // Timestamps have second resolution: separate Deriv ticks can share one.
+    // Suppress only repeated evaluation of the same buffered event.
+    if (last === this.lastProcessedTick) return;
+    this.lastProcessedTick = last;
     this.lastEpoch = last.epoch;
     this.lastSeenTick = last;
     /* FAST execution is continuous: every tick interval is an entry, with no
@@ -9945,11 +10020,13 @@ const DBots = {
     if (sig === "purchase") {
       this.busy = true;
       this.tradeInFlight = true;
+      const tradeRunId = this.runId;
       this.placeTrade(this.stakeValue(), "entry at digit " + rt.lastDigit + ", streak " + this.streakText())
         .catch(err => {
           this.log("err", "Trade failed: " + apiMessage(err));
-          if (this.pending == null && !this.fast) this.cooldownUntil = Date.now() + this.cooldown * 1000;
+          if (this.runId === tradeRunId && this.running) this.stop("Trade failed; review the error before restarting.");
         }).finally(() => {
+          if (this.runId !== tradeRunId) return;
           this.tradeInFlight = false;
           if (this.pending == null) this.busy = false;
         });
@@ -9980,6 +10057,7 @@ const DBots = {
     const presp = await socket.request(propReq, 20000, "dbot proposal");
     const p = presp.proposal;
     if (!isUsableProposal(p)) throw { code: "NO_PROPOSAL", message: "No usable proposal returned." };
+    if (Number(p.ask_price) > Number(propReq.amount)) throw { message: "The quote exceeds the configured stake." };
     if (state.balance != null && num(p.ask_price) > num(state.balance)) {
       throw { code: "LOW_BALANCE", message: "Balance too low for this stake." };
     }
@@ -9988,7 +10066,7 @@ const DBots = {
     }
     let bresp;
     try {
-      bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "dbot buy");
+      bresp = await socket.request({ buy: p.id, price: Number(p.ask_price) }, 25000, "dbot buy");
     } catch (err) {
       if (err && ["TIMEOUT", "CLOSED", "SOCKET", "SEND"].includes(err.code)) {
         this.uncertainOrder = true;
@@ -9998,7 +10076,7 @@ const DBots = {
       }
       throw err;
     }
-    const c = bresp.buy;
+    const c = bresp && bresp.buy;
     if (!c || c.contract_id == null) {
       this.uncertainOrder = true;
       markOrderUncertain();
@@ -10024,6 +10102,10 @@ const DBots = {
       state.openContract = c;
       renderOpenContract();
       if (!c.is_sold) return;
+      if (!hasSettlementProfit(c)) {
+        if (this.running) { this.stop("Settlement profit unavailable; check Deriv positions and history."); toast("Settlement incomplete", "The bot remains locked until a complete settlement arrives.", "warn"); }
+        return;
+      }
       socket.forget("dbotpoc");
       this.pending = null;
       this.pendingSignal = false;

@@ -85,6 +85,7 @@ function seedDigits(sym, digits) {
   login();
   ev(`window.requests = []; window.delayed = null;
     Markets.ensure = () => Promise.resolve();
+    clearTimeout(proposalDebounce); scheduleProposal = () => {};
     Object.keys(MARKETS).forEach(sym => { Markets.buf(sym).live=true; Markets.buf(sym).primed=true; });
     socket.request = (req) => {
       window.requests.push(req);
@@ -94,7 +95,9 @@ function seedDigits(sym, digits) {
     };
     socket.stream = (key, req, handler) => { if (key === "dbotpoc") window.watchHandler = handler; return Promise.resolve(); }; socket.forget = () => {};
     openFreeBot('matchbot');
-    state.market = 'R_100';
+    state.market = 'R_100'; state.signalFamily='matches';
+    Markets.buf('R_100').ticks=[];
+    Markets.seed('R_100',Array(100).fill('12.08'),Array.from({length:100},(_,i)=>1800000000+i),2);
     document.getElementById('dbotsStake').value = '2.5';
     document.getElementById('dbotsStake').dispatchEvent(new Event('change'));
     document.getElementById('dbotsTP').value = '12';
@@ -204,7 +207,7 @@ function seedDigits(sym, digits) {
     ev('DBots.start()');
     check(`${type}: manual Run cannot start`, ev('!DBots.running && requests.length===0'));
     ev(`window.testSig={def:{type:${JSON.stringify(type)}, barrier:${JSON.stringify(digit)}, label:${JSON.stringify(type)}},entry:true,trend:'flat',rate:50,delta:0,strength:'weak',why:'test'};
-       state.market='R_50'; state.signals=[testSig]; renderSignalCards(); document.querySelector('button[data-act=runbot]').click();`);
+       state.market='R_50'; runSignalBot(testSig,null);`);
     await waitFor(()=>ev('DBots.pending != null'));
     check(`${type}: first trade uses entry and one-tick duration`, ev(`requests[0].contract_type===${JSON.stringify(type)} && requests[0].duration===1 && requests[0].duration_unit==='t' && (requests[0].underlying_symbol||requests[0].symbol)==='R_50' && requests[0].amount==='2.00' && ${digit === null ? "!('barrier' in requests[0])" : `requests[0].barrier==='${digit}' && DBots.cfg.barrier===${digit} && DBots.parse(DBots.selected().xml).barrier===${digit}`}`));
     check(`${type}: preserves money settings`, ev(`DBots.martingale && DBots.mult===2 && DBots.sl===20 && DBots.tp===20`));
@@ -245,6 +248,11 @@ function seedDigits(sym, digits) {
     computeSignals();`);
   check('reload keeps legacy bot and saved martingale settings', ev(`DBots.selectedId===oldId && DBots.moneyFor(oldId).martingale && DBots.selected().signalVersion===2`));
   check('live computed Matches 7 produces a clickable entry', ev(`state.signals.some(s=>s.def.id==='M7' && s.entry) && !!Array.from(document.querySelectorAll('button[data-act=runbot]')).find(b=>state.signals[Number(b.dataset.i)].def.id==='M7')`));
+  // A new tick can arrive between animation-frame paint and a click.
+  ev(`window.staleButton=Array.from(document.querySelectorAll('button[data-act=runbot]')).find(b=>state.signals[Number(b.dataset.i)].def.id==='M7');
+      Markets.buf('R_50').ticks=[]; window.requests=[]; staleButton.click()`);
+  check('entry click cannot buy from a stale card after its tick buffer is cleared', ev(`requests.length===0 && !DBots.running && state.signals.length===0`));
+  ev(`for(let i=0;i<100;i++) Markets.push('R_50',{epoch:2100000000+i,quote:'1000.0007',symbol:'R_50'}); renderSignals()`);
   ev(`window.requests=[]; Array.from(document.querySelectorAll('button[data-act=runbot]')).find(b=>state.signals[Number(b.dataset.i)].def.id==='M7').click()`);
   await waitFor(()=>ev('DBots.pending != null'));
   check('clicking computed Matches 7 actually buys and updates prediction', ev(`DBots.running && DBots.cfg.barrier===7 && requests.some(r=>r.proposal && r.contract_type==='DIGITMATCH' && r.barrier==='7' && (r.underlying_symbol||r.symbol)==='R_50')`));

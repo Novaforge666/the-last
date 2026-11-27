@@ -70,6 +70,7 @@ async function waitFor(fn, timeoutMs) {
   await waitFor(() => ev('socket.ws && socket.ws.readyState===1'));
   await sleep(150);
   ev(`state.auth={loginid:'VRTC_TEST',is_virtual:true,currency:'USD'}; state.token='test'; state.accountType='demo'; state.balance=100; state.currency='USD';
+      window.realSubscribeOpenContract=subscribeOpenContract; window.realLoadProfitTable=loadProfitTable; window.realLoadMoreTrades=loadMoreTrades;
       scheduleProposal=()=>{}; subscribeOpenContract=()=>{}; loadProfitTable=()=>{};
       state.market='R_50'; state.stake=1; document.getElementById('ct').value='DIGITOVER'; document.getElementById('barrier').value='4'; document.getElementById('dur').value='1';
       window.reqs=[]; socket.request=req=>{reqs.push(req); if(req.proposal)return Promise.resolve({proposal:{id:'fresh',contract_type:req.contract_type,ask_price:req.amount,payout:2}}); if(req.buy)return Promise.resolve({buy:{contract_id:777,contract_type:'DIGITOVER',buy_price:1,payout:2}});return Promise.resolve({});};`);
@@ -96,7 +97,9 @@ async function waitFor(fn, timeoutMs) {
   ev(`window.oldReq=ticketRequestFor('DIGITOVER'); state.proposal={id:'old',contract_type:'DIGITOVER',ask_price:1,payout:2,__request:JSON.stringify(oldReq),__account:state.auth.loginid,__generation:socket.generation}; state.stake=3;`);
   await ev(`instantBuy('up')`);
   check('changed stake rejects stale cached quote and requests correct parameters', ev(`reqs[0].proposal===1 && reqs[0].amount==='3.00' && reqs[1].buy==='fresh'`));
-  ev(`window.reqs=[]; window.sameReq=ticketRequestFor('DIGITOVER'); state.proposal={id:'cached',contract_type:'DIGITOVER',ask_price:3,payout:4,__request:JSON.stringify(sameReq),__account:state.auth.loginid,__generation:socket.generation}`);
+  ev(`window.reqs=[]; window.sameReq=ticketRequestFor('DIGITOVER'); state.proposal={id:'cached',ask_price:3,payout:4,__request:JSON.stringify(sameReq),__account:state.auth.loginid,__generation:socket.generation}`);
+  ev(`renderProposal()`);
+  check('documented quote without contract_type renders the correct payout and label', ev(`document.getElementById('ovPayout').textContent!=='—' && document.getElementById('pvSub').textContent.includes('Over')`));
   await ev(`instantBuy('up')`);
   check('matching cached quote still buys without an extra proposal round trip', ev(`reqs.length===1 && reqs[0].buy==='cached'`));
 
@@ -130,14 +133,14 @@ async function waitFor(fn, timeoutMs) {
   await ev('badQuote');
   check('a malformed quote never results in a buy', ev(`reqs.length===1 && reqs[0].proposal && !state.orderUncertain`));
 
-  // Only explicit price-moved failures may be retried; a changed ticket cancels retry.
-  ev(`state.proposal=null; window.reqs=[]; window.retryQuote=null; socket.request=req=>{reqs.push(req); if(req.buy)return Promise.reject({code:'PriceMoved',message:'Price moved'});
-      if(req.proposal && reqs.filter(x=>x.proposal).length===1)return Promise.resolve({proposal:{id:'initial',contract_type:req.contract_type,ask_price:5}});
-      if(req.proposal)return new Promise(resolve=>retryQuote=resolve);return Promise.resolve({});}; window.retrying=instantBuy('up')`);
-  await waitFor(()=>ev('retryQuote!==null'));
-  ev(`state.stake=9; retryQuote({proposal:{id:'retry',contract_type:'DIGITOVER',ask_price:5}})`);
-  await ev('retrying');
-  check('changed ticket prevents a second buy after a price-moved retry', ev(`reqs.filter(r=>r.buy).length===1`));
+  // PriceMoved is a definite rejection, but changing payout/price requires a new click.
+  ev(`state.proposal=null; window.reqs=[]; socket.request=req=>{reqs.push(req); if(req.buy)return Promise.reject({code:'PriceMoved',message:'Price moved'});
+      if(req.proposal)return Promise.resolve({proposal:{id:'initial',ask_price:5,payout:7}});return Promise.resolve({});}`);
+  await ev(`instantBuy('up')`);
+  check('price movement never silently submits a second buy', ev(`reqs.filter(r=>r.buy).length===1 && !state.orderUncertain`));
+  ev(`state.proposal=null; window.reqs=[]; socket.request=req=>{reqs.push(req); return Promise.resolve({proposal:{id:'expensive',ask_price:5.01,payout:7}})}`);
+  await ev(`instantBuy('up')`);
+  check('an unseen quote above the requested stake cannot buy', ev(`reqs.filter(r=>r.buy).length===0`));
 
   ev(`state.market='R_50'; state.stake=1; state.proposal=null; window.reqs=[]; window.qResolve=null;
       socket.request=req=>{reqs.push(req); if(req.proposal)return new Promise(resolve=>qResolve=resolve); return Promise.resolve({})};
@@ -169,6 +172,27 @@ async function waitFor(fn, timeoutMs) {
   check('a second confirmation cannot replace the first', !(await ev('secondModal')) && ev(`document.getElementById('modalTitle').textContent==='First'`));
   ev('closeModal(true)');
   check('the original confirmation still resolves', await ev('firstModal'));
+
+  ev(`socket.request=req=>Promise.resolve({profit_table:{next_cursor:'page2',transactions:[{contract_id:55,contract_type:'CALL',shortcode:'CALL_R_100_19.55_123',buy_price:10,sell_price:19.55,payout:19.55}]}})`);
+  await ev('realLoadProfitTable()');
+  check('trade history uses documented contract_type rather than a shortcode fragment', ev(`state.trades[0].contract_type==='CALL' && document.getElementById('tradesBody').textContent.includes('Rise')`));
+  await ev('realLoadMoreTrades()');
+  check('older trade history also retains the documented contract type', ev(`state.trades.length===2 && state.trades[1].contract_type==='CALL'`));
+  ev(`socket.stream=(key,req,handler)=>{window.manualWatch=handler;return Promise.resolve()}; socket.forget=()=>{}; realSubscribeOpenContract(778,'DIGITDIFF'); manualWatch({proposal_open_contract:{contract_id:778,is_sold:0,profit:'0',buy_price:1,payout:2}})`);
+  check('open contract uses purchased request type when Deriv omits it', ev(`state.openContract.contract_type==='DIGITDIFF' && document.getElementById('openContract').textContent.includes('Differs')`));
+  ev(`window.prevTrades=state.localTrades.length; manualWatch({proposal_open_contract:{contract_id:778,is_sold:1,profit:null,buy_price:1,payout:2}})`);
+  check('incomplete manual settlement does not fabricate a zero-profit win', ev(`state.localTrades.length===prevTrades && state.openContract && document.getElementById('openContract').textContent.includes('—')`));
+
+
+  // Picker path previously referenced a missing function. Unknown types fail closed.
+  ev(`window.pick=chooseOptionsAccount([{account_id:'CR_ONE',account_type:'real',currency:'USD'},{account_id:'CR_TWO',account_type:'real',currency:'USD'}],'token','oauth')`);
+  check('multiple real accounts open the picker', ev(`!document.getElementById('accountPickBack').classList.contains('hidden') && document.querySelectorAll('#accountPickList button').length===2`));
+  ev(`document.querySelectorAll('#accountPickList button')[1].click()`);
+  check('selected real account still requires explicit confirmation', (await ev('pick')).account.account_id==='CR_TWO' && !(await ev('pick')).skipRealConfirm);
+  check('unknown account type is rejected without connecting', !(await ev(`connectOptionsAccount({account_id:'UNKNOWN'},'token','oauth',{})`)));
+  ev(`tradeFromSignal({def:{type:'DIGITDIFF',barrier:7,label:'Differs 7'}})`);
+  check('signal prefill updates direction buttons and selected barrier', ev(`document.getElementById('btnBuy').dataset.dir==='DIGITMATCH' && document.getElementById('btnBuyAlt').dataset.dir==='DIGITDIFF' && document.getElementById('barrier').value==='7' && document.querySelector('#digitPick button.active').dataset.d==='7'`));
+  ev(`document.getElementById('ct').value='DIGITOVER'; document.getElementById('barrier').value='4'; state.stake=1;`);
 
   ev(`window.reqs=[]; state.proposal=null; state.bot.running=true; state.bot.tradeInFlight=false; state.bot.pendingContract=null;
       DBots.running=true; DBots.pending=null; DBots.signalTradeInFlight=false; DBots.tradeInFlight=false;

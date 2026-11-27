@@ -82,6 +82,13 @@ function seedDigits(sym, digits) {
 (async () => {
   await waitFor(() => ev("socket.ws && socket.ws.readyState") === 1, 8000);
   await sleep(150);
+  check('guest header shows login and no account identifier', ev(`!document.getElementById('btnLogin').classList.contains('hidden') && document.getElementById('btnLogout').classList.contains('hidden') && document.getElementById('acctId').textContent==='Not logged in'`));
+  ev(`state.auth={loginid:'VRTC_PRIVATE',is_virtual:true};state.token='test';state.accountType='demo';renderAuth()`);
+  check('demo header shows Demo rather than the user ID', ev(`document.getElementById('acctId').classList.contains('hidden') && document.getElementById('acctBadge').textContent==='Demo' && !document.getElementById('acctBlock').textContent.includes('VRTC_PRIVATE') && !document.getElementById('btnLogout').classList.contains('hidden')`));
+  ev(`state.auth={loginid:'CR_PRIVATE',is_virtual:false};state.accountType='real';renderAuth()`);
+  check('real account remains clearly labelled Real and warns about real money', ev(`document.getElementById('acctBadge').textContent==='Real' && document.getElementById('acctBadge').classList.contains('real') && !document.getElementById('acctBlock').textContent.includes('CR_PRIVATE') && document.body.textContent.includes('Orders placed here spend real money.')`));
+  ev(`state.auth=null;state.token=null;state.accountType=null;renderAuth()`);
+  check('guest controls return after logout state', ev(`!document.getElementById('acctId').classList.contains('hidden') && document.getElementById('acctBadge').textContent==='Guest' && !document.getElementById('btnLogin').classList.contains('hidden') && document.getElementById('btnLogout').classList.contains('hidden')`));
   // Controlled precision, including trailing zeros and precision corrections.
   ev(`Markets.buf('R_10').ticks=[]; Markets.setPrecision('R_10',3);
       Markets.push('R_10',{epoch:100,quote:'12.34',pip_size:3});`);

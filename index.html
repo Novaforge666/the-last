@@ -1676,9 +1676,7 @@ html[data-theme="light"] .dbots-item.active{background:rgba(184,134,11,.08)}
 .bl-empty-card h4{font-family:var(--display);font-size:15px;font-weight:800;margin-bottom:6px;color:#e2e8f0}
 .bl-empty-card p{font-size:11.5px;color:#94a3b8;line-height:1.6}
 
-/* ---- quick strategy chooser ---- */
-.qs-modal{max-width:560px}
-.qs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+/* ---- quick strategy chooser (templates now live in the Free bots tab) ---- */
 .qs-card{
   appearance:none;cursor:pointer;text-align:left;
   border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--bg-2);
@@ -1693,6 +1691,38 @@ html[data-theme="light"] .dbots-item.active{background:rgba(184,134,11,.08)}
 }
 .qs-card b{font-family:var(--display);font-size:12px;font-weight:700;color:var(--txt)}
 .qs-card small{font-size:10px;color:var(--dim);line-height:1.45}
+
+/* ---- Free bots gallery ---- */
+.fb-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.fb-card{
+  appearance:none;cursor:pointer;text-align:left;width:100%;
+  border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--bg-2);
+  padding:13px 14px;display:flex;flex-direction:column;gap:6px;
+  transition:border-color .15s,background .15s,transform .12s;
+}
+.fb-card:hover{border-color:var(--acc-line);background:var(--panel-2);transform:translateY(-1px)}
+.fb-card:focus-visible{outline:2px solid var(--acc-line);outline-offset:2px}
+.fb-top{display:flex;align-items:center;gap:10px}
+.fb-glyph{
+  width:34px;height:34px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;
+  font-size:16px;color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc-line);
+}
+.fb-name{font-family:var(--display);font-size:14px;font-weight:800;color:var(--txt);line-height:1.15}
+.fb-epithet{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.fb-desc{font-size:10.5px;color:var(--muted);line-height:1.5}
+.fb-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto;padding-top:4px}
+.fb-tag{
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:var(--dim);
+  border:1px solid var(--line-2);border-radius:var(--radius-pill);padding:2px 7px;
+}
+.fb-tag.acc{color:var(--acc);border-color:var(--acc-line)}
+.fb-open{
+  margin-top:8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--acc);display:flex;align-items:center;gap:6px;
+}
+.fb-open::after{content:"→";font-size:11px}
+.fb-note{font-size:10.5px;color:var(--dim);line-height:1.55}
+.fb-note b{color:var(--muted)}
 
 /* ---- canvas editing: field pills behave like Blockly dropdowns ---- */
 .blk-hint{
@@ -2210,9 +2240,10 @@ body.bb-open #toasts{bottom:auto;top:10px}
   <div class="tabbar-inner" role="tablist">
     <button class="tab active" data-tab="manual" role="tab"><span class="n">01</span>Manual Trade</button>
     <button class="tab" data-tab="bots" role="tab"><span class="n">02</span>Auto Bots <span class="pill hidden" id="botTabPill">RUN</span></button>
-    <button class="tab" data-tab="dbots" role="tab"><span class="n">03</span>DBots <span class="pill hidden" id="dbotsTabPill">RUN</span></button>
-    <button class="tab" data-tab="analysis" role="tab"><span class="n">04</span>Analysis</button>
-    <button class="tab" data-tab="signals" role="tab"><span class="n">05</span>Entry Points</button>
+    <button class="tab" data-tab="freebots" role="tab"><span class="n">03</span>Free bots</button>
+    <button class="tab" data-tab="dbots" role="tab"><span class="n">04</span>DBots <span class="pill hidden" id="dbotsTabPill">RUN</span></button>
+    <button class="tab" data-tab="analysis" role="tab"><span class="n">05</span>Analysis</button>
+    <button class="tab" data-tab="signals" role="tab"><span class="n">06</span>Entry Points</button>
   </div>
 </nav>
 
@@ -2597,6 +2628,13 @@ body.bb-open #toasts{bottom:auto;top:10px}
                 <span class="lbl">Cooldown (seconds)</span>
                 <input type="number" id="botCooldown" value="5" min="0" step="1" inputmode="numeric" />
               </label>
+              <label class="field">
+                <span class="lbl">Execution mode</span>
+                <select id="botMode">
+                  <option value="continuous" selected>Continuous — trade every tick after entry</option>
+                  <option value="signal">Signal only — wait for each entry point</option>
+                </select>
+              </label>
             </div>
             <div class="row" style="margin-top:12px">
               <span class="tiny dim">Account in use:</span>
@@ -2644,7 +2682,30 @@ body.bb-open #toasts{bottom:auto;top:10px}
   </section>
 
   <!-- ================================================================== -->
-  <!-- TAB 3 — DBOTS (Deriv Bot builder workspace)                        -->
+  <!-- TAB 3 — FREE BOTS (the terminal's own bots, named and ready to run) -->
+  <!-- ================================================================== -->
+  <section class="tabpane" id="pane-freebots" role="tabpanel">
+    <div class="stack-12">
+      <div class="panel">
+        <div class="panel-head"><h3>Free bots</h3><div class="spacer"></div>
+          <span class="tiny dim">Open one to edit it and set its parameters in DBots</span>
+        </div>
+        <div class="panel-body">
+          <div class="fb-grid" id="freeBotsGrid"></div>
+          <p class="fb-note" style="margin-top:12px">
+            Every bot here is a real Deriv Bot file. Opening one loads it into the
+            <b>DBots</b> tab — the canvas for editing its blocks and the Run settings
+            (stake, take profit, stop loss, cooldown) for its parameters — and nothing
+            trades until you press <b>Run</b>. Synthetic indices are independent per
+            tick: past digits do not predict the next one, and no payout edge is implied.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- TAB 4 — DBOTS (Deriv Bot builder workspace)                        -->
   <!-- ================================================================== -->
   <section class="tabpane" id="pane-dbots" role="tabpanel">
     <div class="bb" id="dbotsBuilder" hidden>
@@ -2697,7 +2758,6 @@ body.bb-open #toasts{bottom:auto;top:10px}
 
         <!-- left icon rail -->
         <div class="bl-rail">
-          <button class="bl-qs" id="dbotsQuick" title="Load the bundled strategy">Quick strategy</button>
           <button class="bl-qs bl-build" id="dbotsBuild" title="Build a bot from the toolbox">＋ Build bot</button>
           <div class="bl-rail-tools">
             <button data-bl="library" class="active" title="Bot library" aria-label="Bot library">
@@ -2876,7 +2936,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
             <section data-pane="library">
               <div class="bl-side-sec">
                 <div class="bl-side-head">
-                  <span>Saved bots</span>
+                  <span>My bots</span>
                   <span class="tiny dim mono" id="dbotsLibCount">0</span>
                 </div>
                 <div class="dbots-list" id="dbotsList"></div>
@@ -2951,7 +3011,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
 
         <div class="bl-speed">
           <div class="bl-speed-txt">
-            <span class="k">Execution speed</span>
+            <span class="k">Execution speed · FAST = continuous</span>
             <span class="v" id="dbotsSpeed">NORMAL</span>
           </div>
           <button class="bl-switch" id="dbotsSpeedBtn" role="switch" aria-checked="false" aria-label="Fast execution">
@@ -3195,53 +3255,6 @@ body.bb-open #toasts{bottom:auto;top:10px}
   </footer>
 </div>
 
-<!-- =============================  QUICK STRATEGY  ============================= -->
-<div class="modal-back hidden" id="qsBack" role="dialog" aria-modal="true" aria-labelledby="qsTitle">
-  <div class="modal qs-modal">
-    <h4 id="qsTitle">Quick strategy</h4>
-    <p>Start from a template. It loads into the canvas as real blocks, and every value can be changed there.</p>
-    <div class="qs-grid" id="qsGrid">
-      <button class="qs-card" data-qs="sample" type="button">
-        <span class="qs-i">◎</span>
-        <b>Over / Under</b>
-        <small>Digit Over 3 on Volatility 100 (1s), 1 tick</small>
-      </button>
-      <button class="qs-card" data-qs="overunder" type="button">
-        <span class="qs-i">◑</span>
-        <b>Over 5 / Under 4</b>
-        <small>Digit Over 5 on Volatility 50, 5 ticks</small>
-      </button>
-      <button class="qs-card" data-qs="evenodd" type="button">
-        <span class="qs-i">⇄</span>
-        <b>Even / Odd</b>
-        <small>Digit Even on Volatility 75, 1 tick</small>
-      </button>
-      <button class="qs-card" data-qs="matches" type="button">
-        <span class="qs-i">◎</span>
-        <b>Matches / Differs</b>
-        <small>Digit Differs 7 on Volatility 100, 1 tick</small>
-      </button>
-      <button class="qs-card" data-qs="risefall" type="button">
-        <span class="qs-i">↗</span>
-        <b>Rise / Fall</b>
-        <small>Rise on Volatility 100 (1s), 5 ticks</small>
-      </button>
-      <button class="qs-card" data-qs="direct" type="button">
-        <span class="qs-i">▶</span>
-        <b>Direct execution</b>
-        <small>No analysis — buys every tick. Execution parameters are editable</small>
-      </button>
-      <button class="qs-card" data-qs="blank" type="button">
-        <span class="qs-i">＋</span>
-        <b>Blank workspace</b>
-        <small>Trade parameters only — no purchase logic</small>
-      </button>
-    </div>
-    <div class="actions">
-      <button class="btn ghost sm" id="qsCancel">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- =============================  MODAL  ============================= -->
 <div class="modal-back hidden" id="modalBack">
@@ -4662,6 +4675,9 @@ function switchTab(name) {
   if (name === "dbots") {
     DBots.render();
     if (DBots.running && DBots.cfg) Markets.ensure(DBots.cfg.market).catch(() => {});
+  }
+  if (name === "freebots") {
+    renderFreeBots();
   }
   if (name === "manual") {
     renderTickPanel(state.market);
@@ -6662,6 +6678,11 @@ function botConfig() {
     sl: num($("#botSL").value, 0),
     maxLoss: clamp(Math.round(num($("#botMaxLoss").value, 3)), 1, 99),
     cooldown: Math.max(0, num($("#botCooldown").value, 0)),
+    /* Continuous: once an entry point is found the bot keeps trading on every
+       tick interval (back and forth) with no cooldown, until TP/SL/max-loss
+       stops it. Signal: the old behaviour — re-arm and wait for the next
+       entry point after every trade. */
+    continuous: ($("#botMode") ? $("#botMode").value : "continuous") === "continuous",
     strategy: $("#botStrategy").value,
     barrier: 4
   };
@@ -6737,12 +6758,17 @@ $("#btnBotStart").addEventListener("click", async () => {
   b.nextStake = cfg.stake;
   b.cooldownUntil = 0;
   b.pendingContract = null;
+  /* Continuous mode arms on the first entry point; until then the bot waits. */
+  b.armed = false;
+  b.armedContract = null;
+  b.armedBarrier = null;
   $("#botTabPill").classList.remove("hidden");
   renderBotStats();
   renderBotStatus();
 
   pushLog("sys", "Bot started · " + cfg.strategy + " · " + MARKETS[cfg.market].name + " · " + CONTRACT_LABEL[cfg.contract] +
-    (DIGIT_CONTRACTS.indexOf(cfg.contract) >= 0 ? " barrier " + cfg.barrier : "") + " · stake " + money(cfg.stake));
+    (DIGIT_CONTRACTS.indexOf(cfg.contract) >= 0 ? " barrier " + cfg.barrier : "") + " · stake " + money(cfg.stake) +
+    (cfg.continuous ? " · CONTINUOUS — trades every tick after the first entry" : " · signal mode"));
 
   try {
     await Markets.ensure(cfg.market);
@@ -6876,10 +6902,14 @@ function botOnTick(sym) {
   if (!b.running || b.busy || b.pendingContract) return;
   const cfg = b.cfg;
   if (!cfg || sym !== cfg.market) return;
-  if (Date.now() < b.cooldownUntil) return;
-  const now = Date.now();
-  if (now - botEvalThrottle < 250) return;
-  botEvalThrottle = now;
+  /* Continuous mode has no cooldown and no throttle: every tick interval is
+     an entry. Signal mode keeps the old cooldown + 250 ms evaluation gate. */
+  if (!cfg.continuous) {
+    if (Date.now() < b.cooldownUntil) return;
+    const now = Date.now();
+    if (now - botEvalThrottle < 250) return;
+    botEvalThrottle = now;
+  }
 
   // risk gates
   if (cfg.tp > 0 && b.pl >= cfg.tp) { stopBot("take profit reached (" + money(b.pl) + ")."); return; }
@@ -6887,12 +6917,32 @@ function botOnTick(sym) {
   if (b.lossStreak >= cfg.maxLoss) { stopBot(cfg.maxLoss + " consecutive losses."); return; }
   if (state.balance != null && b.nextStake > num(state.balance)) { stopBot("next stake exceeds the balance."); return; }
 
+  /* Continuous: once the strategy fires, the bot stays armed and trades the
+     same contract back and forth on every tick — the entry point is found
+     once, then execution never waits for it again. */
+  if (cfg.continuous && b.armed) {
+    b.busy = true;
+    placeBotTrade(cfg, { contract: b.armedContract, barrier: b.armedBarrier,
+      reason: "continuous — every tick" }).catch(err => {
+      pushLog("err", "Trade failed: " + apiMessage(err));
+      b.busy = false;
+    });
+    return;
+  }
+
   const digits = Markets.digits(cfg.market, Math.max(1000, (cfg.window || 100)));
   const decision = botEvaluate(cfg, digits);
   if (!decision.fire) return;
 
+  if (cfg.continuous) {
+    b.armed = true;
+    b.armedContract = decision.contract || cfg.contract;
+    b.armedBarrier = decision.barrier != null ? decision.barrier : cfg.barrier;
+    pushLog("sys", "Entry point found — continuous execution armed. Trading every tick from here.");
+  }
+
   b.busy = true;
-  b.cooldownUntil = Date.now() + cfg.cooldown * 1000;
+  if (!cfg.continuous) b.cooldownUntil = Date.now() + cfg.cooldown * 1000;
   placeBotTrade(cfg, decision).catch(err => {
     pushLog("err", "Trade failed: " + apiMessage(err));
     b.busy = false;
@@ -6989,7 +7039,8 @@ function botOnContractClosed(c) {
     b.nextStake = b.baseStake;
   }
   b.nextStake = Math.min(b.nextStake, 1e6);
-  b.cooldownUntil = Date.now() + ((cfg ? cfg.cooldown : 0) * 1000);
+  /* Continuous mode trades again on the very next tick — no cooldown gap. */
+  b.cooldownUntil = cfg && cfg.continuous ? 0 : Date.now() + ((cfg ? cfg.cooldown : 0) * 1000);
   renderBotStats();
   renderBalance();
 
@@ -7085,6 +7136,7 @@ async function boot() {
   renderBotStatus();
   renderBotStats();
   DBots.render();
+  renderFreeBots();
   pushLog("sys", "Terminal ready · app id " + (ACTIVE_APP_ID || "not configured") + " · OAuth PKCE login");
   if (!APP_ID_IS_REAL) {
     setBanner("warn",
@@ -8934,7 +8986,9 @@ const DBots = {
     if (last.epoch === this.lastEpoch) return;
     this.lastEpoch = last.epoch;
     this.lastSeenTick = last;
-    if (Date.now() < this.cooldownUntil) return;
+    /* FAST execution is continuous: every tick interval is an entry, with no
+       cooldown gap between trades. NORMAL keeps the configured cooldown. */
+    if (!this.fast && Date.now() < this.cooldownUntil) return;
     if (this.tp > 0 && this.pl >= this.tp) { this.stop("take profit reached (" + money(this.pl) + ")."); return; }
     if (this.sl > 0 && this.pl <= -Math.abs(this.sl)) { this.stop("stop loss reached (" + money(this.pl) + ")."); return; }
     if (this.maxLoss && this.lossStreak >= this.maxLoss) { this.stop(this.maxLoss + " consecutive losses."); return; }
@@ -8955,7 +9009,7 @@ const DBots = {
         .catch(err => {
           this.log("err", "Trade failed: " + apiMessage(err));
           this.busy = false;
-          if (this.pending == null) this.cooldownUntil = Date.now() + this.cooldown * 1000;
+          if (this.pending == null && !this.fast) this.cooldownUntil = Date.now() + this.cooldown * 1000;
         });
     }
   },
@@ -9082,7 +9136,8 @@ const DBots = {
       this.stop("after_purchase finished without “trade again”.");
       return;
     }
-    this.cooldownUntil = Date.now() + this.cooldown * 1000;
+    /* FAST: the next tick is already an entry — no cooldown gap. */
+    this.cooldownUntil = this.fast ? 0 : Date.now() + this.cooldown * 1000;
     this.renderStatus();
   },
 
@@ -9823,22 +9878,11 @@ const DBots = {
       sp.setAttribute("aria-checked", this.fast ? "true" : "false");
       const lbl = $id("dbotsSpeed");
       if (lbl) lbl.textContent = this.fast ? "FAST" : "NORMAL";
-      this.log("sys", "Execution speed set to " + (this.fast ? "fast" : "normal") + ".");
+      this.log("sys", this.fast
+        ? "Execution speed FAST — continuous: every tick interval is an entry, no cooldown."
+        : "Execution speed NORMAL — the configured cooldown applies between trades.");
     });
 
-    const qsBack = $id("qsBack");
-    const openQuick = () => { if (qsBack) { qsBack.classList.remove("hidden"); this.closeSide(); } };
-    const closeQuick = () => { if (qsBack) qsBack.classList.add("hidden"); };
-    const qs = $id("dbotsQuick");
-    if (qs) qs.addEventListener("click", openQuick);
-    const qsCancel = $id("qsCancel");
-    if (qsCancel) qsCancel.addEventListener("click", closeQuick);
-    if (qsBack) qsBack.addEventListener("click", ev => { if (ev.target === qsBack) closeQuick(); });
-    document.addEventListener("keydown", ev => { if (ev.key === "Escape" && qsBack && !qsBack.classList.contains("hidden")) closeQuick(); });
-    $$("#qsGrid [data-qs]").forEach(card => card.addEventListener("click", () => {
-      closeQuick();
-      this.addTemplate(card.dataset.qs);
-    }));
     const ai = $id("dbotsAi");
     if (ai) ai.addEventListener("click", () => {
       this.openSide("checks");
@@ -9893,6 +9937,75 @@ const DBots = {
     this.openSidePanel("dbotsJournalPanel");
   }
 };
+
+/* ---------------------------------------------------------------------------
+   FREE BOTS — the terminal's own bots, with mythological names.
+   Each card is a real DBot template (DBots.template) or the bundled sample.
+   Opening a card loads that bot into the DBots tab — canvas for editing,
+   Setup for its parameters — and switches there. Nothing trades until Run.
+   --------------------------------------------------------------------------- */
+const FREE_BOTS = [
+  { kind: "sample",    glyph: "◎", name: "Pythia",     epithet: "Oracle of the Low Digits",
+    desc: "Buys Digit Over 3 on Volatility 100 (1s) after three digits ≤ 3 in a row — the bundled over-3 sample." },
+  { kind: "overunder", glyph: "◑", name: "Janus",      epithet: "The Two-Faced Gate",
+    desc: "Digit Over 5 on Volatility 50, 5 ticks. One gate, two faces: over and under from the same barrier." },
+  { kind: "evenodd",   glyph: "⇄", name: "Hecate",     epithet: "Keeper of the Crossroads",
+    desc: "Digit Even on Volatility 75, 1 tick. At the crossroads of even and odd, she takes the even road." },
+  { kind: "matches",   glyph: "◎", name: "Orpheus",    epithet: "The Backward Glance",
+    desc: "Digit Differs 7 on Volatility 100, 1 tick. He looks back at the digit that just passed — and bets it will not return." },
+  { kind: "risefall",  glyph: "↗", name: "Icarus",     epithet: "The Ascent",
+    desc: "Rise on Volatility 100 (1s), 5 ticks. Pure ascent — the bot that always climbs toward the next tick." },
+  { kind: "direct",    glyph: "▶", name: "Chronos",    epithet: "The Devourer of Ticks",
+    desc: "No analysis at all: buys Digit Over 5 every tick, forever. Every execution parameter is an editable variable." },
+  { kind: "blank",     glyph: "＋", name: "Tabula Rasa", epithet: "The Empty Tablet",
+    desc: "Trade parameters only, no purchase logic. A blank bot to shape into whatever you want." }
+];
+
+function freeBotSummary(kind) {
+  try {
+    const t = DBots.template(kind);
+    const mk = MARKETS[t.symbol];
+    const contract = CONTRACT_LABEL[t.contract] || t.contract;
+    const barrier = t.barrier != null ? " " + t.barrier : "";
+    const dur = t.duration + " tick" + (t.duration === 1 ? "" : "s");
+    return { market: mk ? mk.short : t.symbol, contract: contract + barrier, duration: dur };
+  } catch (_) {
+    return { market: "—", contract: "—", duration: "—" };
+  }
+}
+
+function renderFreeBots() {
+  const host = $id("freeBotsGrid");
+  if (!host) return;
+  host.innerHTML = FREE_BOTS.map(b => {
+    const s = freeBotSummary(b.kind);
+    return '<button class="fb-card" type="button" data-freebot="' + esc(b.kind) + '">' +
+      '<span class="fb-top"><span class="fb-glyph">' + esc(b.glyph) + "</span>" +
+        '<span><span class="fb-name">' + esc(b.name) + "</span><br>" +
+        '<span class="fb-epithet">' + esc(b.epithet) + "</span></span></span>" +
+      '<span class="fb-desc">' + esc(b.desc) + "</span>" +
+      '<span class="fb-meta">' +
+        '<span class="fb-tag acc">' + esc(s.market) + "</span>" +
+        '<span class="fb-tag">' + esc(s.contract) + "</span>" +
+        '<span class="fb-tag">' + esc(s.duration) + "</span>" +
+      "</span>" +
+      '<span class="fb-open">Open in DBots</span>' +
+    "</button>";
+  }).join("");
+  host.querySelectorAll("[data-freebot]").forEach(card => {
+    card.addEventListener("click", () => openFreeBot(card.dataset.freebot));
+  });
+}
+
+/* Load a gallery bot into the DBots workspace and go there. */
+function openFreeBot(kind) {
+  const bot = FREE_BOTS.find(b => b.kind === kind);
+  const rec = DBots.addTemplate(kind);
+  if (!rec) return;
+  switchTab("dbots");
+  DBots.openSide("setup");
+  toast("Bot opened", (bot ? bot.name : rec.name) + " is loaded in DBots — edit the canvas, set the parameters, then press Run.", "ok");
+}
 
 /* Keep session numbers fresh while the tab is open. */
 Markets.onChange((sym, tick) => {

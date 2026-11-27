@@ -5224,8 +5224,10 @@ function ticketRequestFor(contractType) {
    once per tick and not on a wall clock. Quotes are therefore refreshed:
 
      · once for every new tick of the traded market (the normal case),
-     · immediately when an input changes,
-     · and just before a buy if the cached one is not for the current tick.
+     · immediately when an input changes.
+
+   A buy never waits for a fresh quote: it sends the newest cached quote at
+   once, and only re-quotes if Deriv rejects the price (see instantBuy).
 
    There is no minimum interval. A slow market simply gets fewer refreshes, and
    a 1-second market gets one per second — which is what "live" has to mean.
@@ -5365,8 +5367,9 @@ function updateBuyState() {
   if (ct === "DIGITOVER" && barrier === "9") { setPair(true, "Over 9 can never win — pick 0–8."); return; }
   if (ct === "DIGITUNDER" && barrier === "0") { setPair(true, "Under 0 can never win — pick 1–9."); return; }
 
-  /* A missing or stale quote must NOT disable the buttons: tapping one now
-     fetches a fresh price and buys it. Only genuine blockers disable them. */
+  /* A missing or stale quote must NOT disable the buttons: tapping one buys
+     against the newest cached quote immediately (fetching a fresh price only
+     when there is none). Only genuine blockers disable them. */
   setPair(false, null);
   if (state.proposal) {
     const ask = num(state.proposal.ask_price);
@@ -5642,17 +5645,20 @@ async function instantBuy(direction) {
   if ($id("btnBuy")) $id("btnBuy").disabled = true;
   if ($id("btnBuyAlt")) $id("btnBuyAlt").disabled = true;
 
-  /* Freshness is measured in ticks, not seconds: every contract here settles on
-     a tick, so a quote taken for an older tick is already stale — even if it
-     was issued 200 ms ago on a slow market. If the cached quote is not for the
-     current tick, price it again now and buy that. */
+  /* Buy against the newest cached quote immediately. The quote engine refreshes
+     both legs on every tick, so the cached quote is at most one tick old, and
+     Deriv's buy call rejects a moved price (PriceMoved) instead of charging
+     more — the retry below re-quotes once in that case. Waiting for a
+     same-tick quote before sending the buy would add a full proposal
+     round-trip between the click and the order, and the contract would enter
+     a tick later than it should. A fresh quote is only fetched when there is
+     no usable cached quote at all (none yet, or one for a different contract
+     type). */
   let proposal = direction === "down" ? state.proposalAlt : state.proposal;
-  const currentTick = lastTickEpoch(state.market);
-  const quoteIsCurrent = proposal && proposal.contract_type === contractType &&
-    proposal.__tick != null && proposal.__tick === currentTick;
+  if (proposal && proposal.contract_type !== contractType) proposal = null;
 
   try {
-    if (!quoteIsCurrent) {
+    if (!proposal) {
       if (titleEl) titleEl.textContent = "Pricing…";
       const resp = await socket.request(ticketRequestFor(contractType), 15000, "proposal");
       proposal = resp.proposal || null;

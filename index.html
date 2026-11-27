@@ -788,8 +788,12 @@ footer.foot .links a:hover{color:var(--acc)}
 /* the pane is a column: chart grid takes what is left, strip keeps a fixed slice */
 #pane-manual.active{display:flex;flex-direction:column;min-height:0}
 .mt{
-  display:grid;grid-template-columns:minmax(0,1.62fr) minmax(320px,.9fr);
+  /* minmax(0,…) on BOTH tracks: a 1fr track refuses to shrink below its
+     content, which is what pushed the right edge of the purchase panel out of
+     the viewport on medium screens. */
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);
   gap:12px;min-height:0;flex:1 1 auto;align-items:stretch;
+  width:100%;max-width:100%;overflow:hidden;
 }
 .mt-chart{display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .mt-chart-head{
@@ -883,8 +887,9 @@ footer.foot .links a:hover{color:var(--acc)}
 /* ---------- side column ---------- */
 .mt-side{
   display:grid;grid-template-rows:minmax(0,1fr) auto;
-  gap:10px;min-height:0;overflow:hidden;
+  gap:10px;min-height:0;min-width:0;overflow:hidden;
 }
+.mt-chart{min-width:0}
 .mt-side > .panel:first-child{min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .mt-side > .panel:first-child .panel-body{overflow-y:auto;min-height:0;padding-bottom:2px}
 .mt-side > .panel:last-child{flex:0 0 auto}
@@ -1061,7 +1066,13 @@ body.drawer-open .mt-drawer-tab{opacity:0;pointer-events:none}
 }
 
 /* ---------- the ticket card: dbtraders-style clean blocks ---------- */
-.mt-ticketcard{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mt-ticketcard{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+.mt-ticketcard > .panel-body,
+.mt-ticketcard .mt-ticket,
+.mt-ticketcard .mt-trade,
+.mt-ticketcard .mt-block,
+.mt-ticketcard .mt-stepper-row{min-width:0;max-width:100%}
+.mt-ticketcard .mt-amount input{min-width:0}
 .mt-trade-head{
   display:flex;align-items:center;justify-content:space-between;gap:6px;
   padding:6px 8px;border-bottom:1px solid var(--line);flex:0 0 auto;
@@ -1298,11 +1309,11 @@ input[type="range"]#durRange::-moz-range-thumb{
 .ct-pick small{display:block;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:3px;letter-spacing:.05em;text-transform:uppercase}
 
 @media (max-width:1240px){
-  .mt{grid-template-columns:minmax(0,1.45fr) minmax(300px,.95fr)}
+  .mt{grid-template-columns:minmax(0,1fr) minmax(0,320px)}
 }
 /* Tablet: the chart keeps most of the width, the ticket narrows. */
 @media (max-width:1020px){
-  .mt{grid-template-columns:minmax(0,1.15fr) minmax(292px,.85fr)}
+  .mt{grid-template-columns:minmax(0,1fr) minmax(0,300px)}
   .mt-canvas-wrap{min-height:220px}
   footer.foot .disc{display:none}
 }
@@ -1354,12 +1365,174 @@ input[type="range"]#durRange::-moz-range-thumb{
 }
 
 /* ---------------------------------------------------------------------------
+   18c. DBOTS SIDE PANELS — summary / journal / transactions
+   ---------------------------------------------------------------------------
+   The official builder keeps these as collapsible cards in a right-hand rail:
+   a header you can click, a badge with the count, and a body that expands in
+   place. Same arrangement here so nothing has to be hunted for.
+   --------------------------------------------------------------------------- */
+.bl-sidepanels{
+  display:flex;flex-direction:column;gap:8px;
+  padding:10px 10px 10px 4px;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  border-left:1px solid #1d2939;background:#0b111a;
+  scrollbar-width:thin;
+}
+.bl-panel{
+  border:1px solid #1d2939;border-radius:10px;background:#0e1520;
+  overflow:hidden;flex:0 0 auto;min-width:0;
+}
+.bl-panel-head{
+  appearance:none;cursor:pointer;width:100%;border:0;background:transparent;
+  display:flex;align-items:center;gap:7px;padding:9px 10px;
+  font-family:"Inter",system-ui,sans-serif;color:#c3cbd8;text-align:left;
+  transition:background .14s,color .14s;
+}
+.bl-panel-head:hover{background:#131c29;color:#fff}
+.bl-panel-ico{
+  width:18px;height:18px;flex:0 0 auto;border-radius:5px;display:grid;place-items:center;
+  font-size:10px;color:#7dd3fc;background:rgba(56,189,248,.13);
+}
+.bl-panel-t{
+  flex:1 1 auto;min-width:0;font-size:11.5px;font-weight:600;letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.bl-panel-badge{
+  flex:0 0 auto;font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;
+  padding:2px 6px;border-radius:999px;background:#1b2634;color:#7f8b9c;
+  letter-spacing:.02em;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.bl-panel.open .bl-panel-badge{background:rgba(56,189,248,.16);color:#7dd3fc}
+.bl-panel-caret{
+  flex:0 0 auto;font-size:11px;color:#5b6879;line-height:1;
+  transition:transform .18s ease;
+}
+.bl-panel.open .bl-panel-caret{transform:rotate(180deg);color:#7dd3fc}
+.bl-panel-tools{display:none;padding:0 10px 7px}
+.bl-panel.open .bl-panel-tools{display:flex;justify-content:flex-end}
+.bl-panel.open .bl-panel-tools{margin-top:-2px}
+.bl-panel-clear{
+  appearance:none;cursor:pointer;border:1px solid #24303f;border-radius:5px;
+  background:#111a26;color:#8b98a9;font-family:"Inter",sans-serif;font-size:9.5px;
+  padding:3px 9px;transition:background .14s,color .14s,border-color .14s;
+}
+.bl-panel-clear:hover{background:#17212f;color:#e5ecf5;border-color:#33445a}
+.bl-panel-body{
+  display:none;border-top:1px solid #1d2939;
+  max-height:min(46vh,320px);overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+.bl-panel.open .bl-panel-body{display:block}
+
+/* summary rows: label left, value right, mono for anything numeric */
+.bl-sum{display:flex;flex-direction:column;gap:1px;padding:7px}
+.bl-sum-row{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  padding:4px 5px;border-radius:5px;font-size:10.5px;line-height:1.35;
+}
+.bl-sum-row:nth-child(odd){background:rgba(255,255,255,.022)}
+.bl-sum-row .k{color:#6f7c8d;flex:0 0 auto;font-family:"Inter",sans-serif}
+.bl-sum-row .v{
+  color:#dbe3ee;font-weight:600;text-align:right;min-width:0;
+  overflow-wrap:anywhere;font-family:"Inter",sans-serif;
+}
+.bl-sum-row .v.mono{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:0}
+.bl-sum-row .v.ok{color:#4ade80}
+.bl-sum-row .v.bad{color:#f87171}
+.bl-sum-row .v.acc{color:#fcd34d}
+.bl-sum-sec{
+  font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:#4b5869;padding:8px 5px 3px;
+}
+.bl-sum-sec:first-child{padding-top:2px}
+.bl-sum-bot{
+  appearance:none;cursor:pointer;width:100%;display:flex;align-items:center;gap:6px;
+  border:1px solid transparent;border-radius:6px;background:transparent;
+  padding:5px 6px;margin-top:1px;text-align:left;min-width:0;
+  font-family:"Inter",sans-serif;font-size:10.5px;color:#93a0b1;
+  transition:background .12s,color .12s,border-color .12s;
+}
+.bl-sum-bot:hover{background:#131c29;color:#e5ecf5}
+.bl-sum-bot.on{background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.28);color:#7dd3fc;font-weight:600}
+.bl-sum-bot .n{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-sum-bot .on-dot{flex:0 0 auto;font-size:6px;color:#38bdf8;font-style:normal}
+html[data-theme="light"] .bl-sum-bot{color:var(--muted)}
+html[data-theme="light"] .bl-sum-bot:hover{background:var(--panel-2);color:var(--txt)}
+html[data-theme="light"] .bl-sum-bot.on{background:rgba(11,114,196,.09);border-color:rgba(11,114,196,.24);color:#0b72c4}
+
+/* journal log */
+.bl-log{
+  padding:6px 8px;display:flex;flex-direction:column;gap:2px;
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;line-height:1.45;
+}
+.bl-log .row{display:flex;gap:6px;padding:2px 3px;border-radius:4px}
+.bl-log .row time{color:#4b5869;flex:0 0 auto;font-size:8.5px;padding-top:1px}
+.bl-log .row .msg{min-width:0;overflow-wrap:anywhere;color:#a8b3c2}
+.bl-log .row.sys .msg{color:#7dd3fc}
+.bl-log .row.buy .msg{color:#fcd34d}
+.bl-log .row.win .msg{color:#4ade80}
+.bl-log .row.loss .msg{color:#f87171}
+.bl-log .row.err .msg{color:#f87171}
+.bl-log .row.warn .msg{color:#fbbf24}
+
+/* transactions list */
+.bl-tx{display:flex;flex-direction:column;gap:4px;padding:7px}
+.bl-tx-empty{color:#5b6879;font-size:10.5px;padding:9px 5px;line-height:1.5}
+.bl-tx-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;
+  border:1px solid #1d2939;border-radius:7px;background:#0b111a;padding:6px 8px;
+}
+.bl-tx-row .t{font-size:10.5px;font-weight:600;color:#dbe3ee;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-tx-row .p{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;text-align:right}
+.bl-tx-row .p.ok{color:#4ade80}
+.bl-tx-row .p.bad{color:#f87171}
+.bl-tx-row .p.pending{color:#7dd3fc}
+.bl-tx-row .m{
+  grid-column:1/-1;font-family:"JetBrains Mono",monospace;font-size:8.5px;
+  color:#5b6879;letter-spacing:.01em;overflow-wrap:anywhere;
+}
+
+@media (max-width:1180px){
+  .bl-frame{grid-template-columns:72px minmax(0,1fr) 232px}
+  .bl-sidepanels{padding:8px 8px 8px 3px}
+}
+@media (max-width:980px){
+  /* the panel rail becomes a bottom sheet so the canvas keeps its width */
+  .bl-frame{grid-template-columns:64px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  .bl-sidepanels{
+    grid-column:1/-1;flex-direction:row;overflow-x:auto;overflow-y:hidden;
+    border-left:0;border-top:1px solid #1d2939;max-height:210px;
+    gap:7px;padding:8px;
+  }
+  .bl-sidepanels .bl-panel{min-width:230px;flex:1 1 230px}
+  .bl-panel-body{max-height:150px}
+}
+
+/* ---------------------------------------------------------------------------
    LIGHT THEME OVERRIDES
    ---------------------------------------------------------------------------
    The token swap covers most of the app. These are the places that carried a
    literal dark value (the bot canvas, the dark overlays, the shadows that read
    as light-on-dark) and need an explicit daylight version.
    --------------------------------------------------------------------------- */
+html[data-theme="light"] .bl-sidepanels{border-left-color:var(--line);background:var(--panel-2)}
+html[data-theme="light"] .bl-panel{background:#fff;border-color:var(--line)}
+html[data-theme="light"] .bl-panel-head{color:var(--muted)}
+html[data-theme="light"] .bl-panel-head:hover{background:var(--panel-2);color:var(--txt)}
+html[data-theme="light"] .bl-panel-ico{color:#0b72c4;background:rgba(11,114,196,.1)}
+html[data-theme="light"] .bl-panel-badge{background:var(--panel-3);color:var(--dim)}
+html[data-theme="light"] .bl-panel.open .bl-panel-badge{background:rgba(11,114,196,.12);color:#0b72c4}
+html[data-theme="light"] .bl-panel-body{border-top-color:var(--line)}
+html[data-theme="light"] .bl-sum-row:nth-child(odd){background:rgba(16,24,40,.028)}
+html[data-theme="light"] .bl-sum-row .k{color:var(--dim)}
+html[data-theme="light"] .bl-sum-row .v{color:var(--txt)}
+html[data-theme="light"] .bl-sum-sec{color:var(--dim)}
+html[data-theme="light"] .bl-log .row time{color:var(--dim)}
+html[data-theme="light"] .bl-log .row .msg{color:var(--muted)}
+html[data-theme="light"] .bl-tx-row{background:var(--bg-2);border-color:var(--line)}
+html[data-theme="light"] .bl-tx-empty{color:var(--dim)}
+html[data-theme="light"] .bl-panel-clear{background:var(--panel-2);border-color:var(--line-2);color:var(--muted)}
+html[data-theme="light"] .bl-panel-clear:hover{background:var(--panel-3);color:var(--txt)}
 html[data-theme="light"] .bl-canvas{
   background:
     radial-gradient(circle at 1px 1px, rgba(16,24,40,.09) 1px, transparent 0) 0 0/20px 20px,
@@ -1406,7 +1579,8 @@ html[data-theme="light"] .dbots-item.active{background:rgba(184,134,11,.08)}
 
 .bl-frame{
   flex:1 1 auto;min-height:0;display:grid;
-  grid-template-columns:84px minmax(0,1fr);
+  /* rail | canvas | collapsible summary/journal/transactions */
+  grid-template-columns:84px minmax(0,1fr) 268px;
   overflow:hidden;border-radius:var(--radius);
   position:relative;            /* the side drawer anchors to the frame */
 }
@@ -1734,7 +1908,6 @@ button.blk-v:disabled{cursor:default}
 .bl-drawer .panel{box-shadow:0 -18px 44px -24px rgba(0,0,0,.95);border-color:#243244}
 
 @media (max-width:1180px){
-  .bl-frame{grid-template-columns:72px minmax(0,1fr)}
   .bl-world{grid-template-columns:minmax(0,1fr);gap:12px}
   .bl-ai{top:auto;bottom:56px}
 }
@@ -2493,6 +2666,53 @@ button.blk-v:disabled{cursor:default}
           </button>
         </div>
 
+        <!-- right-hand stack: summary, journal, transactions. Each one is a
+             collapsible panel exactly like the official builder's side rail. -->
+        <div class="bl-sidepanels" id="dbotsSidePanels">
+
+          <section class="bl-panel" id="dbotsSummaryPanel">
+            <button class="bl-panel-head" type="button" aria-expanded="false" aria-controls="dbotsSummaryBody">
+              <span class="bl-panel-ico" aria-hidden="true">▤</span>
+              <span class="bl-panel-t">Summary</span>
+              <span class="bl-panel-badge" id="dbotsSummaryBadge">—</span>
+              <span class="bl-panel-caret" aria-hidden="true">⌄</span>
+            </button>
+            <div class="bl-panel-body" id="dbotsSummaryBody">
+              <div class="bl-sum" id="dbotsSummary"></div>
+            </div>
+          </section>
+
+          <section class="bl-panel" id="dbotsJournalPanel">
+            <button class="bl-panel-head" type="button" aria-expanded="false" aria-controls="dbotsJournalBody">
+              <span class="bl-panel-ico" aria-hidden="true">≡</span>
+              <span class="bl-panel-t">Journal</span>
+              <span class="bl-panel-badge" id="dbotsJournalBadge">0</span>
+              <span class="bl-panel-caret" aria-hidden="true">⌄</span>
+            </button>
+            <div class="bl-panel-tools">
+              <button class="bl-panel-clear" id="dbotsClearLog" type="button">Clear</button>
+            </div>
+            <div class="bl-panel-body" id="dbotsJournalBody">
+              <div class="bl-log" id="dbotsSideLog"></div>
+            </div>
+          </section>
+
+          <section class="bl-panel" id="dbotsTxPanel">
+            <button class="bl-panel-head" type="button" aria-expanded="false" aria-controls="dbotsTxBody">
+              <span class="bl-panel-ico" aria-hidden="true">⇄</span>
+              <span class="bl-panel-t">Transactions</span>
+              <span class="bl-panel-badge" id="dbotsTxBadge">0</span>
+              <span class="bl-panel-caret" aria-hidden="true">⌄</span>
+            </button>
+            <div class="bl-panel-body" id="dbotsTxBody">
+              <div class="bl-tx" id="dbotsTxList">
+                <div class="bl-tx-empty">No transactions yet. Run the bot to see each purchase here.</div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
         <!-- side drawer (library / setup / checks) -->
         <aside class="bl-side" id="dbotsSide">
           <div class="bl-side-top">
@@ -2601,20 +2821,6 @@ button.blk-v:disabled{cursor:default}
         </button>
       </div>
 
-      <!-- transaction journal drawer -->
-      <div class="bl-drawer" id="dbotsJournal">
-        <div class="panel">
-          <div class="panel-head">
-            <h3>Transaction journal</h3>
-            <div class="spacer"></div>
-            <button class="btn ghost xs" id="dbotsClearLog">Clear</button>
-            <button class="btn ghost xs" id="dbotsCloseJournal">Close</button>
-          </div>
-          <div class="panel-body tight">
-            <div class="log" id="dbotsLog" style="height:150px"></div>
-          </div>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -3020,8 +3226,35 @@ function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 /* Last digit of a quoted price. Deriv sends prices as strings like "1234.5678". */
-function lastDigit(quote) {
-  const s = String(quote == null ? "" : quote).replace(/[^0-9]/g, "");
+/* ---------------------------------------------------------------------------
+   LAST DIGIT
+   ---------------------------------------------------------------------------
+   Deriv sends a quote as a decimal string, and it does not always pad to the
+   market's pip count ("77.56" one tick, "77.5600" the next). Stripping the dot
+   and taking the final character therefore reads a DIFFERENT decimal place
+   depending on how the number happened to be formatted — which made the digit
+   histogram noisy and, worse, made "last digit" disagree with the contract the
+   user was buying. The digit is always the market's last pip:
+
+       R_100 / 1s indices : 2 decimals
+       R_10, R_25         : 3 decimals
+       R_50, R_75         : 4 decimals
+
+   Formatting to that fixed width first makes the reading stable and identical
+   to what Deriv settles the contract on.
+   --------------------------------------------------------------------------- */
+function lastDigit(quote, sym) {
+  if (quote == null || quote === "") return null;
+  const market = MARKETS[sym || state.market];
+  const pip = market && Number.isFinite(market.pip) ? market.pip : null;
+  if (pip != null) {
+    const v = Number(quote);
+    if (!Number.isFinite(v)) return null;
+    /* toFixed rounds to the market's pip, so the last character is the pip */
+    const fixed = Math.abs(v).toFixed(pip);
+    return Number(fixed[fixed.length - 1]);
+  }
+  const s = String(quote).replace(/[^0-9]/g, "");
   return s ? Number(s[s.length - 1]) : null;
 }
 function fmtPrice(quote, sym) {
@@ -3437,7 +3670,7 @@ const Markets = {
       epoch: num(tick.epoch),
       quote: String(tick.quote),
       value: num(tick.quote),
-      digit: lastDigit(tick.quote)
+      digit: lastDigit(tick.quote, sym)
     };
     // Deriv can resend the last tick when a subscription is restored.
     const prev = b.ticks[b.ticks.length - 1];
@@ -3455,7 +3688,7 @@ const Markets = {
         epoch: num(times && times[i]),
         quote: String(prices[i]),
         value: num(prices[i]),
-        digit: lastDigit(prices[i])
+        digit: lastDigit(prices[i], sym)
       });
     }
     // Merge with anything that arrived while the history request was in flight.
@@ -4574,62 +4807,51 @@ function renderTickPanel(sym) {
   renderDigitHeat();
   renderMiniAnalysis();
   renderReadout();
+
+  /* A tick IS the pricing event for every contract this terminal trades, so a
+     new tick means the ticket is quoting yesterday's price. Re-quote now.
+     Only the market the ticket is priced against triggers this. */
+  if (state.auth && sym === state.market) {
+    ticketDirty = true;
+    scheduleProposal(true);
+  }
 }
 
 /* The strip under the chart: one cell per digit with its share of the window.
    It doubles as the barrier picker, which is why it lives on the chart. */
-/* ---------------------------------------------------------------------------
-   Deriv's published last-digit percentages for the synthetic indices.
-   These are the numbers deriv.com shows next to each digit when you build a
-   digit contract, and they are the same for every tick because each tick is an
-   independent draw. Returns null for markets Deriv does not publish a table for
-   (the caller then falls back to the live sample from the tick buffer).
-   --------------------------------------------------------------------------- */
-function derivDigitTable(sym) {
-  const m = String(sym || "");
-  /* 1s and 2s indices share the uniform table; everything else in this
-     terminal is a standard volatility index on the same basis. */
-  if (/^(R_10|R_25|R_50|R_75|R_100)$/.test(m)) {
-    return [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
-  }
-  if (/^1HZ(10|25|50|75|100)V$/.test(m)) {
-    return [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
-  }
-  return null;
-}
-
 /* Paint the percentages under each digit of the prediction grid.
 
-   Deriv's synthetics are uniform: every digit is a 10% draw, which is the
-   number deriv.com quotes when you build a digit contract. That flat 10% is
-   useless for reading a market, so each cell shows the observed share over the
-   analysis window — the same arithmetic Deriv's own digit tools use — and the
-   theoretical 10% is the fallback before there are enough ticks. */
+   These are measured, never invented: digits are counted straight out of the
+   tick buffer that the live ticks stream fills, over the window shown in the
+   caption. Before enough ticks have arrived the cells read "—" rather than a
+   placeholder percentage, because a made-up number is worse than no number. */
 function renderDigitPercents() {
-  const table = derivDigitTable(state.market);
   const grid = $id("digitPick");
   if (!grid) return;
-  const st = digitStats(Markets.digits(state.market, state.analysisWindow));
-  const enough = st.n >= 20;
+  const win = state.analysisWindow;
+  const st = digitStats(Markets.digits(state.market, win));
   grid.querySelectorAll("button[data-d]").forEach(b => {
     const d = Number(b.dataset.d);
     const cell = b.querySelector("s");
     if (!cell) return;
-    const observed = enough ? st.shares[d] : null;
-    const value = observed != null ? observed : (table ? table[d] : null);
+    /* No ticks, no number. A percentage that is not measured is a lie. */
+    const value = st.n ? st.shares[d] : null;
     cell.textContent = value == null ? "—" : value.toFixed(1) + "%";
-    /* mark the digits currently running above the 10% baseline */
+    /* the 10% line is the uniform baseline, so highlight what exceeds it */
     b.classList.toggle("heavy", value != null && value > 10);
-    b.title = "Digit " + d + " · " +
-      (observed != null
-        ? observed.toFixed(1) + "% of the last " + st.n + " ticks (theoretical 10.0%)"
-        : "theoretical 10.0% — waiting for ticks");
+    b.title = value == null
+      ? "Digit " + d + " · waiting for ticks"
+      : "Digit " + d + " · " + value.toFixed(1) + "% of the last " + st.n +
+        " Deriv ticks (" + st.counts[d] + " hits)";
   });
-  /* the caption states which number is on screen, so it is never ambiguous */
+  /* the caption names the source and window, so the number can be trusted */
   const cap = $id("digitPickHint");
-  if (cap) cap.textContent = enough
-    ? "observed % · last " + st.n + " ticks"
-    : "deriv.com theoretical 10.0%";
+  if (cap) {
+    const live = Markets.buf(state.market).ticks.length;
+    cap.textContent = st.n
+      ? "live Deriv ticks · " + st.n + " of " + live
+      : "waiting for ticks…";
+  }
 }
 
 function renderDigitHeat() {
@@ -4641,28 +4863,40 @@ function renderDigitHeat() {
   const picked = $id("barrier") ? $id("barrier").value : null;
   const needPick = ["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"].indexOf($id("ct").value) >= 0;
 
-  host.innerHTML = "";
+  /* Build the ten cells once, then only repaint their numbers. Rebuilding the
+     DOM on every tick made the percentages flicker and was easy to mistake for
+     the numbers themselves changing rapidly. */
+  if (host.children.length !== 10) {
+    host.innerHTML = "";
+    for (let d = 0; d <= 9; d++) {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "mt-digi";
+      el.dataset.d = String(d);
+      el.innerHTML = '<span class="n">' + d + "</span>" +
+        '<span class="p">—</span><i class="pip"></i>';
+      el.addEventListener("click", () => {
+        const ct = $id("ct").value;
+        if (["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"].indexOf(ct) < 0) {
+          toast("Barrier not used", CONTRACT_LABEL[ct] + " has no barrier digit.", "info");
+          return;
+        }
+        setBarrierDigit(d);
+      });
+      host.appendChild(el);
+    }
+  }
+
   for (let d = 0; d <= 9; d++) {
+    const el = host.children[d];
+    if (!el) continue;
     const share = st.n ? st.shares[d] : null;
     const cls = !st.n ? "" : share >= 11.5 ? "hot" : share <= 8 ? "cold" : "";
-    const el = document.createElement("button");
-    el.type = "button";
     el.className = "mt-digi " + cls + (needPick && String(d) === picked ? " picked" : "");
-    el.dataset.d = String(d);
-    el.innerHTML = '<span class="n">' + d + "</span>" +
-      '<span class="p">' + (st.n ? share.toFixed(1) + "%" : "—") + "</span>" +
-      '<i class="pip"></i>';
-    el.title = "Digit " + d + " · " + st.counts[d] + " of " + st.n + " ticks in the last " + win +
+    const p = el.querySelector(".p");
+    if (p) p.textContent = share != null ? share.toFixed(1) + "%" : "—";
+    el.title = "Digit " + d + " · " + st.counts[d] + " of " + st.n + " Deriv ticks" +
       (needPick ? " · click to use as barrier" : "");
-    el.addEventListener("click", () => {
-      const ct = $id("ct").value;
-      if (["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"].indexOf(ct) < 0) {
-        toast("Barrier not used", CONTRACT_LABEL[ct] + " has no barrier digit.", "info");
-        return;
-      }
-      setBarrierDigit(d);
-    });
-    host.appendChild(el);
   }
   renderDigitPercents();
 }
@@ -4798,21 +5032,48 @@ function ticketRequestFor(contractType) {
   return req;
 }
 
-/* Re-quote at most every 1.5 s while ticks stream in; immediate on input edits. */
+/* ---------------------------------------------------------------------------
+   QUOTES
+   ---------------------------------------------------------------------------
+   Every contract this terminal offers settles on a tick, so the payout changes
+   once per tick and not on a wall clock. Quotes are therefore refreshed:
+
+     · once for every new tick of the traded market (the normal case),
+     · immediately when an input changes,
+     · and just before a buy if the cached one is not for the current tick.
+
+   There is no minimum interval. A slow market simply gets fewer refreshes, and
+   a 1-second market gets one per second — which is what "live" has to mean.
+   --------------------------------------------------------------------------- */
 let ticketDirty = false;
+
 function scheduleProposal(immediate) {
   if (!state.auth) { renderProposal(true); return; }
   clearTimeout(proposalDebounce);
-  proposalDebounce = setTimeout(() => refreshProposal(), immediate ? 0 : 150);
+  proposalDebounce = setTimeout(() => refreshProposal(), immediate ? 0 : 60);
 }
 
-async function refreshProposal() {
+/* Coalesce bursts: a tick can arrive while a quote for the previous tick is
+   still in flight, so keep one request queued instead of stacking them. */
+let proposalBusy = false;
+let proposalQueued = false;
+
+async function refreshProposal(force) {
   if (!state.auth) { renderProposal(true); return; }
-  const now = Date.now();
-  if (!ticketDirty && now - state.proposalAt < 1500) return;
-  if (ticketDirty) ticketDirty = false;
+  if (proposalBusy) { proposalQueued = true; return; }
+  if (!force && !ticketDirty && state.proposalAt) {
+    /* nothing changed since the last quote and no tick has landed */
+    return;
+  }
+  ticketDirty = false;
+  proposalBusy = true;
+  proposalQueued = false;
 
   const seq = ++state.proposalSeq;
+  /* remember which tick this quote belongs to, so a purchase can tell whether
+     it is still quoting the current tick */
+  const tickEpoch = lastTickEpoch(state.market);
+  state.quoteTick = tickEpoch;
   const pair = contractPair($id("ct").value);
   const pvAge = $id("pvAge");
   if (pvAge) pvAge.textContent = "quoting…";
@@ -4822,19 +5083,28 @@ async function refreshProposal() {
       socket.request(ticketRequestFor(pair.up), 15000, "proposal"),
       socket.request(ticketRequestFor(pair.down), 15000, "proposal")
     ]);
-    if (seq !== state.proposalSeq) return; // a newer quote is in flight
     state.proposal = upResp.proposal || null;
     state.proposalAlt = downResp.proposal || null;
-    if (state.proposal) state.proposal.__at = Date.now();
-    if (state.proposalAlt) state.proposalAlt.__at = Date.now();
+    if (state.proposal) { state.proposal.__at = Date.now(); state.proposal.__tick = tickEpoch; }
+    if (state.proposalAlt) { state.proposalAlt.__at = Date.now(); state.proposalAlt.__tick = tickEpoch; }
     state.proposalAt = Date.now();
-    renderProposal();
+    if (seq === state.proposalSeq) renderProposal();
   } catch (err) {
     if (seq !== state.proposalSeq) return;
     state.proposal = null;
     state.proposalAlt = null;
     renderProposal(true, apiMessage(err));
+  } finally {
+    proposalBusy = false;
+    if (proposalQueued) { proposalQueued = false; setTimeout(() => refreshProposal(true), 40); }
   }
+}
+
+/* Epoch of the newest tick in a market's buffer (null when it has none yet). */
+function lastTickEpoch(sym) {
+  const b = Markets.buf(sym);
+  const t = b.ticks[b.ticks.length - 1];
+  return t ? t.epoch : null;
 }
 
 function pctOf(p) {
@@ -5187,18 +5457,22 @@ async function instantBuy(direction) {
   if ($id("btnBuy")) $id("btnBuy").disabled = true;
   if ($id("btnBuyAlt")) $id("btnBuyAlt").disabled = true;
 
-  /* The quote may be seconds old (or missing entirely). Ask Deriv for a fresh
-     one right now and buy that, instead of dead-ending on a stale proposal. */
+  /* Freshness is measured in ticks, not seconds: every contract here settles on
+     a tick, so a quote taken for an older tick is already stale — even if it
+     was issued 200 ms ago on a slow market. If the cached quote is not for the
+     current tick, price it again now and buy that. */
   let proposal = direction === "down" ? state.proposalAlt : state.proposal;
-  const quoteIsFresh = proposal && proposal.contract_type === contractType &&
-    (Date.now() - (proposal.__at || 0) < 12000);
+  const currentTick = lastTickEpoch(state.market);
+  const quoteIsCurrent = proposal && proposal.contract_type === contractType &&
+    proposal.__tick != null && proposal.__tick === currentTick;
 
   try {
-    if (!quoteIsFresh) {
+    if (!quoteIsCurrent) {
       if (titleEl) titleEl.textContent = "Pricing…";
       const resp = await socket.request(ticketRequestFor(contractType), 15000, "proposal");
       proposal = resp.proposal || null;
-      if (proposal) proposal.__at = Date.now();
+      if (proposal) { proposal.__at = Date.now(); proposal.__tick = lastTickEpoch(state.market); }
+      if (direction === "down") state.proposalAlt = proposal; else state.proposal = proposal;
     }
     if (!proposal) throw { code: "NO_PROPOSAL", message: "Deriv did not return a price for this contract." };
 
@@ -6958,13 +7232,15 @@ const DBots = {
   cfg: null,                // analysis of the selected bot
   vars: {},                 // live Blockly variables while running
   totalProfit: 0,
-  pl: 0, wins: 0, losses: 0,
   pending: null,            // contract id in flight
   lastEpoch: 0,
   lastSeenTick: null,
   startedAt: 0,
   logs: [],
+  txs: [],                  // every purchase this session, newest first
   stake: 1, tp: 0, sl: 0, cooldown: 0,
+  /* session counters */
+  pl: 0, wins: 0, losses: 0, lossStreak: 0, step: 0, nextStake: 1,
   purchaseContract: "",
 
   /* ---------------- persistence ---------------- */
@@ -8083,7 +8359,7 @@ const DBots = {
     const t = tick || this.lastSeenTick || null;
     return {
       vars: this.vars,
-      lastDigit: t ? lastDigit(t.quote) : null,
+      lastDigit: t ? lastDigit(t.quote, sym) : null,
       totalProfit: this.totalProfit,
       steps: 0,
       log: msg => this.log("sys", "notify: " + msg)
@@ -8422,6 +8698,7 @@ const DBots = {
     const bresp = await socket.request({ buy: p.id, price: Number(p.ask_price || stake).toFixed(2) }, 25000, "dbot buy");
     const c = bresp.buy;
     this.pending = c.contract_id;
+    this.addTransaction(c, contract, barrier);
     this.log("buy", "Bought " + c.contract_id + " · " + money(c.buy_price) + " → payout " + money(c.payout) +
       " · " + dur + (unit === "t" ? " tick" + (dur === 1 ? "" : "s") : "s") +
       (DIGIT_CONTRACTS.indexOf(contract) >= 0 ? " · barrier " + barrier : ""));
@@ -8459,6 +8736,7 @@ const DBots = {
     this.pl += profit;
     this.totalProfit = this.pl;
     if (won) this.wins++; else this.losses++;
+    this.settleTransaction(c.contract_id, profit);
 
     /* money management: the ladder resets on a win and climbs on a loss */
     if (won) {
@@ -8814,6 +9092,186 @@ const DBots = {
     host.innerHTML = lines.join("\n");
   },
 
+  /* ---------------- right-hand panels ---------------- */
+
+  /** Open one of the side panels by id (and close the rest). */
+  openSidePanel(id) {
+    const panel = $id(id);
+    if (!panel) return;
+    const head = panel.querySelector(".bl-panel-head");
+    if (!panel.classList.contains("open")) {
+      if (head) head.click();
+    } else {
+      /* already open: bring it into view rather than collapsing it */
+      try { panel.scrollIntoView({ block: "nearest" }); } catch (_) {}
+    }
+  },
+
+  /** Collapse/expand wiring for the three side panels. */
+  initSidePanels() {
+    const host = $id("dbotsSidePanels");
+    if (!host) return;
+    host.querySelectorAll(".bl-panel-head").forEach(head => {
+      head.addEventListener("click", () => {
+        const panel = head.closest(".bl-panel");
+        if (!panel) return;
+        const open = !panel.classList.contains("open");
+        panel.classList.toggle("open", open);
+        head.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) {
+          /* opening one closes the others, so the rail never crowds itself */
+          host.querySelectorAll(".bl-panel").forEach(p => {
+            if (p === panel) return;
+            p.classList.remove("open");
+            const h = p.querySelector(".bl-panel-head");
+            if (h) h.setAttribute("aria-expanded", "false");
+          });
+          if (panel.id === "dbotsJournalPanel") this.renderSideJournal();
+          if (panel.id === "dbotsTxPanel") this.renderTransactions();
+          if (panel.id === "dbotsSummaryPanel") this.renderSummary();
+        }
+      });
+    });
+    this.renderSummary();
+    this.renderSideJournal();
+    this.renderTransactions();
+  },
+
+  /** Summary: what this bot is, and how the session is going. */
+  renderSummary() {
+    const host = $id("dbotsSummary");
+    const cfg = this.cfg;
+    const rec = this.selected();
+    if (!host) return;
+    const badge = $id("dbotsSummaryBadge");
+    if (badge) badge.textContent = this.running ? "running" : (rec ? "ready" : "idle");
+    if (!cfg) {
+      host.innerHTML = '<div class="bl-sum-row"><span class="k">Bot</span><span class="v">No bot loaded</span></div>' +
+        '<div class="bl-sum-row"><span class="k">Next</span><span class="v">Import a .xml or load the sample</span></div>';
+      return;
+    }
+    const contract = this.purchaseContract || cfg.purchaseContract || cfg.contract;
+    const isDigit = DIGIT_CONTRACTS.indexOf(contract) >= 0;
+    const mk = MARKETS[cfg.market];
+    const mo = this.moneyFor(this.selectedId);
+    const pl = num(this.pl);
+    const rows = [];
+    const row = (k, v, cls, mono) => rows.push(
+      '<div class="bl-sum-row"><span class="k">' + esc(k) + '</span><span class="v ' + (cls || "") +
+      (mono ? " mono" : "") + '">' + v + "</span></div>");
+
+    rows.push('<div class="bl-sum-sec">Bot</div>');
+    row("File", esc(rec ? rec.name : "—"));
+    row("Market", esc(mk ? mk.name : cfg.symbol));
+    row("Contract", esc(CONTRACT_LABEL[contract] || contract) +
+      (isDigit ? " · " + esc(cfg.barrier) : ""), "", true);
+    row("Duration", esc(cfg.duration) + " tick" + (cfg.duration === 1 ? "" : "s"), "", true);
+    row("Stake", esc(money(this.running ? this.stakeValue() : this.stake)), "", true);
+
+    rows.push('<div class="bl-sum-sec">Money management</div>');
+    row("Take profit", mo.tp ? esc(money(mo.tp)) : "off", mo.tp ? "ok" : "", true);
+    row("Stop loss", mo.sl ? esc(money(mo.sl)) : "off", mo.sl ? "bad" : "", true);
+    row("Martingale", mo.martingale ? "on · ×" + mo.mult + " / " + mo.maxSteps + " steps" : "off",
+      mo.martingale ? "acc" : "", true);
+    row("Max losses", esc(mo.maxLoss), "", true);
+
+    rows.push('<div class="bl-sum-sec">Session</div>');
+    row("Status", this.running ? "running" : (pl || this.wins || this.losses ? "stopped" : "idle"),
+      this.running ? "ok" : "");
+    row("Net P/L", (pl >= 0 ? "+" : "") + esc(money(pl)), pl > 0 ? "ok" : pl < 0 ? "bad" : "", true);
+    row("Win / lose", this.wins + " W · " + this.losses + " L", "", true);
+    row("Loss streak", this.lossStreak + (mo.maxLoss ? " / " + mo.maxLoss : ""),
+      mo.maxLoss && this.lossStreak >= mo.maxLoss ? "bad" : "", true);
+    row("Trades", String(this.txs.length), "", true);
+    if (mo.martingale) row("Next stake", esc(money(this.nextStake || this.stake)), "acc", true);
+
+    /* the library, so switching bots never means leaving the canvas */
+    if (this.library.length > 1) {
+      rows.push('<div class="bl-sum-sec">My bots · ' + this.library.length + "</div>");
+      this.library.slice(0, 8).forEach(rec => {
+        rows.push('<button class="bl-sum-bot' + (rec.id === this.selectedId ? " on" : "") +
+          '" type="button" data-bot="' + esc(rec.id) + '">' +
+          '<span class="n">' + esc(rec.name) + "</span>" +
+          (rec.id === this.selectedId ? '<i class="on-dot">●</i>' : "") +
+          "</button>");
+      });
+    }
+
+    host.innerHTML = rows.join("");
+    /* one delegated handler, installed once */
+    if (!host.dataset.wired) {
+      host.dataset.wired = "1";
+      host.addEventListener("click", ev => {
+        const b = ev.target.closest("[data-bot]");
+        if (b) this.select(b.dataset.bot);
+      });
+    }
+  },
+
+  /** Journal: the same log the run bar shows, in the side rail. */
+  renderSideJournal() {
+    const host = $id("dbotsSideLog");
+    if (!host) return;
+    const badge = $id("dbotsJournalBadge");
+    if (badge) badge.textContent = String(this.logs.length);
+    const rows = this.logs.slice(-120).map(l =>
+      '<div class="row ' + esc(l.kind) + '"><time>' + esc(l.t) + '</time><span class="msg">' +
+      esc(l.msg) + "</span></div>").join("");
+    host.innerHTML = rows || '<div class="row sys"><span class="msg">Nothing logged yet.</span></div>';
+    const body = host.parentElement;
+    if (body && body.classList.contains("open")) host.scrollTop = host.scrollHeight;
+  },
+
+  /** Transactions: one row per purchase, with its outcome once it settles. */
+  renderTransactions() {
+    const host = $id("dbotsTxList");
+    if (!host) return;
+    const badge = $id("dbotsTxBadge");
+    if (badge) badge.textContent = String(this.txs.length);
+    if (!this.txs.length) {
+      host.innerHTML = '<div class="bl-tx-empty">No transactions yet. Run the bot to see each purchase here.</div>';
+      return;
+    }
+    host.innerHTML = this.txs.map(tx => {
+      const settled = tx.profit != null;
+      const cls = !settled ? "pending" : tx.profit >= 0 ? "ok" : "bad";
+      const val = !settled ? "open" : (tx.profit >= 0 ? "+" : "") + money(tx.profit);
+      return '<div class="bl-tx-row">' +
+        '<span class="t">' + esc(CONTRACT_LABEL[tx.type] || tx.type) +
+          (tx.barrier != null && tx.barrier !== "" ? " · " + esc(tx.barrier) : "") + "</span>" +
+        '<span class="p ' + cls + '">' + esc(val) + "</span>" +
+        '<span class="m">#' + esc(tx.id) + " · " + esc(money(tx.stake)) + " → " +
+          esc(money(tx.payout)) + (tx.at ? " · " + esc(tx.at) : "") + "</span>" +
+        "</div>";
+    }).join("");
+  },
+
+  /** Record a purchase; the row is updated in place when it settles. */
+  addTransaction(buy, contractType, barrier) {
+    const at = new Date().toLocaleTimeString([], { hour12: false });
+    this.txs.unshift({
+      id: buy.contract_id,
+      type: contractType || buy.contract_type,
+      barrier: barrier == null ? "" : barrier,
+      stake: num(buy.buy_price),
+      payout: num(buy.payout),
+      profit: null,
+      at
+    });
+    if (this.txs.length > 100) this.txs.length = 100;
+    this.renderTransactions();
+    this.renderSummary();
+    return this.txs[0];
+  },
+
+  settleTransaction(contractId, profit) {
+    const tx = this.txs.find(t => String(t.id) === String(contractId));
+    if (!tx) return;
+    tx.profit = num(profit);
+    this.renderTransactions();
+    this.renderSummary();
+  },
+
   renderStatus() {
     const pill = $id("dbotsStatus");
     if (pill) {
@@ -8835,6 +9293,7 @@ const DBots = {
     }
     const pillTab = $id("dbotsTabPill");
     if (pillTab) pillTab.classList.toggle("hidden", !this.running);
+    this.renderSummary();
     const count = $id("dbotsLogCount");
     if (count) count.textContent = String(this.logs.length);
 
@@ -8861,14 +9320,9 @@ const DBots = {
     if (c0) c0.textContent = String(this.logs.length);
     const tr0 = $id("dbotsTranscript");
     if (tr0) tr0.innerHTML = '<b>' + esc(t) + "</b> · " + esc(msg);
-    const host = $id("dbotsLog");
-    if (!host) return;
-    const ln = document.createElement("div");
-    ln.className = "ln " + (kind || "sys");
-    ln.innerHTML = '<span class="ts">' + esc(t) + '</span><span class="msgt">' + esc(msg) + "</span>";
-    host.appendChild(ln);
-    host.scrollTop = host.scrollHeight;
-    while (host.children.length > 400) host.firstElementChild.remove();
+    /* One log, one renderer: the side Journal panel is the only surface now,
+       so there is no second DOM to keep in sync. */
+    this.renderSideJournal();
   },
 
   /* ---------------- wiring ---------------- */
@@ -8948,7 +9402,7 @@ const DBots = {
       const already = side && side.classList.contains("open") && btn.classList.contains("active");
       $$("[data-bl]").forEach(x => x.classList.toggle("active", x === btn));
       if (already) { this.closeSide(); return; }
-      if (act === "history") { this.openSide("setup"); this.toggleJournal(true); return; }
+      if (act === "history") { this.openSidePanel("dbotsTxPanel"); return; }
       this.openSide(act === "blocks" ? "checks" : "library");
     }));
 
@@ -8992,14 +9446,19 @@ const DBots = {
         "warn"));
 
     const jb = $id("dbotsJournalBtn");
-    if (jb) jb.addEventListener("click", () => this.toggleJournal());
-    const jc = $id("dbotsCloseJournal");
-    if (jc) jc.addEventListener("click", () => this.toggleJournal(false));
+    if (jb) jb.addEventListener("click", () => this.openSidePanel("dbotsJournalPanel"));
+
+    /* Clear lives in the Journal panel header now that the floating drawer is
+       gone. It resets the log and the transaction ledger together, because the
+       two are two views of the same session. */
     const cl = $id("dbotsClearLog");
     if (cl) cl.addEventListener("click", () => {
       this.logs = [];
-      if ($id("dbotsLog")) $id("dbotsLog").innerHTML = "";
-      this.renderStatus();
+      this.txs = [];
+      this.renderSideJournal();
+      this.renderTransactions();
+      this.renderSummary();
+      this.log("sys", "Journal and transactions cleared.");
     });
 
     const emptyImport = $id("dbotsEmptyImport");
@@ -9010,23 +9469,21 @@ const DBots = {
     });
 
     this.initCanvasEditor();
+    this.initSidePanels();
     this.initCanvasNav();
 
     if (this.library.length) this.select(this.library[0].id);
     else this.render();
   },
 
+  /* Kept as a thin alias: older wiring and the tests still call it. */
   toggleJournal(force) {
-    const draw = $id("dbotsJournal");
-    const btn = $id("dbotsJournalBtn");
-    if (!draw) return;
-    const open = force === undefined ? !draw.classList.contains("open") : !!force;
-    draw.classList.toggle("open", open);
-    if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
-    if (open) {
-      const log = $id("dbotsLog");
-      if (log) log.scrollTop = log.scrollHeight;
+    if (force === false) {
+      const p = $id("dbotsJournalPanel");
+      if (p && p.classList.contains("open")) { const h = p.querySelector(".bl-panel-head"); if (h) h.click(); }
+      return;
     }
+    this.openSidePanel("dbotsJournalPanel");
   }
 };
 

@@ -88,6 +88,19 @@ function seedDigits(sym, digits) {
   check('signed-in theme and logout are in the collapsed left panel, not the top bar', ev(`!document.getElementById('userMenu').classList.contains('hidden') && document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='false' && document.getElementById('userPanel').contains(document.getElementById('themeToggle')) && document.getElementById('userPanel').contains(document.getElementById('btnLogout')) && !document.querySelector('.topbar #themeToggle, .topbar #btnLogout')`));
   ev(`document.getElementById('userMenuToggle').click()`);
   check('three-dot button opens accessible account panel', ev(`!document.getElementById('userPanel').hidden && document.getElementById('userMenuToggle').getAttribute('aria-expanded')==='true'`));
+  check('drawer has a top-left handle, full-height panel and four language choices', ev(`getComputedStyle(document.getElementById('userMenu')).top==='0px' && document.getElementById('userPanel').contains(document.getElementById('languageSelect')) && document.getElementById('languageSelect').options.length===4 && document.querySelector('.user-panel').getAttribute('aria-label')==='Account controls'`));
+  ev(`window.beforeLanguageRequest=JSON.stringify(ticketRequestFor('DIGITOVER'));document.getElementById('languageSelect').value='es';document.getElementById('languageSelect').dispatchEvent(new Event('change',{bubbles:true}))`);
+  check('Spanish translates navigation and menu and saves the preference', ev(`document.querySelector('[data-tab="manual"] [data-i18n]').textContent==='Operación manual' && document.getElementById('btnLogout').textContent==='Cerrar sesión' && document.getElementById('userMenuToggle').getAttribute('aria-label')==='Cerrar menú de cuenta' && localStorage.getItem('tickforge.language.v1')==='es' && document.getElementById('languageHelp').textContent.includes('inglés')`));
+  check('changing language leaves trade parameters untouched', ev(`JSON.stringify(ticketRequestFor('DIGITOVER'))===beforeLanguageRequest`));
+  ev(`document.getElementById('languageSelect').value='fr';document.getElementById('languageSelect').dispatchEvent(new Event('change',{bubbles:true}))`);
+  check('French translates navigation and indicates partial coverage', ev(`document.querySelector('[data-tab="analysis"] [data-i18n]').textContent==='Analyse' && document.getElementById('languageHelp').textContent.includes('anglais') && document.getElementById('btnLogout').textContent==='Se déconnecter'`));
+  ev(`document.getElementById('languageSelect').value='sw';document.getElementById('languageSelect').dispatchEvent(new Event('change',{bubbles:true}))`);
+  check('Kiswahili translates navigation and indicates partial coverage', ev(`document.querySelector('[data-tab="freebots"] [data-i18n]').textContent==='Boti za bure' && document.getElementById('btnLogout').textContent==='Ondoka' && document.getElementById('languageHelp').textContent.includes('Kiingereza')`));
+  ev(`renderAuth();applyLanguage(localStorage.getItem('tickforge.language.v1'))`);
+  check('saved language can be restored', ev(`document.getElementById('languageSelect').value==='sw' && document.querySelector('[data-tab="manual"] [data-i18n]').getAttribute('lang')==='sw'`));
+  ev(`applyLanguage('invalid')`);
+  check('unsupported language falls back safely to English', ev(`document.getElementById('languageSelect').value==='en' && document.getElementById('btnLogout').textContent==='Log out'`));
+  ev(`document.getElementById('languageSelect').value='en';document.getElementById('languageSelect').dispatchEvent(new Event('change',{bubbles:true}))`);
   ev(`window.themeBefore=currentTheme(); document.getElementById('themeToggle').click()`);
   check('theme switch in the panel changes and persists theme', ev(`currentTheme()!==themeBefore && localStorage.getItem('tickforge.theme.v1')===currentTheme()`));
   ev(`document.getElementById('themeToggle').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
@@ -107,6 +120,7 @@ function seedDigits(sym, digits) {
   ev(`state.auth=null;state.token=null;state.accountType=null;renderAuth()`);
   check('guest controls return after logout state', ev(`!document.getElementById('acctId').classList.contains('hidden') && document.getElementById('acctBadge').textContent==='Guest' && !document.getElementById('btnLogin').classList.contains('hidden') && document.getElementById('btnLogout').classList.contains('hidden')`));
   check('guest theme button returns to the header and the side panel is hidden', ev(`document.getElementById('userMenu').classList.contains('hidden') && document.getElementById('userPanel').hidden && document.getElementById('guestActions').contains(document.getElementById('themeToggle')) && !document.getElementById('guestActions').classList.contains('hidden')`));
+  check('guest can still change the saved language', ev(`document.getElementById('guestActions').contains(document.getElementById('languageSelect')) && !document.body.classList.contains('has-user-menu')`));
   // Controlled precision, including trailing zeros and precision corrections.
   ev(`Markets.buf('R_10').ticks=[]; Markets.setPrecision('R_10',3);
       Markets.push('R_10',{epoch:100,quote:'12.34',pip_size:3});`);

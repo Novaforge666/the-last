@@ -37,7 +37,7 @@ after a reconnect, **OAuth 2.0 login (Authorization Code + PKCE)**, an optional
 **API-token login** (PAT → REST account discovery → single-use OTP WebSocket),
 an account picker for logins with several Options accounts, REST calls that fall
 back to a same-origin relay when CORS blocks the direct read, and a header with
-Demo/Real badge, live `balance` subscription and logout. After login, the left-edge three-dot panel contains the theme switch and logout; the guest theme and login controls remain in the header.
+Demo/Real badge, live `balance` subscription and logout. After login, the top-left three-dot control opens a full-height drawer for theme, language and logout. Guests can change theme or language in the header. English, Spanish, French and Kiswahili are available for navigation and account controls; trading, confirmation and risk details remain in English. The language preference is saved locally.
 
 ## 1. Register the application
 

@@ -4844,12 +4844,13 @@ function renderDigitPercents() {
       : "Digit " + d + " · " + value.toFixed(1) + "% of the last " + st.n +
         " Deriv ticks (" + st.counts[d] + " hits)";
   });
-  /* the caption names the source and window, so the number can be trusted */
+  /* The caption names the source and the window the share is measured over.
+     Printing "N of M" invited the reading that M was a cap on how many ticks
+     were loaded; what matters is the window used for the percentage. */
   const cap = $id("digitPickHint");
   if (cap) {
-    const live = Markets.buf(state.market).ticks.length;
     cap.textContent = st.n
-      ? "live Deriv ticks · " + st.n + " of " + live
+      ? "measured over the last " + st.n + " live Deriv ticks"
       : "waiting for ticks…";
   }
 }

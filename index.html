@@ -3094,6 +3094,27 @@ body.bb-open #toasts{bottom:auto;top:10px}
             </div>
           </div>
         </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Matches / Differs probability</h3><div class="spacer"></div>
+            <span class="tiny dim">from the selected window</span>
+          </div>
+          <div class="panel-body tight">
+            <div class="tbl-scroll" style="max-height:360px;overflow-y:auto">
+              <table>
+                <thead>
+                  <tr><th>Digit</th><th class="num">Matches %</th><th class="num">Differs %</th>
+                      <th class="num">Matches hits</th><th class="num">Differs hits</th><th>Bias</th></tr>
+                </thead>
+                <tbody id="mdBody"></tbody>
+              </table>
+            </div>
+            <div class="row" style="margin-top:10px;justify-content:space-between">
+              <span class="tiny dim">Newest digit repeats the previous one</span>
+              <span class="tiny mono" id="mdRepeat">—</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="stack-12">
@@ -3193,6 +3214,10 @@ body.bb-open #toasts{bottom:auto;top:10px}
       <div class="panel-head">
         <h3>Entry points — <span id="sigMarketName">Volatility 50 Index</span></h3>
         <div class="spacer"></div>
+        <span class="seg" id="sigFamilySeg" role="tablist" aria-label="Entry point family">
+          <button data-fam="overunder" class="active" type="button">Over / Under</button>
+          <button data-fam="matches" type="button">Matches / Differs</button>
+        </span>
         <span class="tiny dim" id="sigUpdated">—</span>
       </div>
       <div class="panel-body">
@@ -3342,8 +3367,10 @@ const CONTRACT_LABEL = {
 };
 const DIGIT_CONTRACTS = ["DIGITOVER","DIGITUNDER","DIGITEVEN","DIGITODD","DIGITMATCH","DIGITDIFF"];
 
-/* The six cards required on the Entry Points tab. */
-const SIGNAL_DEFS = [
+/* The cards on the Entry Points tab, by family. The two families are shown
+   one at a time through the sub-tab in that panel: when Over/Under is open
+   the Matches/Differs cards are not rendered, and vice versa. */
+const SIGNAL_DEFS_OVERUNDER = [
   { id: "O2", type: "DIGITOVER", barrier: 2, label: "Over 2" },
   { id: "O3", type: "DIGITOVER", barrier: 3, label: "Over 3" },
   { id: "O4", type: "DIGITOVER", barrier: 4, label: "Over 4" },
@@ -3351,6 +3378,20 @@ const SIGNAL_DEFS = [
   { id: "U6", type: "DIGITUNDER", barrier: 6, label: "Under 6" },
   { id: "U5", type: "DIGITUNDER", barrier: 5, label: "Under 5" }
 ];
+/* Matches/Differs: the barrier IS the digit, so there is one card per digit
+   per side. Expected hit rates are fixed: Matches 10%, Differs 90%. */
+const SIGNAL_DEFS_MATCHES = [];
+for (let d = 0; d <= 9; d++) {
+  SIGNAL_DEFS_MATCHES.push({ id: "M" + d, type: "DIGITMATCH", barrier: d, label: "Matches " + d });
+  SIGNAL_DEFS_MATCHES.push({ id: "D" + d, type: "DIGITDIFF", barrier: d, label: "Differs " + d });
+}
+/* Back-compat alias: the Over/Under family. */
+const SIGNAL_DEFS = SIGNAL_DEFS_OVERUNDER;
+
+/* The family currently shown on the Entry Points tab. */
+function signalDefs() {
+  return state.signalFamily === "matches" ? SIGNAL_DEFS_MATCHES : SIGNAL_DEFS_OVERUNDER;
+}
 
 /* ---------------------------------------------------------------------------
    1. TINY HELPERS
@@ -3469,6 +3510,7 @@ const state = {
   analysisWindow: 1000,
   miniWindow: 100,
   signals: [],                 // last computed signal cards
+  signalFamily: "overunder",   // entry-points sub-tab: overunder | matches
   scan: [],
   lastSignalEntry: {},         // id -> bool, for sound alerts
   bot: {
@@ -6080,6 +6122,7 @@ function renderAnalysis() {
   renderRatio(st);
   renderHotCold(st);
   renderOverUnder(digits);
+  renderMatchesDiffers(digits);
   renderStreaks(digits, st.n);
   renderDigitStrip($("#anaStrip"), Markets.digits(sym, 60), true);
 }
@@ -6162,6 +6205,52 @@ function renderOverUnder(digits) {
   body.innerHTML = rows.join("");
 }
 
+function renderMatchesDiffers(digits) {
+  const body = $("#mdBody");
+  if (!body) return;
+  if (!digits.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">Waiting for ticks…</td></tr>';
+    const rep = $("#mdRepeat");
+    if (rep) rep.textContent = "—";
+    return;
+  }
+  const n = digits.length;
+  const counts = new Array(10).fill(0);
+  digits.forEach(d => counts[d]++);
+  const rows = [];
+  for (let d = 0; d <= 9; d++) {
+    // Matches d : last digit == d   (expected 10%)
+    // Differs d : last digit != d   (expected 90%)
+    const match = counts[d];
+    const diff = n - match;
+    const mp = (match / n) * 100;
+    const dp = 100 - mp;
+    const bias = mp - 10;
+    const biasTxt = Math.abs(bias) < 0.8 ? '<span class="dim">flat</span>'
+      : bias > 0 ? '<span class="acc">hot +' + bias.toFixed(1) + "</span>"
+      : '<span class="bad">cold ' + bias.toFixed(1) + "</span>";
+    rows.push("<tr>" +
+      '<td class="mono">' + d + "</td>" +
+      '<td class="num mono">' + mp.toFixed(2) + "%</td>" +
+      '<td class="num mono">' + dp.toFixed(2) + "%</td>" +
+      '<td class="num mono dim">' + match + "</td>" +
+      '<td class="num mono dim">' + diff + "</td>" +
+      "<td>" + biasTxt + "</td>" +
+    "</tr>");
+  }
+  body.innerHTML = rows.join("");
+  /* The natural Matches setup: the next digit repeats the newest one. Its
+     hit rate over the window is how often consecutive digits were equal. */
+  const rep = $("#mdRepeat");
+  if (rep) {
+    if (n < 2) { rep.textContent = "—"; return; }
+    let repeats = 0;
+    for (let i = 0; i < n - 1; i++) if (digits[i] === digits[i + 1]) repeats++;
+    const rp = (repeats / (n - 1)) * 100;
+    rep.textContent = rp.toFixed(2) + "%  (" + repeats + " / " + (n - 1) + " ticks)";
+  }
+}
+
 function renderStreaks(digits, n) {
   const body = $("#streakBody");
   if (!body) return;
@@ -6189,19 +6278,27 @@ function renderStreaks(digits, n) {
    ---------------------------------------------------------------------------
    A "signal" here is a description of the recent tick distribution, not a
    forecast. Expected hit rates for synthetic indices are fixed by the
-   contract definition: Over b = (9-b)/10, Under b = b/10.
+   contract definition: Over b = (9-b)/10, Under b = b/10, Matches = 10%,
+   Differs = 90%.
    Entry rules (all adjustable):
      R1 streak  : the run of losing digits at the newest tick reaches the
                   configured length (a "finished streak"), or a run of winning
                   digits does with a positive edge (momentum).
-     R2 cold    : the digit just outside the barrier (b+1 for Over, b-1 for
-                  Under) is in the cold zone, i.e. under-represented.
+     R2 zone    : Over/Under — the digit just outside the barrier (b+1 / b-1)
+                  is in the cold zone. Matches — the digit itself is hot
+                  (above the mirror of the cold line). Differs — the digit
+                  itself is cold.
    Strength: |edge| against the expected rate, measured over the window.
    --------------------------------------------------------------------------- */
 function signalExpected(def) {
+  /* Matches/Differs have a fixed expectation whatever the digit: 10% / 90%. */
+  if (def.type === "DIGITMATCH") return 10;
+  if (def.type === "DIGITDIFF") return 90;
   return def.type === "DIGITOVER" ? ((9 - def.barrier) / 10) * 100 : (def.barrier / 10) * 100;
 }
 function digitWins(def, d) {
+  if (def.type === "DIGITMATCH") return d === def.barrier;
+  if (def.type === "DIGITDIFF") return d !== def.barrier;
   return def.type === "DIGITOVER" ? d > def.barrier : d < def.barrier;
 }
 function computeSignal(def, digits, cfg) {
@@ -6229,20 +6326,34 @@ function computeSignal(def, digits, cfg) {
   const streakTrigger = lossRun >= cfg.streak;
   const momentumTrigger = winRun >= cfg.streak && edge > 1;
 
-  // R2: cold zone next to the barrier.
+  // R2: the digit itself is hot (Matches) or cold (Differs); for Over/Under
+  // it is the cold zone just outside the barrier.
   const counts = new Array(10).fill(0);
   slice.forEach(d => counts[d]++);
-  const nearDigit = def.type === "DIGITOVER" ? Math.min(9, def.barrier + 1) : Math.max(0, def.barrier - 1);
+  const isMatch = def.type === "DIGITMATCH";
+  const isDiff = def.type === "DIGITDIFF";
+  const nearDigit = isMatch || isDiff ? def.barrier
+    : def.type === "DIGITOVER" ? Math.min(9, def.barrier + 1) : Math.max(0, def.barrier - 1);
   const nearShare = win ? (counts[nearDigit] / win) * 100 : 0;
-  const coldTrigger = nearShare < cfg.cold;
+  /* A hot digit is the mirror of the cold zone around the 10% expectation:
+     with the default 8% cold line, hot means above 12%. */
+  const zoneTrigger = isMatch ? nearShare > 10 + (10 - cfg.cold)
+    : nearShare < cfg.cold;
 
   const reasons = [];
-  if (streakTrigger) reasons.push(lossRun + "× losing digits in a row (streak just ended)");
+  if (streakTrigger) {
+    reasons.push(isMatch ? lossRun + "× non-matching digits in a row (streak just ended)"
+      : isDiff ? lossRun + "× matching digits in a row (streak just ended)"
+      : lossRun + "× losing digits in a row (streak just ended)");
+  }
   if (momentumTrigger) reasons.push(winRun + "× winning digits in a row");
-  if (coldTrigger) reasons.push("digit " + nearDigit + " is cold (" + nearShare.toFixed(1) + "%)");
+  if (zoneTrigger) {
+    reasons.push(isMatch ? "digit " + nearDigit + " is hot (" + nearShare.toFixed(1) + "%)"
+      : "digit " + nearDigit + " is cold (" + nearShare.toFixed(1) + "%)");
+  }
 
-  // Both a finished streak and a cold neighbour is the strongest setup.
-  const entry = (streakTrigger || momentumTrigger) || (coldTrigger && edge > 0.5);
+  // Both a finished streak and a hot/cold digit is the strongest setup.
+  const entry = (streakTrigger || momentumTrigger) || (zoneTrigger && edge > 0.5);
   let score = Math.abs(edge) * 1.4 + (entry ? 2 : 0) + (strength === "strong" ? 1.5 : strength === "medium" ? 0.5 : 0);
   if (trend === "up" && delta > 0) score += 0.4;
 
@@ -6268,10 +6379,20 @@ function computeSignals() {
   const cfg = sigConfig();
   const digits = Markets.digits(state.market, Math.max(cfg.window, cfg.trend, 60));
   if (!digits.length) return;
-  state.signals = SIGNAL_DEFS.map(def => computeSignal(def, digits, cfg));
+  /* Only the open family's cards are computed and rendered: with Over/Under
+     open, no Matches/Differs card exists on the page (and vice versa). */
+  state.signals = signalDefs().map(def => computeSignal(def, digits, cfg));
   state.signalCfg = cfg;
   renderSignalCards();
 }
+
+/* Entry-points sub-tab: switch the visible family and recompute. */
+$$("#sigFamilySeg button").forEach(btn => btn.addEventListener("click", () => {
+  if (state.signalFamily === btn.dataset.fam) return;
+  state.signalFamily = btn.dataset.fam;
+  $$("#sigFamilySeg button").forEach(b => b.classList.toggle("active", b === btn));
+  computeSignals();
+}));
 
 function ensureSignals() {
   if (!state.signals.length) computeSignals();
@@ -6301,7 +6422,7 @@ function renderSignalCards() {
     return '<div class="sig ' + (ready ? "entry" : "wait") + '">' +
       '<div class="top">' +
         '<div><div class="name">' + esc(def.label) + '</div>' +
-        '<div class="tiny dim mono">' + esc(def.type === "DIGITOVER" ? "DIGITOVER" : "DIGITUNDER") + " · barrier " + def.barrier + "</div></div>" +
+        '<div class="tiny dim mono">' + esc(def.type) + " · barrier " + def.barrier + "</div></div>" +
         '<span class="badge-entry ' + (ready ? "go" : "hold") + '">' + (ready ? "Entry now" : "Wait") + "</span>" +
       "</div>" +
       '<div class="row" style="justify-content:space-between;align-items:flex-end">' +
@@ -6486,7 +6607,7 @@ $("#btnScanAll").addEventListener("click", async () => {
           return;
         }
         let best = null;
-        SIGNAL_DEFS.forEach(def => {
+        signalDefs().forEach(def => {
           const s = computeSignal(def, digits, Object.assign({}, cfg, { window: Math.min(cfg.window, digits.length) }));
           if (!best || s.score > best.score) best = s;
         });
@@ -6536,7 +6657,7 @@ function renderScan(results) {
       const sym = btn.dataset.sym;
       const r = results.find(x => x.sym === sym);
       setMarket(sym);
-      if (r && r.best) { state.signals = SIGNAL_DEFS.map(def => computeSignal(def, Markets.digits(sym, 1000), sigConfig())); renderSignalCards(); }
+      if (r && r.best) { state.signals = signalDefs().map(def => computeSignal(def, Markets.digits(sym, 1000), sigConfig())); renderSignalCards(); }
       switchTab("signals");
     });
   });
@@ -7947,6 +8068,7 @@ const DBots = {
       overunder: ["R_50",    "DIGITOVER",  "overunder",     5, 5],
       evenodd:   ["R_75",    "DIGITEVEN",  "evenodd",    null, 1],
       matches:   ["R_100",   "DIGITDIFF",  "matchesdiffers", 7, 1],
+      matchbot:  ["R_100",   "DIGITMATCH", "matchesdiffers", 5, 1],
       risefall:  ["1HZ100V", "CALL",       "callput",     null, 5],
       /* No analysis: trades on every tick. Execution parameters live in the
          variables below so the canvas can edit them. */
@@ -7986,7 +8108,7 @@ const DBots = {
   ,
 
   templateBarrier(kind) {
-    const map = { sample: 3, overunder: 5, matches: 7, direct: 5 };
+    const map = { sample: 3, overunder: 5, matches: 7, matchbot: 5, direct: 5 };
     if (!(kind in map)) return "";
     return '<value name="PREDICTION"><shadow type="math_number" id="sh_pred"><field name="NUM">' + map[kind] + "</field></shadow></value>";
   },
@@ -8037,7 +8159,7 @@ const DBots = {
     /* The bundled sample buys DIGITOVER inside its lifecycle; a template that
        trades something else must not smuggle that purchase block along. */
     const want = { sample: "DIGITOVER", overunder: "DIGITOVER", evenodd: "DIGITEVEN",
-                   matches: "DIGITDIFF", risefall: "CALL" }[kind];
+                   matches: "DIGITDIFF", matchbot: "DIGITMATCH", risefall: "CALL" }[kind];
     if (want) {
       before = before.replace(/(<block type="purchase"[\s\S]*?<field name="PURCHASE_LIST">)([A-Z_]+)(<\/field>)/,
         (m, a, cur, b) => a + want + b);
@@ -8050,7 +8172,8 @@ const DBots = {
     const t = this.template(kind);
     const names = {
       sample: "over3_1tick_bot.xml", overunder: "digit_over5_bot.xml", evenodd: "digit_even_bot.xml",
-      matches: "digit_differs7_bot.xml", risefall: "rise_fall_bot.xml", blank: "new_strategy.xml"
+      matches: "digit_differs7_bot.xml", matchbot: "digit_matches5_bot.xml",
+      risefall: "rise_fall_bot.xml", blank: "new_strategy.xml"
     };
     const rec = this.add(t.xml, names[kind] || "new_strategy.xml");
     if (rec) this.resetCanvas();
@@ -9953,6 +10076,8 @@ const FREE_BOTS = [
     desc: "Digit Even on Volatility 75, 1 tick. At the crossroads of even and odd, she takes the even road." },
   { kind: "matches",   glyph: "◎", name: "Orpheus",    epithet: "The Backward Glance",
     desc: "Digit Differs 7 on Volatility 100, 1 tick. He looks back at the digit that just passed — and bets it will not return." },
+  { kind: "matchbot",  glyph: "◉", name: "Narcissus",  epithet: "The One Who Saw Himself",
+    desc: "Digit Matches 5 on Volatility 100, 1 tick. He gazes into the pool and sees his own face — the digit that repeats itself." },
   { kind: "risefall",  glyph: "↗", name: "Icarus",     epithet: "The Ascent",
     desc: "Rise on Volatility 100 (1s), 5 ticks. Pure ascent — the bot that always climbs toward the next tick." },
   { kind: "direct",    glyph: "▶", name: "Chronos",    epithet: "The Devourer of Ticks",

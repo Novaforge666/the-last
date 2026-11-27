@@ -1,0 +1,10 @@
+{
+  "name": "the-last-integration-tests",
+  "private": true,
+  "scripts": {
+    "test": "node entry-signal.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "31.0.1"
+  }
+}

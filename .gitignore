@@ -1,2 +1,4 @@
 .scratch/
 handoff/
+
+tests/node_modules/

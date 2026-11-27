@@ -85,8 +85,9 @@ public app id.
 6. **Pick an account.** The access token is used as a Bearer token against
    `GET https://api.derivws.com/trading/v1/options/accounts`. The page restores
    the account used before, otherwise prefers a demo account, otherwise uses the
-   only account, otherwise opens the account picker. A real account always needs
-   an explicit confirmation.
+   only account, otherwise opens the account picker. Selecting a real account
+   requires confirmation; restoring a previously selected account skips that
+   connection confirmation. Manual trading remains one-click on real accounts.
 7. **Connect the trading socket.** `POST …/accounts/{id}/otp` returns a
    single-use WebSocket URL. That socket is already authenticated, so the page
    never sends an `authorize` message. OTP URLs expire, so every reconnect mints
@@ -290,8 +291,19 @@ endorsement of the strategy.
   not guaranteed execution prices or loss caps.
 - **Manual ticket safety.** Cached prices are used only for the same account,
   connection, contract and ticket parameters. An old quote response cannot
-  replace the current ticket; Quick confirmations are cancelled if the account
-  or market changes, and purchases are never queued across a reconnect.
+  replace the current ticket. If a price moves or a proposal expires, the manual
+  order is not silently retried: review the refreshed quote and click again.
+  Manual and automated stake-based quotes above the requested stake are rejected.
+  Quick confirmations are cancelled if the account or market changes, and
+  purchases are never queued across a reconnect. If a bot settlement lacks a
+  numeric profit, it stops and keeps the contract locked until a complete
+  settlement arrives; check Deriv positions and history before proceeding.
+  Automated runners stop on a trade error instead of repeatedly submitting on
+  successive ticks. Distinct tick events are processed even when they share a
+  timestamp; execution can still be delayed or missed while an order is in flight.
+- **Tab and signal usability.** Arrow keys, Home and End navigate the primary
+  tabs. Entry Now rechecks the latest buffered ticks when clicked, while the
+  all-market scan is a dated snapshot, not a continuously refreshed signal.
 
 ## Known limits
 

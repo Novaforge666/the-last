@@ -590,6 +590,9 @@ th.num{text-align:right}
   font-size:11px;font-weight:600;font-family:var(--mono);letter-spacing:.02em;
   border-radius:var(--radius-pill);transition:background .15s,color .15s;
 }
+#sigFamilyHead{flex-wrap:wrap}
+#sigFamilySeg{max-width:100%;flex-wrap:wrap}
+#sigFamilySeg button{white-space:nowrap}
 .seg button + button{border-left:0}
 .seg button.active{background:var(--acc);color:var(--acc-ink);font-weight:700}
 .seg button:hover:not(.active){background:var(--wash);color:var(--txt)}
@@ -2693,7 +2696,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
     <div class="stack-12">
       <div class="panel">
         <div class="panel-head"><h3>Free bots</h3><div class="spacer"></div>
-          <span class="tiny dim">Open one to edit it and set its parameters in DBots</span>
+          <span class="tiny dim">Open a bot to configure it in DBots</span>
         </div>
         <div class="panel-body">
           <div class="fb-grid" id="freeBotsGrid"></div>
@@ -2701,7 +2704,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
             Every bot here is a real Deriv Bot file. Opening one loads it into the
             <b>DBots</b> tab — the canvas for editing its blocks and the Run settings
             (stake, take profit, stop loss, cooldown) for its parameters. Start it with
-            <b>Run</b> or from a matching <b>Entry now</b> signal. Synthetic indices are independent per
+            <b>Run</b>. Janus, Hecate, Orpheus and Narcissus only start from a matching <b>Entry now</b> signal. Synthetic indices are independent per
             tick: past digits do not predict the next one, and no payout edge is implied.
           </p>
         </div>
@@ -3216,12 +3219,13 @@ body.bb-open #toasts{bottom:auto;top:10px}
     </div>
 
     <div class="panel" style="margin-top:12px">
-      <div class="panel-head">
+      <div class="panel-head" id="sigFamilyHead">
         <h3>Entry points — <span id="sigMarketName">Volatility 50 Index</span></h3>
         <div class="spacer"></div>
         <span class="seg" id="sigFamilySeg" role="tablist" aria-label="Entry point family">
           <button data-fam="overunder" class="active" type="button">Over / Under</button>
           <button data-fam="matches" type="button">Matches / Differs</button>
+          <button data-fam="evenodd" type="button">Even / Odd</button>
         </span>
         <span class="tiny dim" id="sigUpdated">—</span>
       </div>
@@ -3230,7 +3234,7 @@ body.bb-open #toasts{bottom:auto;top:10px}
         <div class="hint" style="margin-top:12px">
           First configure a matching Free bot in DBots and select the same market here.
           Pressing <b>Entry now</b> starts the bot and places that signal trade immediately;
-          afterwards it continues its own strategy. “Entry now” is <b>not</b> a prediction:
+          the bot repeats that signal until stopped or a risk limit is reached, without its own analysis. “Entry now” is <b>not</b> a prediction:
           each tick is independent, so hit rates describe the past window only.
         </div>
       </div>
@@ -3373,6 +3377,13 @@ const CONTRACT_LABEL = {
   CALL: "Rise", PUT: "Fall"
 };
 const DIGIT_CONTRACTS = ["DIGITOVER","DIGITUNDER","DIGITEVEN","DIGITODD","DIGITMATCH","DIGITDIFF"];
+const BARRIER_CONTRACTS = ["DIGITOVER", "DIGITUNDER", "DIGITMATCH", "DIGITDIFF"];
+const SIGNAL_BOT_NAMES = { overunder: "digit_over5_bot.xml", evenodd: "digit_even_bot.xml", matches: "digit_differs7_bot.xml", matchbot: "digit_matches5_bot.xml" };
+function signalBotKind(rec) {
+  if (!rec) return null;
+  if (Object.hasOwn(SIGNAL_BOT_NAMES, rec.signalBotKind)) return rec.signalBotKind;
+  return Object.keys(SIGNAL_BOT_NAMES).find(k => SIGNAL_BOT_NAMES[k] === rec.name) || null;
+}
 
 /* The cards on the Entry Points tab, by family. The two families are shown
    one at a time through the sub-tab in that panel: when Over/Under is open
@@ -3392,12 +3403,16 @@ for (let d = 0; d <= 9; d++) {
   SIGNAL_DEFS_MATCHES.push({ id: "M" + d, type: "DIGITMATCH", barrier: d, label: "Matches " + d });
   SIGNAL_DEFS_MATCHES.push({ id: "D" + d, type: "DIGITDIFF", barrier: d, label: "Differs " + d });
 }
+const SIGNAL_DEFS_EVENODD = [
+  { id: "EVEN", type: "DIGITEVEN", label: "Even" },
+  { id: "ODD", type: "DIGITODD", label: "Odd" }
+];
 /* Back-compat alias: the Over/Under family. */
 const SIGNAL_DEFS = SIGNAL_DEFS_OVERUNDER;
 
 /* The family currently shown on the Entry Points tab. */
 function signalDefs() {
-  return state.signalFamily === "matches" ? SIGNAL_DEFS_MATCHES : SIGNAL_DEFS_OVERUNDER;
+  return state.signalFamily === "matches" ? SIGNAL_DEFS_MATCHES : state.signalFamily === "evenodd" ? SIGNAL_DEFS_EVENODD : SIGNAL_DEFS_OVERUNDER;
 }
 
 /* ---------------------------------------------------------------------------
@@ -3517,7 +3532,7 @@ const state = {
   analysisWindow: 1000,
   miniWindow: 100,
   signals: [],                 // last computed signal cards
-  signalFamily: "overunder",   // entry-points sub-tab: overunder | matches
+  signalFamily: "overunder",   // entry-points sub-tab: overunder | matches | evenodd
   scan: [],
   lastSignalEntry: {},         // id -> bool, for sound alerts
   bot: {
@@ -6299,11 +6314,14 @@ function renderStreaks(digits, n) {
    --------------------------------------------------------------------------- */
 function signalExpected(def) {
   /* Matches/Differs have a fixed expectation whatever the digit: 10% / 90%. */
+  if (def.type === "DIGITEVEN" || def.type === "DIGITODD") return 50;
   if (def.type === "DIGITMATCH") return 10;
   if (def.type === "DIGITDIFF") return 90;
   return def.type === "DIGITOVER" ? ((9 - def.barrier) / 10) * 100 : (def.barrier / 10) * 100;
 }
 function digitWins(def, d) {
+  if (def.type === "DIGITEVEN") return d % 2 === 0;
+  if (def.type === "DIGITODD") return d % 2 === 1;
   if (def.type === "DIGITMATCH") return d === def.barrier;
   if (def.type === "DIGITDIFF") return d !== def.barrier;
   return def.type === "DIGITOVER" ? d > def.barrier : d < def.barrier;
@@ -6339,13 +6357,14 @@ function computeSignal(def, digits, cfg) {
   slice.forEach(d => counts[d]++);
   const isMatch = def.type === "DIGITMATCH";
   const isDiff = def.type === "DIGITDIFF";
-  const nearDigit = isMatch || isDiff ? def.barrier
+  const isParity = def.type === "DIGITEVEN" || def.type === "DIGITODD";
+  const nearDigit = isParity ? null : isMatch || isDiff ? def.barrier
     : def.type === "DIGITOVER" ? Math.min(9, def.barrier + 1) : Math.max(0, def.barrier - 1);
-  const nearShare = win ? (counts[nearDigit] / win) * 100 : 0;
+  const nearShare = win && nearDigit != null ? (counts[nearDigit] / win) * 100 : 0;
   /* A hot digit is the mirror of the cold zone around the 10% expectation:
      with the default 8% cold line, hot means above 12%. */
-  const zoneTrigger = isMatch ? nearShare > 10 + (10 - cfg.cold)
-    : nearShare < cfg.cold;
+  const zoneTrigger = !isParity && (isMatch ? nearShare > 10 + (10 - cfg.cold)
+    : nearShare < cfg.cold);
 
   const reasons = [];
   if (streakTrigger) {
@@ -6429,7 +6448,7 @@ function renderSignalCards() {
     return '<div class="sig ' + (ready ? "entry" : "wait") + '">' +
       '<div class="top">' +
         '<div><div class="name">' + esc(def.label) + '</div>' +
-        '<div class="tiny dim mono">' + esc(def.type) + " · barrier " + def.barrier + "</div></div>" +
+        '<div class="tiny dim mono">' + esc(def.type) + (BARRIER_CONTRACTS.includes(def.type) ? " · barrier " + def.barrier : "") + "</div></div>" +
         (ready
           ? '<button class="badge-entry go" type="button" data-act="runbot" data-i="' + i + '" title="Run the matching bot and trade this signal now">Entry now</button>'
           : '<span class="badge-entry hold">Wait</span>') +
@@ -6461,7 +6480,7 @@ function renderSignalCards() {
         $("#botContract").value = s.def.type;
         renderStrategyParams();
         const bb = $id("botBarrier");
-        if (bb) bb.value = String(s.def.barrier);
+        if (bb && BARRIER_CONTRACTS.includes(s.def.type)) bb.value = String(s.def.barrier);
         switchTab("bots");
         toast("Bot pre-filled", s.def.label + " selected as the bot contract.", "info");
       }
@@ -6484,8 +6503,9 @@ async function quickTrade(s, btn) {
   const req = {
     proposal: 1, amount: stake.toFixed(2), basis: "stake",
     contract_type: def.type, currency: state.currency || "USD",
-    duration: 1, duration_unit: "t", ...symbolPayload(state.market), barrier: String(def.barrier)
+    duration: 1, duration_unit: "t", ...symbolPayload(state.market)
   };
+  if (BARRIER_CONTRACTS.includes(def.type)) req.barrier = String(def.barrier);
   const original = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "Quoting…"; }
   try {
@@ -6520,7 +6540,7 @@ function tradeFromSignal(s) {
   const def = s.def;
   $("#ct").value = def.type;
   const bar = $("#barrier");
-  if (bar) bar.value = String(def.barrier);
+  if (bar && BARRIER_CONTRACTS.includes(def.type)) bar.value = String(def.barrier);
   updateBarrierVisibility();
   ticketDirty = true;
   scheduleProposal(true);
@@ -6553,8 +6573,11 @@ async function runSignalBot(s, btn) {
   const kind = botKindForContract(def.type);
   const rec = DBots.selected();
   let cfg;
-  try { cfg = rec && DBots.parse(rec.xml); } catch (_) { cfg = null; }
-  if (!kind || !cfg || botKindForContract(cfg.purchaseContract || cfg.contract) !== kind) {
+  try {
+    if (rec && signalBotKind(rec) && !DBots.upgradeSignalBot(rec)) throw new Error("Could not upgrade bot");
+    cfg = rec && DBots.parse(rec.xml);
+  } catch (_) { cfg = null; }
+  if (!kind || !cfg || signalBotKind(rec) !== kind) {
     const bot = FREE_BOTS.find(b => b.kind === kind);
     switchTab("freebots");
     toast("Configure the matching bot first", "Open " + (bot ? bot.name : "the matching bot") + " in Free bots, set it up in DBots, then return to this signal.", "warn");
@@ -7162,7 +7185,7 @@ async function placeBotTrade(cfg, decision) {
     contract_type: contract, currency: state.currency || "USD",
     duration: cfg.ticks, duration_unit: "t", ...symbolPayload(cfg.market)
   };
-  if (DIGIT_CONTRACTS.indexOf(contract) >= 0) propReq.barrier = String(barrier);
+  if (BARRIER_CONTRACTS.includes(contract)) propReq.barrier = String(barrier);
 
   pushLog("buy", "Entry · " + decision.reason);
   const presp = await socket.request(propReq, 20000, "bot proposal");
@@ -7710,7 +7733,7 @@ const DBots = {
       if (Array.isArray(arr)) {
         this.library = arr.filter(b => b && b.id && b.xml).map(b => ({
           id: String(b.id), name: String(b.name || "bot.xml"), xml: String(b.xml),
-          addedAt: num(b.addedAt)
+          addedAt: num(b.addedAt), signalBotKind: b.signalBotKind || undefined, signalVersion: num(b.signalVersion)
         }));
       }
     } catch (_) { /* a corrupt library is not worth a broken page */ }
@@ -7928,7 +7951,7 @@ const DBots = {
     else if (!market) issues.push({ level: "err", text: "Market “" + symbol + "” is not one of the volatility indices this terminal streams." });
     if (!contract) issues.push({ level: "err", text: "No contract type is set in the trade definition." });
     else if (!CONTRACT_LABEL[contract]) issues.push({ level: "err", text: "Contract “" + contract + "” is not supported by the ticket yet." });
-    if (contract && DIGIT_CONTRACTS.indexOf(contract) >= 0 && finalBarrier == null) {
+    if (contract && BARRIER_CONTRACTS.includes(contract) && finalBarrier == null) {
       issues.push({ level: "warn", text: "A digit contract needs a barrier, but the file carries no prediction value. Defaulting to 3." });
     }
     if (!before && !during) issues.push({ level: "warn", text: "This bot has no before_purchase logic, so it would never place a trade." });
@@ -8146,7 +8169,7 @@ const DBots = {
 
     const map = {
       sample:    ["1HZ100V", "DIGITOVER",  "overunder",     3, 1],
-      overunder: ["R_50",    "DIGITOVER",  "overunder",     5, 5],
+      overunder: ["R_50",    "DIGITOVER",  "overunder",     5, 1],
       evenodd:   ["R_75",    "DIGITEVEN",  "evenodd",    null, 1],
       matches:   ["R_100",   "DIGITDIFF",  "matchesdiffers", 7, 1],
       matchbot:  ["R_100",   "DIGITMATCH", "matchesdiffers", 5, 1],
@@ -8199,7 +8222,7 @@ const DBots = {
     /* Zero-analysis bot: before_purchase contains one purchase block and
        nothing else, so every tick is an entry. No conditions, no indicators,
        no streak counting — the only controls are execution parameters. */
-    if (kind === "direct") {
+    if (kind === "direct" || Object.hasOwn(SIGNAL_BOT_NAMES, kind)) {
       /* No analysis anywhere: before_purchase is a single purchase, and
          after_purchase ends in trade_again so the runner keeps going. Without
          that trailing trade_again the runner stops after the first settlement
@@ -8248,8 +8271,36 @@ const DBots = {
     return before + after + during;
   },
 
+  /* Migrate previously opened gallery bots without replacing their record,
+     market, prediction, or separately stored risk settings. */
+  upgradeSignalBot(rec) {
+    const kind = signalBotKind(rec);
+    if (!kind) return false;
+    if (rec.signalVersion === 2) return true;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rec.xml, "application/xml");
+    const source = parser.parseFromString(this.template(kind).xml, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length || source.getElementsByTagName("parsererror").length) return false;
+    const types = ["before_purchase", "during_purchase", "after_purchase"];
+    Array.from(doc.documentElement.children).filter(el => el.localName === "block" && types.includes(el.getAttribute("type"))).forEach(el => el.remove());
+    Array.from(source.documentElement.children).filter(el => el.localName === "block" && types.includes(el.getAttribute("type"))).forEach(el => doc.documentElement.appendChild(doc.importNode(el, true)));
+    rec.xml = new XMLSerializer().serializeToString(doc);
+    rec.signalBotKind = kind;
+    rec.signalVersion = 2;
+    this.save();
+    return true;
+  },
+
   /** Load a quick-strategy template into the library and select it. */
   addTemplate(kind) {
+    if (Object.hasOwn(SIGNAL_BOT_NAMES, kind)) {
+      const existing = this.library.find(b => signalBotKind(b) === kind);
+      if (existing) {
+        if (this.running || this.starting || this.busy || this.pending != null) { toast("Bot busy", "Stop the bot and wait for its order to settle before loading another.", "warn"); return null; }
+        if (!this.upgradeSignalBot(existing)) { toast("Bot upgrade failed", "Could not prepare this bot. Your saved settings were not cleared.", "err"); return null; }
+        this.select(existing.id); return existing;
+      }
+    }
     const t = this.template(kind);
     const names = {
       sample: "over3_1tick_bot.xml", overunder: "digit_over5_bot.xml", evenodd: "digit_even_bot.xml",
@@ -8257,7 +8308,10 @@ const DBots = {
       risefall: "rise_fall_bot.xml", blank: "new_strategy.xml"
     };
     const rec = this.add(t.xml, names[kind] || "new_strategy.xml");
-    if (rec) this.resetCanvas();
+    if (rec) {
+      if (Object.hasOwn(SIGNAL_BOT_NAMES, kind)) { rec.signalBotKind = kind; rec.signalVersion = 2; this.save(); }
+      this.resetCanvas();
+    }
     return rec;
   },
 
@@ -8543,6 +8597,7 @@ const DBots = {
     if (!rec) return;
     const map = {
       market: ["trade_definition_market", "SYMBOL_LIST", value, "market"],
+      durationunit: ["trade_definition_tradeoptions", "DURATIONTYPE_LIST", value, "durationunit"],
       contract: ["trade_definition_contracttype", "TYPE_LIST", value, "contract"],
       /* the purchase block can name its own contract, and the parser lets it
          win over TYPE_LIST — write both so a change always sticks */
@@ -9091,6 +9146,10 @@ const DBots = {
     options = options || {};
     const rec = this.selected();
     if (!rec) { toast("No bot", "Import a Deriv Bot XML file first.", "warn"); return; }
+    if (signalBotKind(rec) && !options.signal) {
+      switchTab("signals");
+      toast("Entry signal required", "Choose an Entry now signal for this bot and market to start trading.", "warn"); return;
+    }
     if (this.running || this.starting || this.busy || this.pending != null) { toast("Bot busy", "Wait for the current order to finish.", "warn"); return; }
     if (!state.auth || !state.token) { toast("Login required", "Log in to Deriv before running a DBot.", "warn"); return; }
     let cfg;
@@ -9101,7 +9160,7 @@ const DBots = {
     }
     if (!cfg.market) { toast("Market unsupported", cfg.symbol ? ("“" + cfg.symbol + "” is not streamed by this terminal.") : "The bot has no market.", "warn"); return; }
     if (options.signal && (rec.id !== options.selectedId || cfg.market !== options.signal.market ||
-        botKindForContract(cfg.purchaseContract || cfg.contract) !== botKindForContract(options.signal.def.type))) {
+        signalBotKind(rec) !== botKindForContract(options.signal.def.type))) {
       toast("Bot settings changed", "Check the bot and market, then choose the entry again.", "warn"); return;
     }
     const startToken = state.token;
@@ -9155,7 +9214,7 @@ const DBots = {
         this.busy = true;
         this.signalTradeInFlight = true;
         executeSignalTrade(options.signal, this.runId);
-        toast("Signal bot started", "Placing " + options.signal.def.label + " now; the bot then continues its configured strategy.", "info");
+        toast("Signal bot started", "Placing " + options.signal.def.label + " now and repeating it until stopped or a risk limit is reached.", "info");
       }
       $id("dbotsTabPill").classList.remove("hidden");
       this.renderStatus();
@@ -9182,10 +9241,12 @@ const DBots = {
           "Run this DBot on a REAL account?",
           "Bot <b>" + esc(rec.name) + "</b> will spend <b>real money</b> on account <b>" + esc(startAccount) + "</b>.<br><br>" +
           "Market: <b>" + esc(MARKETS[cfg.market].name) + "</b><br>" +
-          (first ? "Immediate signal trade: <b>" + esc(first.def.label) + "</b> · barrier <b>" + esc(first.def.barrier) + "</b><br>" : "") +
-          "Bot contract after entry: <b>" + esc(CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) + "</b>" +
-          (DIGIT_CONTRACTS.indexOf(this.purchaseContract) >= 0 ? " · barrier <b>" + esc(cfg.barrier) + "</b>" : "") + "<br>" +
-          "Stake: <b>" + esc(money(stake)) + "</b><br>Stop loss: <b>" + esc(sl ? money(sl) : "none") + "</b> · Take profit: <b>" + esc(tp ? money(tp) : "none") + "</b><br><br>" +
+          (first ? "Immediate signal trade: <b>" + esc(first.def.label) + "</b>" + (BARRIER_CONTRACTS.includes(first.def.type) ? " · barrier <b>" + esc(first.def.barrier) + "</b>" : "") + " · 1 tick<br>" : "") +
+          (first ? "The bot will repeat this signal until stopped or a risk limit is reached.<br>" :
+            "Bot contract: <b>" + esc(CONTRACT_LABEL[this.purchaseContract] || this.purchaseContract) + "</b>" +
+            (BARRIER_CONTRACTS.includes(this.purchaseContract) ? " · barrier <b>" + esc(cfg.barrier) + "</b>" : "") + "<br>") +
+          "Stake: <b>" + esc(money(stake)) + "</b><br>Stop loss: <b>" + esc(sl ? money(sl) : "none") + "</b> · Take profit: <b>" + esc(tp ? money(tp) : "none") + "</b><br>" +
+          "Martingale: <b>" + (martingale ? "on ×" + esc(mult) + " · max " + esc(maxSteps) + " steps" : "off") + "</b><br><br>" +
           "A DBot file is not a guarantee of profit. Only run this with money you can afford to lose.",
           "I understand — run on REAL", true
         );
@@ -9199,6 +9260,17 @@ const DBots = {
         toast("Bot settings changed", "Check the account and bot, then start again.", "warn"); return;
       }
     }
+    if (options.signal) {
+      /* Persist the signal into the actual bot fields, without replacing its
+         record or its per-bot stake and money-management settings. */
+      this.applyEdit("contract", options.signal.def.type);
+      if (BARRIER_CONTRACTS.includes(options.signal.def.type)) this.applyEdit("prediction", options.signal.def.barrier);
+      this.applyEdit("duration", 1);
+      this.applyEdit("durationunit", "t");
+      cfg = this.cfg;
+      this.purchaseContract = options.signal.def.type;
+    }
+    this.signalMode = !!options.signal;
     begin();
   },
 
@@ -9233,10 +9305,16 @@ const DBots = {
     this.lastSeenTick = last;
     /* FAST execution is continuous: every tick interval is an entry, with no
        cooldown gap between trades. NORMAL keeps the configured cooldown. */
-    if (!this.fast && Date.now() < this.cooldownUntil) return;
+    if (!this.signalMode && !this.fast && Date.now() < this.cooldownUntil) return;
     if (this.tp > 0 && this.pl >= this.tp) { this.stop("take profit reached (" + money(this.pl) + ")."); return; }
     if (this.sl > 0 && this.pl <= -Math.abs(this.sl)) { this.stop("stop loss reached (" + money(this.pl) + ")."); return; }
     if (this.maxLoss && this.lossStreak >= this.maxLoss) { this.stop(this.maxLoss + " consecutive losses."); return; }
+    if (this.signalMode) {
+      this.busy = true;
+      this.signalTradeInFlight = true;
+      executeSignalTrade({ def: { type: this.purchaseContract, barrier: cfg.barrier, label: CONTRACT_LABEL[this.purchaseContract] + (BARRIER_CONTRACTS.includes(this.purchaseContract) ? " " + cfg.barrier : "") }, market: cfg.market }, this.runId);
+      return;
+    }
     if (!cfg.trees.before || !cfg.trees.before.statements.BEFORE_PURCHASE_STACK) return;
 
     const rt = this.runtime(last);
@@ -9276,7 +9354,7 @@ const DBots = {
       duration: dur, duration_unit: unit
     };
     Object.assign(propReq, symbolPayload(entry ? entry.market : cfg.market));
-    if (DIGIT_CONTRACTS.indexOf(contract) >= 0) propReq.barrier = String(barrier);
+    if (BARRIER_CONTRACTS.includes(contract)) propReq.barrier = String(barrier);
 
     this.log("buy", "Entry · " + why);
     const presp = await socket.request(propReq, 20000, "dbot proposal");
@@ -9292,10 +9370,10 @@ const DBots = {
     const c = bresp.buy;
     this.pending = c.contract_id;
     this.pendingSignal = !!entry;
-    this.addTransaction(c, contract, barrier);
+    this.addTransaction(c, contract, BARRIER_CONTRACTS.includes(contract) ? barrier : null);
     this.log("buy", "Bought " + c.contract_id + " · " + money(c.buy_price) + " → payout " + money(c.payout) +
       " · " + dur + (unit === "t" ? " tick" + (dur === 1 ? "" : "s") : "s") +
-      (DIGIT_CONTRACTS.indexOf(contract) >= 0 ? " · barrier " + barrier : ""));
+      (BARRIER_CONTRACTS.includes(contract) ? " · barrier " + barrier : ""));
     renderBalance();
     this.watch(c.contract_id);
     this.busy = false;
@@ -9375,6 +9453,7 @@ const DBots = {
     if (this.tp > 0 && this.pl >= this.tp) { this.stop("take profit reached (" + money(this.pl) + ")."); return; }
     if (this.sl > 0 && this.pl <= -Math.abs(this.sl)) { this.stop("stop loss reached (" + money(this.pl) + ")."); return; }
     if (!this.running || !cfg) return;
+    if (this.signalMode) { this.cooldownUntil = 0; this.renderStatus(); return; }
 
     let sig = null;
     if (cfg.trees.after && cfg.trees.after.statements.AFTERPURCHASE_STACK) {
@@ -9438,7 +9517,7 @@ const DBots = {
     setTxt("blkMarket", mk ? mk.name : (cfg.symbol || "—"), !!cfg.market);
     setTxt("blkTradeType", cfg.tradeType || this.inferTradeType(cfg), false);
     setTxt("blkContract", (CONTRACT_LABEL[cfg.purchaseContract || cfg.contract] || cfg.contract) +
-      (DIGIT_CONTRACTS.indexOf(cfg.purchaseContract || cfg.contract) >= 0 ? " · " + cfg.barrier : ""), true);
+      (BARRIER_CONTRACTS.includes(cfg.purchaseContract || cfg.contract) ? " · " + cfg.barrier : ""), true);
     setTxt("blkCandle", cfg.candle || "60s", false);
     setTxt("blkRestartBuy", cfg.restartBuy ? "true" : "false", false);
     setTxt("blkRestartErr", cfg.restartOnError ? "true" : "false", false);
@@ -9476,7 +9555,7 @@ const DBots = {
     setTxt("blkDuration", cfg.duration + (cfg.durationUnit === "t" ? " tick" + (cfg.duration === 1 ? "" : "s") : " " + cfg.durationUnit), false);
     const stakeVar = Object.keys(cfg.vars || {}).find(k => /^(stake|stakeamount|amount)$/i.test(k));
     setTxt("blkStake", stakeVar ? stakeVar + " = " + cfg.vars[stakeVar] : "from the run panel", false);
-    setTxt("blkPrediction", DIGIT_CONTRACTS.indexOf(cfg.contract) >= 0 ? String(cfg.barrier) : "not used", DIGIT_CONTRACTS.indexOf(cfg.contract) >= 0);
+    setTxt("blkPrediction", BARRIER_CONTRACTS.includes(cfg.contract) ? String(cfg.barrier) : "not used", BARRIER_CONTRACTS.includes(cfg.contract));
     const sub = $id("blkSubLabel");
     if (sub) sub.textContent = cfg.symbol && cfg.symbol.indexOf("1HZ") === 0 ? "1s volatility" : "volatility";
 
@@ -9572,7 +9651,7 @@ const DBots = {
         const c = this.parse(rec.xml);
         summary = (MARKETS[c.market] ? MARKETS[c.market].short : (c.symbol || "—")) + " · " +
           (CONTRACT_LABEL[c.contract] || c.contract || "—") +
-          (DIGIT_CONTRACTS.indexOf(c.contract) >= 0 ? " " + c.barrier : "");
+          (BARRIER_CONTRACTS.includes(c.contract) ? " " + c.barrier : "");
       } catch (_) {}
       return '<div class="dbots-item' + (rec.id === this.selectedId ? " active" : "") + '" data-id="' + esc(rec.id) + '" role="button" tabindex="0">' +
         '<i class="dot-tag"></i>' +
@@ -9631,7 +9710,7 @@ const DBots = {
     tags.push('<span class="dbots-tag">Market <b>' + esc(MARKETS[cfg.market] ? MARKETS[cfg.market].name : (cfg.symbol || "—")) + "</b></span>");
     const traded = cfg.purchaseContract || cfg.contract;
     tags.push('<span class="dbots-tag acc">' + esc(CONTRACT_LABEL[traded] || traded || "—") +
-      (DIGIT_CONTRACTS.indexOf(traded) >= 0 ? " <b>" + cfg.barrier + "</b>" : "") + "</span>");
+      (BARRIER_CONTRACTS.includes(traded) ? " <b>" + cfg.barrier + "</b>" : "") + "</span>");
     tags.push('<span class="dbots-tag">Duration <b>' + esc(cfg.duration) + (cfg.durationUnit === "t" ? " tick" + (cfg.duration === 1 ? "" : "s") : " " + esc(cfg.durationUnit)) + "</b></span>");
     const varKeys = Object.keys(cfg.vars);
     if (varKeys.length) tags.push('<span class="dbots-tag">Vars <b>' + esc(varKeys.join(", ")) + "</b></span>");
@@ -9992,7 +10071,7 @@ const DBots = {
       const last = this.logs.length ? this.logs[this.logs.length - 1] : null;
       tr.innerHTML = last
         ? '<b>' + esc(last.t) + "</b> · " + esc(last.msg)
-        : (this.cfg ? "Ready · " + esc(this.cfg.blockCount) + " blocks parsed · press Run" : "No strategy loaded");
+        : (this.cfg ? (signalBotKind(this.selected()) ? "Ready · choose an Entry now signal to start" : "Ready · " + esc(this.cfg.blockCount) + " blocks parsed · press Run") : "No strategy loaded");
     }
   },
 
@@ -10203,13 +10282,13 @@ const FREE_BOTS = [
   { kind: "sample",    glyph: "◎", name: "Pythia",     epithet: "Oracle of the Low Digits",
     desc: "Buys Digit Over 3 on Volatility 100 (1s) after three digits ≤ 3 in a row — the bundled over-3 sample." },
   { kind: "overunder", glyph: "◑", name: "Janus",      epithet: "The Two-Faced Gate",
-    desc: "Digit Over 5 on Volatility 50, 5 ticks. One gate, two faces: over and under from the same barrier." },
+    desc: "Signal-driven Over / Under executor. Configure risk and market, then select an entry." },
   { kind: "evenodd",   glyph: "⇄", name: "Hecate",     epithet: "Keeper of the Crossroads",
-    desc: "Digit Even on Volatility 75, 1 tick. At the crossroads of even and odd, she takes the even road." },
+    desc: "Signal-driven Even / Odd executor. Configure risk and market, then select an entry." },
   { kind: "matches",   glyph: "◎", name: "Orpheus",    epithet: "The Backward Glance",
-    desc: "Digit Differs 7 on Volatility 100, 1 tick. He looks back at the digit that just passed — and bets it will not return." },
+    desc: "Signal-driven Differs executor. The entry supplies the prediction digit." },
   { kind: "matchbot",  glyph: "◉", name: "Narcissus",  epithet: "The One Who Saw Himself",
-    desc: "Digit Matches 5 on Volatility 100, 1 tick. He gazes into the pool and sees his own face — the digit that repeats itself." },
+    desc: "Signal-driven Matches executor. The entry supplies the prediction digit." },
   { kind: "risefall",  glyph: "↗", name: "Icarus",     epithet: "The Ascent",
     desc: "Rise on Volatility 100 (1s), 5 ticks. Pure ascent — the bot that always climbs toward the next tick." },
   { kind: "direct",    glyph: "▶", name: "Chronos",    epithet: "The Devourer of Ticks",
@@ -10236,6 +10315,7 @@ function renderFreeBots() {
   if (!host) return;
   host.innerHTML = FREE_BOTS.map(b => {
     const s = freeBotSummary(b.kind);
+    if (Object.hasOwn(SIGNAL_BOT_NAMES, b.kind)) { s.contract = "From Entry Points"; s.duration = "1 tick"; }
     return '<button class="fb-card" type="button" data-freebot="' + esc(b.kind) + '">' +
       '<span class="fb-top"><span class="fb-glyph">' + esc(b.glyph) + "</span>" +
         '<span><span class="fb-name">' + esc(b.name) + "</span><br>" +
@@ -10261,7 +10341,7 @@ function openFreeBot(kind) {
   if (!rec) return;
   switchTab("dbots");
   DBots.openSide("setup");
-  toast("Bot opened", (bot ? bot.name : rec.name) + " is loaded in DBots — edit the canvas, set the parameters, then press Run.", "ok");
+  toast("Bot opened", (bot ? bot.name : rec.name) + (signalBotKind(rec) ? " is loaded — set your market and risk, then choose an Entry now signal." : " is loaded in DBots — edit the canvas, set the parameters, then press Run."), "ok");
 }
 
 /* Keep session numbers fresh while the tab is open. */
